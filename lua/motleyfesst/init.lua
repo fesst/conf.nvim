@@ -1,2 +1,2 @@
 require("motleyfesst.remap")
---print("hello motley fesst")
+vim.wo.number = true
