@@ -46,4 +46,8 @@ return require('packer').startup(function(use)
 			require('render-markdown').setup({})
 		end,
 	})
+	use {
+		'nvim-lualine/lualine.nvim',
+		requires = { 'echasnovski/mini.nvim', opt = true } -- 'nvim-tree/nvim-web-devicons', opt = true }
+	}
 end)
