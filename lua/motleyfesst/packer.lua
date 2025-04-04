@@ -48,6 +48,6 @@ return require('packer').startup(function(use)
 	})
 	use {
 		'nvim-lualine/lualine.nvim',
-		requires = { 'echasnovski/mini.nvim', opt = true } -- 'nvim-tree/nvim-web-devicons', opt = true }
+		requires = { 'echasnovski/mini.nvim', opt = true }
 	}
 end)

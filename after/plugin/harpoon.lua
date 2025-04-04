@@ -13,4 +13,3 @@ vim.keymap.set("n", "<leader>t6", function() ui.nav_file(5) end)
 vim.keymap.set("n", "<leader>t7", function() ui.nav_file(6) end)
 vim.keymap.set("n", "<leader>t8", function() ui.nav_file(8) end)
 vim.keymap.set("n", "<leader>t9", function() ui.nav_file(9) end)
-
