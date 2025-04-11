@@ -24,7 +24,7 @@ local capabilities = require("cmp_nvim_lsp").default_capabilities()
 lspconfig.pyright.setup{}
 -- Servers 
 local servers = {
-	"omnisharp", "clangd", "pyright", "jdtls", "julials", "r_language_server", "awk_ls", "groovyls", "kotlin_language_server", "dockerls", "jqls", "ltex", "jsonls", "omnisharp", "clangd", "pyright", "gopls", "ts_ls", "html", "cssls", "jsonls", "yamlls", "bashls", "powershell_es", "marksman", "lua_ls", "rust_analyzer", "lemminx", "vimls", "grammarly", "angularls", "ansiblels", "asm_lsp", "neocmake", "azure_pipelines_ls", "nginx_language_server", "terraformls"
+	"omnisharp", "clangd", "pyright", "jdtls", "julials", "r_language_server", "awk_ls", "groovyls", "kotlin_language_server", "dockerls", "jqls", "jsonls", "omnisharp", "clangd", "pyright", "gopls", "ts_ls", "html", "cssls", "jsonls", "yamlls", "bashls", "powershell_es", "lua_ls", "rust_analyzer", "lemminx", "vimls", "angularls", "ansiblels", "asm_lsp", "neocmake", "azure_pipelines_ls", "nginx_language_server", "terraformls"
 }
 
 for _, server in ipairs(servers) do

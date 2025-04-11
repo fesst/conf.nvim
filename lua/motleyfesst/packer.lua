@@ -18,6 +18,9 @@ return require('packer').startup(function(use)
 			'hrsh7th/cmp-nvim-lsp'
 		}
 	}
+	use {
+		'mfussenegger/nvim-dap'
+	}
 	use 'mfussenegger/nvim-jdtls'
 	-- Formatting
 	use 'jose-elias-alvarez/null-ls.nvim'
@@ -39,15 +42,21 @@ return require('packer').startup(function(use)
 	use('theprimeagen/harpoon')
 	use('github/copilot.vim' )
 	use({
+		'nvim-tree/nvim-tree.lua',
+		requires = {
+			'nvim-tree/nvim-web-devicons', -- optional
+		}
+	})
+	use({
 		'MeanderingProgrammer/render-markdown.nvim',
 		after = { 'nvim-treesitter' },
-		requires = { 'echasnovski/mini.nvim', opt = true }, -- if you use the mini.nvim suite
+		requires = { 'nvim-tree/nvim-web-devicons', opt = true },
 		config = function()
 			require('render-markdown').setup({})
 		end,
 	})
 	use {
 		'nvim-lualine/lualine.nvim',
-		requires = { 'echasnovski/mini.nvim', opt = true }
+		requires = { 'nvim-tree/nvim-web-devicons', opt = true },
 	}
 end)
