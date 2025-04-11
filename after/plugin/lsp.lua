@@ -24,7 +24,11 @@ local capabilities = require("cmp_nvim_lsp").default_capabilities()
 lspconfig.pyright.setup{}
 -- Servers 
 local servers = {
-	"omnisharp", "clangd", "pyright", "jdtls", "julials", "r_language_server", "awk_ls", "groovyls", "kotlin_language_server", "dockerls", "jqls", "jsonls", "omnisharp", "clangd", "pyright", "gopls", "ts_ls", "html", "cssls", "jsonls", "yamlls", "bashls", "powershell_es", "lua_ls", "rust_analyzer", "lemminx", "vimls", "angularls", "ansiblels", "asm_lsp", "neocmake", "azure_pipelines_ls", "nginx_language_server", "terraformls"
+	"omnisharp", "clangd", "pyright", "jdtls", "kotlin_language_server", "dockerls", "jqls", "jsonls", "clangd", "gopls", "html", "cssls", "jsonls", "yamlls", "bashls", "lua_ls", "angularls"
+}
+local servers_omit = {
+	"ts_ls",
+	"powershell_es", "rust_analyzer", "lemminx", "vimls", "julials", "r_language_server", "awk_ls", "groovyls", "ansiblels", "asm_lsp", "neocmake", "azure_pipelines_ls", "nginx_language_server", "terraformls"
 }
 
 for _, server in ipairs(servers) do
@@ -32,11 +36,12 @@ for _, server in ipairs(servers) do
         capabilities = capabilities
     })
 end
+
 lspconfig.lua_ls.setup {
     on_init = function(client)
       if client.workspace_folders then
         local path = client.workspace_folders[1].name
-        if path ~= vim.fn.stdpath('config') and (vim.loop.fs_stat(path..'/.luarc.json') or vim.loop.fs_stat(path..'/.luarc.jsonc')) then
+	if path ~= vim.fn.stdpath('config') and (vim.loop.fs_stat(path..'/.luarc.json') or vim.loop.fs_stat(path..'/.luarc.jsonc')) then
           return
         end
       end
