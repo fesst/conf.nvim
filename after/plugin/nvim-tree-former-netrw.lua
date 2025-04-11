@@ -1,6 +1,9 @@
 require("nvim-tree").setup {
 	sync_root_with_cwd = true,
 	reload_on_bufenter = true,
+	hijack_directories = {
+		enable = false
+	},
 	sort = {
 		sorter = "case_sensitive",
 	},
@@ -22,14 +25,19 @@ require("nvim-tree").setup {
 			'\\.docker', '\\.dotnet', '\\.git', '\\.idead', '\\.lesshst', '\\.local',
 			'\\.mounty', '\\.npm', '\\.nuget', '\\.nvm', '\\.oh-my-zsh',
 			'\\.python_history', '\\.sdkman','\\.templateengine', '\\.ssh',
-			'\\.tmux', '\\.venv', '\\.vim', '\\.vscode', '\\.w3m', 
+			'\\.tmux', '\\.venv', '\\.vim', '\\.vscode', '\\.w3m',
 			'\\.zsh_sessions', 'node_modules',
 		}
-	}
+	},
+	actions = {
+		open_file = {
+			quit_on_open = true,
+		},
+	},
 }
-vim.api.nvim_set_keymap("n", "<leader>pv", ":NvimTreeFindFile<CR>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<leader>pV", ":NvimTreeFindFileToggle<CR>", { noremap = true, silent = true })
-
+vim.api.nvim_set_keymap("n", "<leader>pv", ":NvimTreeFindFileToggle<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>pV", ":NvimTreeFindFile<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>p-", ":NvimTreeExplore<CR>", { noremap = true, silent = true })
 -- from netrw.lua
 --vim.g.netrw_banner = 0 -- disable that anoying Netrw banner
 --vim.g.netrw_browser_split = 4 -- open in a prior window
