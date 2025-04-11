@@ -1,13 +1,21 @@
 require("nvim-tree").setup {
-	--sync_root_with_cwd = true,
+	sync_root_with_cwd = true,
 	reload_on_bufenter = true,
-
+	sort = {
+		sorter = "case_sensitive",
+	},
+	view = {
+		width = 30,
+	},
+	renderer = {
+		group_empty = true,
+	},
+	filters = {
+		dotfiles = false,--true,
+	}
 }
-
 vim.api.nvim_set_keymap("n", "<leader>pv", ":NvimTreeFindFile<CR>", { noremap = true, silent = true })
-
 vim.api.nvim_set_keymap("n", "<leader>pV", ":NvimTreeFindFileToggle<CR>", { noremap = true, silent = true })
-
 
 -- from netrw.lua
 --vim.g.netrw_banner = 0 -- disable that anoying Netrw banner
