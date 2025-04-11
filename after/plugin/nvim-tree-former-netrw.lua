@@ -13,19 +13,17 @@ require("nvim-tree").setup {
 	filters = {
 		dotfiles = false,
 		custom = {
-			'\\.git', 'node_modules', '.cache',
-			'Applications', 'Library', 'MusicCreation',
-			'\\.aspnet', '\\.colima', '\\.local', '\\.npm', '\\.nvm',
-			'\\.oh-my-zsh', '\\.venv', '\\.docker', 'Movies', 'Public',
-			'Pictures', 'Desktop', 'Documents', 'Downloads',
-			'Live Projects', 'Live project mac', '010-installers',
-			'\\.zsh_sessions', 'Push3',
-			'\\.CFUserTextEncoding', '\\.DS_Store', '\\.lesshst',
-			'\\.Spotlight-V100','\\.node_repl_history',
-			'\\.python_history', '\\.sdkman','\\.templateengine',
-			'\\.mounty', '\\.nuget', '\\.dotnet', '\\.vim',
-			'\\.vscode', '\\.idead', '\\.ssh', '\\.tmux',
-			'\\.w3m', '\\.cursor'
+			'010-installers',
+			'Applications', 'Desktop', 'Documents', 'Downloads',
+			'Library', 'Live projects mac', 'Live\\ projects',
+			'Movies', 'Music', 'MusicCreation', 'Pictures', 'Public', 'Push3',
+			'\\.CFUserTextEncoding', '\\.DS_Store', '\\.Spotlight-V100',
+			'\\.node_repl_history', '\\.aspnet', '\\.cache', '\\.colima', '\\.cursor',
+			'\\.docker', '\\.dotnet', '\\.git', '\\.idead', '\\.lesshst', '\\.local',
+			'\\.mounty', '\\.npm', '\\.nuget', '\\.nvm', '\\.oh-my-zsh',
+			'\\.python_history', '\\.sdkman','\\.templateengine', '\\.ssh',
+			'\\.tmux', '\\.venv', '\\.vim', '\\.vscode', '\\.w3m', 
+			'\\.zsh_sessions', 'node_modules',
 		}
 	}
 }
