@@ -21,7 +21,7 @@ require("nvim-tree").setup {
 			'Library', 'Live projects mac', 'Live\\ projects',
 			'Movies', 'Music', 'MusicCreation', 'Pictures', 'Public', 'Push3',
 			'\\.CFUserTextEncoding', '\\.DS_Store', '\\.Spotlight-V100',
-			'\\.node_repl_history', '\\.aspnet', '\\.cache', '\\.colima', '\\.cursor',
+			'\\.node_repl_history', '\\.aspnet', '\\.cache', '\\.colima',
 			'\\.docker', '\\.dotnet', '\\.git', '\\.idead', '\\.lesshst', '\\.local',
 			'\\.mounty', '\\.npm', '\\.nuget', '\\.nvm', '\\.oh-my-zsh',
 			'\\.python_history', '\\.sdkman','\\.templateengine', '\\.ssh',
