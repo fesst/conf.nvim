@@ -1,66 +1,271 @@
 -- Initialize Mason
-require("mason").setup()
+require("mason").setup({
+    ui = {
+        icons = {
+            package_installed = "✓",
+            package_pending = "➜",
+            package_uninstalled = "✗"
+        }
+    }
+})
+
 require("mason-lspconfig").setup({
     ensure_installed = {
-        "jdtls",       -- Java
-        "omnisharp",   -- C#
-        "clangd",      -- C++
-        "pyright",     -- Python
---        "gopls",       -- Go
-        "ts_ls",    -- JavaScript/TypeScript
-        "html",        -- HTML
-        "cssls",       -- CSS
-        "jsonls",      -- JSON
-        "yamlls",      -- YAML
---        "bash-language-server",      -- Bash
-        -- "marksman",    -- Markdown
-        "lua_ls"       -- Lua
+        -- Web Development
+        "angularls",   -- Angular
+        "tsserver",   -- TypeScript/JavaScript
+        "eslint",     -- ESLint
+        "html",       -- HTML
+        "cssls",      -- CSS
+        "jsonls",     -- JSON
+        "yamlls",     -- YAML
+        "dockerls",   -- Docker
+
+        -- Backend Languages
+        "pyright",    -- Python
+        "gopls",      -- Go
+        "omnisharp",  -- C#
+        "jdtls",      -- Java
+        "kotlin_language_server", -- Kotlin
+        "clangd",     -- C/C++
+        "rust_analyzer", -- Rust
+
+        -- Scripting
+        "bashls",     -- Bash
+        "lua_ls",     -- Lua
+        "awk_ls",     -- AWK
+
+        -- Markup
+        "texlab",     -- LaTeX
+        "lemminx",    -- XML
     }
 })
 
 local lspconfig = require("lspconfig")
 local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
-lspconfig.pyright.setup{}
--- Servers 
-local servers = {
-	"omnisharp", "clangd", "pyright", "jdtls", "kotlin_language_server", "dockerls", "jqls", "jsonls", "clangd", "gopls", "html", "cssls", "jsonls", "yamlls", "bashls", "lua_ls", "angularls"
-}
-local servers_omit = {
-	"ts_ls",
-	"powershell_es", "rust_analyzer", "lemminx", "vimls", "julials", "r_language_server", "awk_ls", "groovyls", "ansiblels", "asm_lsp", "neocmake", "azure_pipelines_ls", "nginx_language_server", "terraformls"
-}
-
-for _, server in ipairs(servers) do
-    lspconfig[server].setup({
-        capabilities = capabilities
+-- Enhanced on_attach function
+local on_attach = function(client, bufnr)
+    -- Enable formatting on save
+    vim.api.nvim_create_autocmd("BufWritePre", {
+        buffer = bufnr,
+        callback = function()
+            vim.lsp.buf.format()
+        end
     })
+
+    -- Key mappings
+    local opts = { buffer = bufnr, silent = true }
+    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+    vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
+    vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, opts)
+    vim.keymap.set('n', '<leader>f', vim.lsp.buf.format, opts)
+    vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, opts)
+    vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
+    vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
 end
 
-lspconfig.lua_ls.setup {
-    on_init = function(client)
-      if client.workspace_folders then
-        local path = client.workspace_folders[1].name
-	if path ~= vim.fn.stdpath('config') and (vim.loop.fs_stat(path..'/.luarc.json') or vim.loop.fs_stat(path..'/.luarc.jsonc')) then
-          return
-        end
-      end
-
-      client.config.settings.Lua = vim.tbl_deep_extend('force', client.config.settings.Lua, {
-        runtime = {
-          -- Tell the language server which version of Lua you're using
-          version = 'LuaJIT'
+-- Language-specific configurations
+local configs = {
+    -- Web Development
+    angularls = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        filetypes = { 'typescript', 'html', 'typescriptreact', 'typescript.tsx' },
+        root_dir = lspconfig.util.root_pattern('angular.json', 'package.json'),
+    },
+    tsserver = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        filetypes = { "typescript", "javascript", "typescriptreact", "typescript.tsx" },
+        root_dir = lspconfig.util.root_pattern("package.json", "tsconfig.json"),
+    },
+    eslint = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        filetypes = { "typescript", "javascript", "typescriptreact", "typescript.tsx" },
+    },
+    html = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        filetypes = { "html", "htmldjango" },
+    },
+    cssls = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        filetypes = { "css", "scss", "less" },
+    },
+    jsonls = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        settings = {
+            json = {
+                schemas = require('schemastore').json.schemas(),
+                validate = { enable = true },
+            },
         },
-        -- Make the server aware of Neovim runtime files
-        workspace = {
-          checkThirdParty = false,
-          library = {
-            vim.env.VIMRUNTIME
-          }
-        }
-      })
-    end,
-    settings = {
-      Lua = {}
-    }
-  }
+    },
+    yamlls = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        settings = {
+            yaml = {
+                schemas = require('schemastore').yaml.schemas(),
+            },
+        },
+    },
+    dockerls = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+    },
+
+    -- Backend Languages
+    pyright = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        settings = {
+            python = {
+                analysis = {
+                    typeCheckingMode = "basic",
+                    diagnosticMode = "workspace",
+                    useLibraryCodeForTypes = true,
+                },
+            },
+        },
+    },
+    gopls = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        settings = {
+            gopls = {
+                analyses = {
+                    unusedparams = true,
+                },
+                staticcheck = true,
+            },
+        },
+    },
+    omnisharp = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        cmd = { "omnisharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
+    },
+    jdtls = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+    },
+    kotlin_language_server = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+    },
+    clangd = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        cmd = {
+            "clangd",
+            "--background-index",
+            "--suggest-missing-includes",
+            "--clang-tidy",
+            "--header-insertion=iwyu",
+        },
+    },
+    rust_analyzer = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        settings = {
+            ["rust-analyzer"] = {
+                checkOnSave = {
+                    command = "clippy",
+                },
+            },
+        },
+    },
+
+    -- Scripting
+    bashls = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        filetypes = { "sh", "zsh", "bash" },
+    },
+    lua_ls = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        settings = {
+            Lua = {
+                runtime = {
+                    version = 'LuaJIT',
+                },
+                workspace = {
+                    checkThirdParty = false,
+                    library = {
+                        vim.env.VIMRUNTIME,
+                    },
+                },
+                telemetry = {
+                    enable = false,
+                },
+            },
+        },
+    },
+    awk_ls = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+    },
+
+    -- Markup
+    texlab = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        settings = {
+            texlab = {
+                build = {
+                    executable = "latexmk",
+                    args = { "-pdf", "-interaction=nonstopmode", "-synctex=1", "%f" },
+                    forwardSearchAfter = true,
+                },
+                forwardSearch = {
+                    executable = "zathura",
+                    args = { "--synctex-forward", "%l:1:%f", "%p" },
+                },
+            },
+        },
+    },
+    lemminx = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+    },
+}
+
+-- Setup all language servers
+for server, config in pairs(configs) do
+    lspconfig[server].setup(config)
+end
+
+-- Additional diagnostics configuration
+vim.diagnostic.config({
+    virtual_text = true,
+    signs = true,
+    underline = true,
+    update_in_insert = false,
+    severity_sort = false,
+})
+
+-- Enable border for floating windows
+local border = {
+    {"╭", "FloatBorder"},
+    {"─", "FloatBorder"},
+    {"╮", "FloatBorder"},
+    {"│", "FloatBorder"},
+    {"╯", "FloatBorder"},
+    {"─", "FloatBorder"},
+    {"╰", "FloatBorder"},
+    {"│", "FloatBorder"},
+}
+
+local orig_util_open_floating_preview = vim.lsp.util.open_floating_preview
+function vim.lsp.util.open_floating_preview(contents, syntax, opts, ...)
+    opts = opts or {}
+    opts.border = opts.border or border
+    return orig_util_open_floating_preview(contents, syntax, opts, ...)
+end
