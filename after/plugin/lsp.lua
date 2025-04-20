@@ -13,7 +13,7 @@ require("mason-lspconfig").setup({
     ensure_installed = {
         -- Web Development
         "angularls",   -- Angular
-        "tsserver",   -- TypeScript/JavaScript
+        "ts_ls",   -- TypeScript/JavaScript
         "eslint",     -- ESLint
         "html",       -- HTML
         "cssls",      -- CSS
@@ -75,7 +75,7 @@ local configs = {
         filetypes = { 'typescript', 'html', 'typescriptreact', 'typescript.tsx' },
         root_dir = lspconfig.util.root_pattern('angular.json', 'package.json'),
     },
-    tsserver = {
+    ts_ls = {
         capabilities = capabilities,
         on_attach = on_attach,
         filetypes = { "typescript", "javascript", "typescriptreact", "typescript.tsx" },
