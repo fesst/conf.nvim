@@ -12,32 +12,34 @@ require("mason").setup({
 require("mason-lspconfig").setup({
     ensure_installed = {
         -- Web Development
-        "angularls",   -- Angular
-        "ts_ls",   -- TypeScript/JavaScript
-        "eslint",     -- ESLint
-        "html",       -- HTML
-        "cssls",      -- CSS
-        "jsonls",     -- JSON
-        "yamlls",     -- YAML
-        "dockerls",   -- Docker
+        "angularls", -- Angular
+        "ts_ls",     -- TypeScript/JavaScript
+        "eslint",    -- ESLint
+        "html",      -- HTML
+        "cssls",     -- CSS
+        "jsonls",    -- JSON
+        "yamlls",    -- YAML
+        "dockerls",  -- Docker
 
         -- Backend Languages
-        "pyright",    -- Python
-        "gopls",      -- Go
-        "omnisharp",  -- C#
-        "jdtls",      -- Java
+        "pyright",                -- Python
+        "gopls",                  -- Go
+        "omnisharp",              -- C#
+        "jdtls",                  -- Java
         "kotlin_language_server", -- Kotlin
-        "clangd",     -- C/C++
-        "rust_analyzer", -- Rust
+        "clangd",                 -- C/C++
+        "rust_analyzer",          -- Rust
+
+        "gradle_ls",              -- Gradle
 
         -- Scripting
-        "bashls",     -- Bash
-        "lua_ls",     -- Lua
-        "awk_ls",     -- AWK
+        "bashls", -- Bash
+        "lua_ls", -- Lua
+        "awk_ls", -- AWK
 
         -- Markup
-        "texlab",     -- LaTeX
-        "lemminx",    -- XML
+        "texlab",  -- LaTeX
+        "lemminx", -- XML
     }
 })
 
@@ -253,14 +255,14 @@ vim.diagnostic.config({
 
 -- Enable border for floating windows
 local border = {
-    {"╭", "FloatBorder"},
-    {"─", "FloatBorder"},
-    {"╮", "FloatBorder"},
-    {"│", "FloatBorder"},
-    {"╯", "FloatBorder"},
-    {"─", "FloatBorder"},
-    {"╰", "FloatBorder"},
-    {"│", "FloatBorder"},
+    { "╭", "FloatBorder" },
+    { "─", "FloatBorder" },
+    { "╮", "FloatBorder" },
+    { "│", "FloatBorder" },
+    { "╯", "FloatBorder" },
+    { "─", "FloatBorder" },
+    { "╰", "FloatBorder" },
+    { "│", "FloatBorder" },
 }
 
 local orig_util_open_floating_preview = vim.lsp.util.open_floating_preview
