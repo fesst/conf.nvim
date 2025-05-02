@@ -1,3 +1,20 @@
+local function open_nvim_tree(data)
+    -- buffer is a directory
+    local directory = vim.fn.isdirectory(data.file) == 1
+
+    if not directory then
+        return
+    end
+
+    -- change to the directory
+    vim.cmd.cd(data.file)
+
+    -- open the tree
+    require("nvim-tree.api").tree.open()
+end
+
+vim.api.nvim_create_autocmd({ "VimEnter" }, { callback = open_nvim_tree })
+
 require("nvim-tree").setup {
     sync_root_with_cwd = true,
     reload_on_bufenter = true,
@@ -35,6 +52,5 @@ require("nvim-tree").setup {
         },
     },
 }
-vim.api.nvim_set_keymap("n", "<leader>pv", ":NvimTreeFindFileToggle<CR>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<leader>pV", ":NvimTreeFindFile<CR>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<leader>p-", ":NvimTreeExplore<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>pv", ":NvimTreeFindFile<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>p-", ":NvimTreeToggle<CR>", { noremap = true, silent = true })
