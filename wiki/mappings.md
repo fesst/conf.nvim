@@ -39,10 +39,10 @@
 
 ## Copilot
 - `<leader>cp` - Open Copilot panel
-- `<C-J>` - Accept suggestion (overrides default join lines)
-- `<C-[>` - Previous suggestion (overrides default escape)
-- `<C-]>` - Next suggestion (overrides default jump to tag)
-- `<C-\>` - Dismiss suggestion (overrides default toggle terminal)
+- `<C-\>>` - Next suggestion
+- `<C-\<>` - Previous suggestion
+- `<C-\>` - Dismiss suggestion
+- `<C-Return>` - Accept suggestion
 
 ## Language-Specific Mappings
 ### Python
