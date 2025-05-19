@@ -39,10 +39,10 @@
 
 ## Copilot
 - `<leader>cp` - Open Copilot panel
-- `<C-\>>` - Next suggestion
-- `<C-\<>` - Previous suggestion
+- `<C-.>` - Next suggestion
+- `<C-,>` - Previous suggestion
 - `<C-\>` - Dismiss suggestion
-- `<C-Return>` - Accept suggestion
+- `<C-CR>` - Accept suggestion (inserts newline after accepting)
 
 ## Language-Specific Mappings
 ### Python
