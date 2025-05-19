@@ -70,8 +70,22 @@ local function setup_language_settings()
     vim.api.nvim_create_autocmd("FileType", {
         pattern = "rust",
         callback = function()
+            -- Use LSP-based folding for Rust
+            vim.opt_local.foldmethod = "expr"
+            vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
+            
             setup_tabs(4, true)
-            setup_folding()
+            vim.opt_local.colorcolumn = "100"
+            vim.opt_local.textwidth = 100
+            vim.opt_local.formatoptions:append("c") -- Auto-wrap comments
+            vim.opt_local.formatoptions:append("q") -- Allow formatting of comments with 'gq'
+            vim.opt_local.formatoptions:append("r") -- Auto-insert comment leader after hitting <Enter>
+            vim.opt_local.formatoptions:append("n") -- Recognize numbered lists
+            vim.opt_local.formatoptions:append("j") -- Remove comment leader when joining lines
         end
     })
 
@@ -138,8 +152,8 @@ local function setup_language_keybindings()
     keymap('n', '<leader>yt', ':!npm test<CR>', { desc = 'Run JavaScript tests' })
 
     -- LaTeX
-    keymap('n', '<leader>yb', ':!latexmk -pdf %<CR>', { desc = 'Build LaTeX document' })
-    keymap('n', '<leader>yv', ':!zathura %:r.pdf &<CR>', { desc = 'View LaTeX PDF' })
+    keymap('n', '<leader>yb', ':!latexmk -pdf -synctex=1 -interaction=nonstopmode %<CR>', { desc = 'Build LaTeX document' })
+    keymap('n', '<leader>yv', ':!open -a Skim %:r.pdf<CR>', { desc = 'View LaTeX PDF' })
 
     -- Docker
     keymap('n', '<leader>yd', ':!docker build .<CR>', { desc = 'Build Docker image' })

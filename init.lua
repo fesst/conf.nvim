@@ -21,8 +21,35 @@ if not vim.loop.fs_stat(lazypath) then
     })
 end
 vim.opt.rtp:prepend(lazypath)
-require("lazy").setup("motleyfesst.lazy")
 
+-- Configure Lazy.nvim
+require("lazy").setup("motleyfesst.lazy", {
+    install = {
+        missing = true,
+        colorscheme = { "rose-pine" },
+    },
+    checker = {
+        enabled = true,
+        notify = false,
+    },
+    change_detection = {
+        notify = false,
+    },
+    performance = {
+        rtp = {
+            disabled_plugins = {
+                "gzip",
+                "tarPlugin",
+                "tohtml",
+                "tutor",
+                "zipPlugin",
+            },
+        },
+    },
+    rocks = {
+        enabled = false,
+    },
+})
 
 vim.api.nvim_create_autocmd("TextYankPost", {
     group = vim.api.nvim_create_augroup("highlight_yank", {}),

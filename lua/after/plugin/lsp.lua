@@ -253,8 +253,8 @@ local configs = {
                     forwardSearchAfter = true,
                 },
                 forwardSearch = {
-                    executable = "zathura",
-                    args = { "--synctex-forward", "%l:1:%f", "%p" },
+                    executable = "displayline",
+                    args = { "%l", "%p", "%f" },
                 },
             },
         },

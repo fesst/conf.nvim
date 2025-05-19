@@ -201,12 +201,12 @@ dap.configurations.go = {
 -- Note: Requires manual installation of CodeLLDB:
 -- cargo install codelldb
 dap.adapters.codelldb = {
-    type = 'server',
-    port = '${port}',
-    executable = {
-        command = 'codelldb',
-        args = { '--port', '${port}' },
-    },
+    type = 'executable',
+    command = vim.fn.stdpath('data') .. '/mason/packages/codelldb/extension/adapter/codelldb',
+    args = { '--port', '13000' },
+    env = {
+        DYLD_LIBRARY_PATH = vim.fn.stdpath('data') .. '/mason/packages/codelldb/extension/adapter'
+    }
 }
 
 dap.configurations.rust = {
@@ -234,23 +234,39 @@ dap.configurations.rust = {
 }
 
 -- C/C++ DAP configuration
+dap.adapters.lldb = {
+    type = 'executable',
+    command = 'lldb',
+    name = 'lldb'
+}
+
 dap.configurations.cpp = {
     {
         name = 'Launch file',
-        type = 'cppdbg',
+        type = 'lldb',
         request = 'launch',
         program = function()
             return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/', 'file')
         end,
         cwd = '${workspaceFolder}',
-        stopAtEntry = true,
-        setupCommands = {
-            {
-                text = '-enable-pretty-printing',
-                description = 'enable pretty printing',
-                ignoreFailures = false,
-            },
-        },
+        stopOnEntry = false,
+        args = {},
+        runInTerminal = true,
+    },
+    {
+        name = 'Debug with arguments',
+        type = 'lldb',
+        request = 'launch',
+        program = function()
+            return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/', 'file')
+        end,
+        cwd = '${workspaceFolder}',
+        args = function()
+            local args = vim.fn.input('Program arguments: ')
+            return vim.split(args, ' ')
+        end,
+        stopOnEntry = false,
+        runInTerminal = true,
     },
 }
 
@@ -407,3 +423,6 @@ dap.configurations.zig = {
         cwd = '${workspaceFolder}',
     },
 }
+
+-- Enable DAP logging
+dap.set_log_level('DEBUG')
