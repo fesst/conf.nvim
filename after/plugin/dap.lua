@@ -6,12 +6,8 @@ local mason_registry = require("mason-registry")
 local function ensure_dap_installed()
     local adapters = {
         "debugpy",           -- Python
-        "js-debug",          -- JavaScript/TypeScript
-        "codelldb",          -- Rust, C/C++
-        "delve",             -- Go
         "netcoredbg",        -- C#
         "elixir-ls",         -- Elixir
-        "zls",               -- Zig
     }
     
     for _, adapter in ipairs(adapters) do
@@ -148,15 +144,19 @@ dap.configurations.python = {
 }
 
 -- JavaScript/TypeScript DAP configuration
-dap.adapters.node2 = {
-    type = 'executable',
-    command = 'node',
-    args = { os.getenv('HOME') .. '/.local/share/nvim/mason/packages/js-debug/out/src/vsDebugServer.js' },
+dap.adapters.node = {
+    type = 'server',
+    host = 'localhost',
+    port = '${port}',
+    executable = {
+        command = 'node',
+        args = { '--inspect-brk' },
+    },
 }
 
 dap.configurations.javascript = {
     {
-        type = 'node2',
+        type = 'node',
         request = 'launch',
         name = 'Launch file',
         program = '${file}',
