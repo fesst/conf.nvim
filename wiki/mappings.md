@@ -31,6 +31,17 @@
 - `[i` - Previous diagnostic
 - `]i` - Next diagnostic
 
+## Debug (DAP) Mappings
+- `<leader>dc` - Start/Continue debugging
+- `<leader>di` - Step into
+- `<leader>do` - Step over
+- `<leader>du` - Step out
+- `<leader>db` - Toggle breakpoint
+- `<leader>dB` - Set conditional breakpoint
+- `<leader>dl` - Set log point
+- `<leader>dr` - Open REPL
+- `<leader>dL` - Run last debug configuration
+
 ## Git (Fugitive)
 - `<leader>gs` - Git status
 
@@ -75,6 +86,24 @@
 ### Docker
 - `<leader>yd` - Build Docker image
 - `<leader>yr` - Run Docker container
+
+## Supported Languages
+- Python (LSP: pyright, DAP: debugpy)
+- JavaScript/TypeScript (LSP: tsserver, DAP: node-debug2)
+- Go (LSP: gopls, DAP: delve)
+- Rust (LSP: rust-analyzer, DAP: codelldb)
+- C/C++ (LSP: clangd, DAP: codelldb)
+- Java/Kotlin (LSP: jdtls)
+- Elixir (LSP: elixirls, DAP: elixir-ls)
+- C# (LSP: omnisharp, DAP: netcoredbg)
+- Zig (LSP: zls, DAP: zls)
+- Lua (LSP: lua_ls, DAP: nlua)
+- PHP (LSP: intelephense, DAP: xdebug)
+- Ruby (LSP: solargraph, DAP: rdbg)
+- HTML/CSS/SCSS/Less
+- JSON/YAML/TOML
+- Markdown
+- Shell scripts (sh, bash, zsh)
 
 ## Plugin Mappings
 *(More mappings to be added as we configure more plugins)* 

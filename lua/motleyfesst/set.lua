@@ -39,3 +39,12 @@ opt.swapfile = false
 opt.backup = false
 opt.undofile = true
 opt.undodir = os.getenv("HOME") .. "/.vim/undodir"
+
+-- folding
+opt.foldmethod = "expr"
+opt.foldexpr = "v:lua.vim.lsp.foldexpr() or nvim_treesitter#foldexpr()"
+opt.foldlevelstart = 99  -- Start with all folds open
+opt.foldenable = true
+opt.foldcolumn = "4"  -- Show fold column with width of 4
+opt.foldminlines = 1  -- Minimum number of lines for a fold
+opt.foldnestmax = 20  -- Maximum fold nesting level

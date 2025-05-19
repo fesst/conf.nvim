@@ -21,6 +21,14 @@ return {
     "mfussenegger/nvim-jdtls",
     "jose-elias-alvarez/null-ls.nvim",
     {
+        "rcarriga/nvim-dap-ui",
+        dependencies = { "mfussenegger/nvim-dap" }
+    },
+    {
+        "theHamsta/nvim-dap-virtual-text",
+        dependencies = { "mfussenegger/nvim-dap" }
+    },
+    {
         "nvim-telescope/telescope.nvim",
         tag = "0.1.8",
         dependencies = { "nvim-lua/plenary.nvim" }

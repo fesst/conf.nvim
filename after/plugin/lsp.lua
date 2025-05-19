@@ -20,6 +20,7 @@ require("mason-lspconfig").setup({
         "jsonls",    -- JSON
         "yamlls",    -- YAML
         "dockerls",  -- Docker
+        "taplo",     -- TOML
 
         -- Backend Languages
         "pyright",                -- Python
@@ -29,6 +30,8 @@ require("mason-lspconfig").setup({
         "kotlin_language_server", -- Kotlin
         "clangd",                 -- C/C++
         "rust_analyzer",          -- Rust
+        "elixirls",              -- Elixir
+        "zls",                   -- Zig
 
         "gradle_ls",              -- Gradle
 
@@ -152,6 +155,14 @@ local configs = {
         capabilities = capabilities,
         on_attach = on_attach,
         cmd = { "omnisharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
+        settings = {
+            omnisharp = {
+                enableRoslynAnalyzers = true,
+                organizeImportsOnFormat = true,
+                enableEditorConfigSupport = true,
+                enableImportCompletion = true,
+            },
+        },
     },
     jdtls = {
         capabilities = capabilities,
@@ -182,6 +193,21 @@ local configs = {
                 },
             },
         },
+    },
+    elixirls = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        settings = {
+            elixirLS = {
+                dialyzerEnabled = true,
+                fetchDeps = true,
+                mixEnv = "dev",
+            },
+        },
+    },
+    zls = {
+        capabilities = capabilities,
+        on_attach = on_attach,
     },
 
     -- Scripting
@@ -236,6 +262,20 @@ local configs = {
     lemminx = {
         capabilities = capabilities,
         on_attach = on_attach,
+    },
+    taplo = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        settings = {
+            taplo = {
+                formatter = {
+                    alignEntries = true,
+                    alignComments = true,
+                    compactArrays = true,
+                    compactInlineTables = true,
+                },
+            },
+        },
     },
 }
 

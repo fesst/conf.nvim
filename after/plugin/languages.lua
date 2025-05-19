@@ -11,6 +11,11 @@ local function setup_language_settings()
             vim.opt_local.softtabstop = 4
             vim.opt_local.expandtab = true
             vim.opt_local.textwidth = 88 -- Black formatter default
+            vim.opt_local.foldmethod = "indent"  -- Use indentation for folding
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"  -- Show fold column
+            vim.opt_local.foldlevel = 99    -- Start with all folds open
+            vim.opt_local.foldminlines = 1  -- Minimum lines for a fold
         end
     })
 
@@ -22,6 +27,11 @@ local function setup_language_settings()
             vim.opt_local.shiftwidth = 2
             vim.opt_local.softtabstop = 2
             vim.opt_local.expandtab = true
+            vim.opt_local.foldmethod = "indent"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
         end
     })
 
@@ -33,6 +43,11 @@ local function setup_language_settings()
             vim.opt_local.shiftwidth = 2
             vim.opt_local.softtabstop = 2
             vim.opt_local.expandtab = true
+            vim.opt_local.foldmethod = "indent"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
         end
     })
 
@@ -44,6 +59,11 @@ local function setup_language_settings()
             vim.opt_local.shiftwidth = 4
             vim.opt_local.softtabstop = 4
             vim.opt_local.noexpandtab = true
+            vim.opt_local.foldmethod = "indent"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
         end
     })
 
@@ -55,6 +75,11 @@ local function setup_language_settings()
             vim.opt_local.shiftwidth = 4
             vim.opt_local.softtabstop = 4
             vim.opt_local.expandtab = true
+            vim.opt_local.foldmethod = "indent"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
         end
     })
 
@@ -66,6 +91,11 @@ local function setup_language_settings()
             vim.opt_local.shiftwidth = 4
             vim.opt_local.softtabstop = 4
             vim.opt_local.expandtab = true
+            vim.opt_local.foldmethod = "indent"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
         end
     })
 
@@ -76,6 +106,59 @@ local function setup_language_settings()
             vim.opt_local.textwidth = 80
             vim.opt_local.wrap = true
             vim.opt_local.linebreak = true
+            vim.opt_local.foldmethod = "indent"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
+        end
+    })
+
+    -- Lua
+    vim.api.nvim_create_autocmd("FileType", {
+        pattern = "lua",
+        callback = function()
+            vim.opt_local.foldmethod = "indent"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
+        end
+    })
+
+    -- Shell scripts
+    vim.api.nvim_create_autocmd("FileType", {
+        pattern = { "sh", "bash", "zsh" },
+        callback = function()
+            vim.opt_local.foldmethod = "indent"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
+        end
+    })
+
+    -- JSON/YAML/TOML
+    vim.api.nvim_create_autocmd("FileType", {
+        pattern = { "json", "yaml", "toml" },
+        callback = function()
+            vim.opt_local.foldmethod = "indent"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
+        end
+    })
+
+    -- Markdown and other text files
+    vim.api.nvim_create_autocmd("FileType", {
+        pattern = { "markdown", "md", "txt", "text" },
+        callback = function()
+            vim.opt_local.foldmethod = "indent"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
         end
     })
 end
