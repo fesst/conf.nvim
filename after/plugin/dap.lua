@@ -6,7 +6,7 @@ local mason_registry = require("mason-registry")
 local function ensure_dap_installed()
     local adapters = {
         "debugpy",           -- Python
-        "node-debug2-adapter", -- JavaScript/TypeScript
+        "js-debug-adapter",  -- JavaScript/TypeScript
         "codelldb",          -- Rust, C/C++
         "delve",             -- Go
         "netcoredbg",        -- C#
@@ -151,7 +151,7 @@ dap.configurations.python = {
 dap.adapters.node2 = {
     type = 'executable',
     command = 'node',
-    args = { os.getenv('HOME') .. '/.local/share/nvim/mason/packages/node-debug2-adapter/out/src/nodeDebug.js' },
+    args = { os.getenv('HOME') .. '/.local/share/nvim/mason/packages/js-debug-adapter/out/src/vsDebugServer.js' },
 }
 
 dap.configurations.javascript = {
