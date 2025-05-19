@@ -1,21 +1,32 @@
 local keymap = vim.keymap.set
 
+-- Helper function to set up common folding settings
+local function setup_folding()
+    vim.opt_local.foldmethod = "expr"
+    vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr() or nvim_treesitter#foldexpr()"
+    vim.opt_local.foldenable = true
+    vim.opt_local.foldcolumn = "4"
+    vim.opt_local.foldlevel = 99
+    vim.opt_local.foldminlines = 1
+end
+
+-- Helper function to set up common tab settings
+local function setup_tabs(tab_size, expand_tab)
+    vim.opt_local.tabstop = tab_size
+    vim.opt_local.shiftwidth = tab_size
+    vim.opt_local.softtabstop = tab_size
+    vim.opt_local.expandtab = expand_tab
+end
+
 -- Language-specific settings
 local function setup_language_settings()
     -- Python
     vim.api.nvim_create_autocmd("FileType", {
         pattern = "python",
         callback = function()
-            vim.opt_local.tabstop = 4
-            vim.opt_local.shiftwidth = 4
-            vim.opt_local.softtabstop = 4
-            vim.opt_local.expandtab = true
+            setup_tabs(4, true)
             vim.opt_local.textwidth = 88 -- Black formatter default
-            vim.opt_local.foldmethod = "indent"  -- Use indentation for folding
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"  -- Show fold column
-            vim.opt_local.foldlevel = 99    -- Start with all folds open
-            vim.opt_local.foldminlines = 1  -- Minimum lines for a fold
+            setup_folding()
         end
     })
 
@@ -23,15 +34,8 @@ local function setup_language_settings()
     vim.api.nvim_create_autocmd("FileType", {
         pattern = { "javascript", "typescript", "typescriptreact" },
         callback = function()
-            vim.opt_local.tabstop = 2
-            vim.opt_local.shiftwidth = 2
-            vim.opt_local.softtabstop = 2
-            vim.opt_local.expandtab = true
-            vim.opt_local.foldmethod = "indent"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
+            setup_tabs(2, true)
+            setup_folding()
         end
     })
 
@@ -39,15 +43,8 @@ local function setup_language_settings()
     vim.api.nvim_create_autocmd("FileType", {
         pattern = { "html", "css", "scss", "less" },
         callback = function()
-            vim.opt_local.tabstop = 2
-            vim.opt_local.shiftwidth = 2
-            vim.opt_local.softtabstop = 2
-            vim.opt_local.expandtab = true
-            vim.opt_local.foldmethod = "indent"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
+            setup_tabs(2, true)
+            setup_folding()
         end
     })
 
@@ -55,15 +52,8 @@ local function setup_language_settings()
     vim.api.nvim_create_autocmd("FileType", {
         pattern = "go",
         callback = function()
-            vim.opt_local.tabstop = 4
-            vim.opt_local.shiftwidth = 4
-            vim.opt_local.softtabstop = 4
-            vim.opt_local.noexpandtab = true
-            vim.opt_local.foldmethod = "indent"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
+            setup_tabs(4, false)
+            setup_folding()
         end
     })
 
@@ -71,15 +61,8 @@ local function setup_language_settings()
     vim.api.nvim_create_autocmd("FileType", {
         pattern = { "c", "cpp" },
         callback = function()
-            vim.opt_local.tabstop = 4
-            vim.opt_local.shiftwidth = 4
-            vim.opt_local.softtabstop = 4
-            vim.opt_local.expandtab = true
-            vim.opt_local.foldmethod = "indent"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
+            setup_tabs(4, true)
+            setup_folding()
         end
     })
 
@@ -87,15 +70,8 @@ local function setup_language_settings()
     vim.api.nvim_create_autocmd("FileType", {
         pattern = "rust",
         callback = function()
-            vim.opt_local.tabstop = 4
-            vim.opt_local.shiftwidth = 4
-            vim.opt_local.softtabstop = 4
-            vim.opt_local.expandtab = true
-            vim.opt_local.foldmethod = "indent"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
+            setup_tabs(4, true)
+            setup_folding()
         end
     })
 
@@ -106,11 +82,7 @@ local function setup_language_settings()
             vim.opt_local.textwidth = 80
             vim.opt_local.wrap = true
             vim.opt_local.linebreak = true
-            vim.opt_local.foldmethod = "indent"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
+            setup_folding()
         end
     })
 
@@ -118,11 +90,7 @@ local function setup_language_settings()
     vim.api.nvim_create_autocmd("FileType", {
         pattern = "lua",
         callback = function()
-            vim.opt_local.foldmethod = "indent"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
+            setup_folding()
         end
     })
 
@@ -130,11 +98,7 @@ local function setup_language_settings()
     vim.api.nvim_create_autocmd("FileType", {
         pattern = { "sh", "bash", "zsh" },
         callback = function()
-            vim.opt_local.foldmethod = "indent"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
+            setup_folding()
         end
     })
 
@@ -142,11 +106,7 @@ local function setup_language_settings()
     vim.api.nvim_create_autocmd("FileType", {
         pattern = { "json", "yaml", "toml" },
         callback = function()
-            vim.opt_local.foldmethod = "indent"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
+            setup_folding()
         end
     })
 
@@ -154,11 +114,7 @@ local function setup_language_settings()
     vim.api.nvim_create_autocmd("FileType", {
         pattern = { "markdown", "md", "txt", "text" },
         callback = function()
-            vim.opt_local.foldmethod = "indent"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
+            setup_folding()
         end
     })
 end

@@ -4,6 +4,14 @@
 - `K` - Hover documentation (overrides default help lookup)
 - `gd` - Go to definition (overrides default goto declaration)
 
+## Folding Strategy
+- Uses LSP-based folding with Treesitter fallback for all languages
+- Folding is based on semantic code structure rather than indentation
+- All folds are open by default (foldlevel = 99)
+- Fold column width is set to 4 characters
+- Minimum 1 line required for a fold
+- Maximum fold nesting level is 20
+
 ## File Explorer (NvimTree)
 - `<leader>pv` - Open NvimTree and find current file
 - `<leader>p-` - Toggle NvimTree
@@ -89,21 +97,48 @@
 
 ## Supported Languages
 - Python (LSP: pyright, DAP: debugpy)
+  - Tab size: 4 spaces
+  - Text width: 88 (Black formatter default)
+  - Folding: LSP/Treesitter-based
 - JavaScript/TypeScript (LSP: tsserver, DAP: node-debug2)
+  - Tab size: 2 spaces
+  - Folding: LSP/Treesitter-based
 - Go (LSP: gopls, DAP: delve)
+  - Tab size: 4 spaces (no expandtab)
+  - Folding: LSP/Treesitter-based
 - Rust (LSP: rust-analyzer, DAP: codelldb)
+  - Tab size: 4 spaces
+  - Folding: LSP/Treesitter-based
 - C/C++ (LSP: clangd, DAP: codelldb)
+  - Tab size: 4 spaces
+  - Folding: LSP/Treesitter-based
 - Java/Kotlin (LSP: jdtls)
+  - Folding: LSP/Treesitter-based
 - Elixir (LSP: elixirls, DAP: elixir-ls)
+  - Folding: LSP/Treesitter-based
 - C# (LSP: omnisharp, DAP: netcoredbg)
+  - Folding: LSP/Treesitter-based
 - Zig (LSP: zls, DAP: zls)
+  - Folding: LSP/Treesitter-based
 - Lua (LSP: lua_ls, DAP: nlua)
+  - Folding: LSP/Treesitter-based
 - PHP (LSP: intelephense, DAP: xdebug)
+  - Folding: LSP/Treesitter-based
 - Ruby (LSP: solargraph, DAP: rdbg)
+  - Folding: LSP/Treesitter-based
 - HTML/CSS/SCSS/Less
+  - Tab size: 2 spaces
+  - Folding: LSP/Treesitter-based
 - JSON/YAML/TOML
+  - Folding: LSP/Treesitter-based
 - Markdown
+  - Folding: LSP/Treesitter-based
 - Shell scripts (sh, bash, zsh)
+  - Folding: LSP/Treesitter-based
+- LaTeX
+  - Text width: 80
+  - Word wrap enabled
+  - Folding: LSP/Treesitter-based
 
 ## Plugin Mappings
 *(More mappings to be added as we configure more plugins)* 
