@@ -170,6 +170,8 @@ dap.configurations.javascript = {
 dap.configurations.typescript = dap.configurations.javascript
 
 -- Go DAP configuration
+-- Note: Requires manual installation of Delve:
+-- go install github.com/go-delve/delve/cmd/dlv@latest
 dap.adapters.delve = {
     type = 'server',
     port = '${port}',
@@ -195,7 +197,9 @@ dap.configurations.go = {
     },
 }
 
--- Rust DAP configuration
+-- Rust and C/C++ DAP configuration
+-- Note: Requires manual installation of CodeLLDB:
+-- cargo install codelldb
 dap.adapters.codelldb = {
     type = 'server',
     port = '${port}',
