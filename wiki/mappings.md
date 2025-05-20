@@ -5,19 +5,26 @@
 - `gd` - Go to definition (overrides default goto declaration)
 - `<C-e>` - Toggle harpoon quick menu (overrides default scroll down)
 
-## Folding Strategy
-- Uses LSP-based folding with Treesitter fallback for all languages
-- Folding is based on semantic code structure rather than indentation
-- All folds are open by default (foldlevel = 99)
-- Fold column width is set to 4 characters
-- Minimum 1 line required for a fold
-- Maximum fold nesting level is 20
+## Plugin Mappings
 
-## File Explorer (NvimTree)
+### Tree-sitter
+#### Incremental Selection
+- `gnn` - Start selection
+- `grn` - Expand to next syntax node
+- `grc` - Expand to next scope
+- `grm` - Shrink to previous node
+
+#### Text Objects
+- `af` - Select outer function
+- `if` - Select inner function
+- `ac` - Select outer class
+- `ic` - Select inner class
+
+### File Explorer (NvimTree)
 - `<leader>pv` - Open NvimTree and find current file
 - `<leader>p-` - Toggle NvimTree
 
-## File Search (Telescope)
+### File Search (Telescope)
 - `<leader>tf` - Find files
 - `<leader>te` - Find recently opened files
 - `<leader>ts` - Search for string
@@ -25,12 +32,12 @@
 - `<leader>tl` - Live grep
 - `<leader>th` - Search help tags
 
-## File Navigation (Harpoon)
+### File Navigation (Harpoon)
 - `<leader>a` - Add file to harpoon
 - `<C-e>` - Toggle harpoon quick menu
 - `<leader>g1` to `<leader>g9` - Navigate to harpooned files 1-9
 
-## LSP Mappings
+### LSP
 - `gd` - Go to definition
 - `K` - Hover documentation
 - `<leader>ca` - Code actions
@@ -40,7 +47,7 @@
 - `[i` - Previous diagnostic
 - `]i` - Next diagnostic
 
-## Debug (DAP) Mappings
+### Debug (DAP)
 - `<leader>dc` - Start/Continue debugging
 - `<leader>di` - Step into
 - `<leader>do` - Step over
@@ -51,18 +58,29 @@
 - `<leader>dr` - Open REPL
 - `<leader>dL` - Run last debug configuration
 
-## Git (Fugitive)
+### Git (Fugitive)
 - `<leader>gs` - Git status
 
-## Undo Tree
+### Undo Tree
 - `<leader>u` - Toggle undotree
 
-## Copilot
+### Copilot
 - `<leader>cp` - Open Copilot panel
 - `<C-.>` - Next suggestion
 - `<C-,>` - Previous suggestion
 - `<C-\>` - Dismiss suggestion
 - `<C-CR>` - Accept suggestion (inserts newline after accepting)
+
+### Mason
+- `:Mason` - Open Mason UI
+- `:MasonInstall <package>` - Install LSP/DAP/Linter/Formatter
+- `:MasonUninstall <package>` - Uninstall package
+- `:MasonUpdate` - Update all packages
+
+### Null-ls
+- `<leader>f` - Format document (via Prettier)
+- `<leader>e` - Show diagnostics (via ESLint)
+- `<leader>ca` - Code actions (via ESLint)
 
 ## Language-Specific Mappings
 
@@ -94,42 +112,52 @@
 - `<leader>yd` - Build Docker image
 - `<leader>yr` - Run Docker container
 
-## Angular-Specific Mappings
+### Angular
 - `<leader>saf` - Find Angular Component
 - `<leader>sag` - Search in Angular App
 - `<leader>gac` - Generate Angular Component
 - `<leader>gas` - Generate Angular Service
 - `<leader>gam` - Generate Angular Module
 
-## Language-Specific Settings
+## Editor Settings
 
-### Python
+### Folding Strategy
+- Uses LSP-based folding with Treesitter fallback for all languages
+- Folding is based on semantic code structure rather than indentation
+- All folds are open by default (foldlevel = 99)
+- Fold column width is set to 4 characters
+- Minimum 1 line required for a fold
+- Maximum fold nesting level is 20
+
+### Language-Specific Settings
+
+#### Python
 - Tab size: 4
 - Expand tabs: Yes
 - Text width: 88 (Black formatter default)
 - Folding: LSP/Treesitter-based
 
-### JavaScript/TypeScript
+#### JavaScript/TypeScript
 - Tab size: 2
 - Expand tabs: Yes
 - Folding: LSP/Treesitter-based
 
-### HTML/CSS
+#### HTML/CSS
 - Tab size: 2
 - Expand tabs: Yes
 - Folding: LSP/Treesitter-based
 
-### Go
+#### Go
 - Tab size: 4
 - Expand tabs: No
 - Folding: LSP/Treesitter-based
 
-### C/C++
+#### C/C++
 - Tab size: 4
 - Expand tabs: Yes
 - Folding: LSP/Treesitter-based
 
-### Rust
+#### Rust
 - Tab size: 4
 - Expand tabs: Yes
 - Color column: 100
@@ -137,18 +165,18 @@
 - Format options: cqrnj
 - Folding: LSP-based
 
-### LaTeX
+#### LaTeX
 - Text width: 80
 - Word wrap enabled
 - Folding: LSP/Treesitter-based
 
-### Shell Scripts
+#### Shell Scripts
 - Folding: LSP/Treesitter-based
 
-### JSON/YAML/TOML
+#### JSON/YAML/TOML
 - Folding: LSP/Treesitter-based
 
-### Markdown and Text Files
+#### Markdown and Text Files
 - Folding: LSP/Treesitter-based
 
 ## Supported Languages
@@ -194,7 +222,4 @@
 - LaTeX
   - Text width: 80
   - Word wrap enabled
-  - Folding: LSP/Treesitter-based
-
-## Plugin Mappings
-*(More mappings to be added as we configure more plugins)* 
+  - Folding: LSP/Treesitter-based 

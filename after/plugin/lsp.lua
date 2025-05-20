@@ -1,3 +1,56 @@
+-- Mason configuration
+require("mason").setup()
+require("mason-lspconfig").setup({
+    ensure_installed = {
+        "gradle_ls",
+    },
+    handlers = {
+        function(server_name)
+            local lspconfig = require("lspconfig")
+            if server_name == "gradle_ls" then
+                lspconfig.gradle_ls.setup({
+                    init_options = {
+                        settings = {
+                            gradle = {
+                                wrapperEnabled = true,
+                                wrapperPath = "gradle/wrapper/gradle-wrapper.jar",
+                            },
+                        },
+                    },
+                    settings = {
+                        gradle = {
+                            wrapperEnabled = true,
+                            wrapperPath = "gradle/wrapper/gradle-wrapper.jar",
+                        },
+                    },
+                    filetypes = { "groovy", "java", "kotlin" },
+                    root_dir = lspconfig.util.root_pattern(
+                        "build.gradle",
+                        "build.gradle.kts",
+                        "settings.gradle",
+                        "settings.gradle.kts"
+                    ),
+                })
+            else
+                lspconfig[server_name].setup({})
+            end
+        end,
+    },
+})
+
+-- Null-ls configuration
+local null_ls = require("null-ls")
+null_ls.setup({
+    sources = {
+        null_ls.builtins.formatting.prettier,
+        null_ls.builtins.diagnostics.eslint,
+        null_ls.builtins.code_actions.eslint,
+    },
+})
+
+-- Render Markdown configuration
+require("render-markdown").setup({})
+
 -- Initialize Mason
 require("mason").setup({
     ui = {

@@ -9,46 +9,6 @@ return {
             "williamboman/mason-lspconfig.nvim",
             "neovim/nvim-lspconfig",
         },
-        config = function()
-            require("mason").setup()
-            require("mason-lspconfig").setup({
-                ensure_installed = {
-                    "gradle_ls",
-                },
-                handlers = {
-                    function(server_name)
-                        local lspconfig = require("lspconfig")
-                        if server_name == "gradle_ls" then
-                            lspconfig.gradle_ls.setup({
-                                init_options = {
-                                    settings = {
-                                        gradle = {
-                                            wrapperEnabled = true,
-                                            wrapperPath = "gradle/wrapper/gradle-wrapper.jar",
-                                        },
-                                    },
-                                },
-                                settings = {
-                                    gradle = {
-                                        wrapperEnabled = true,
-                                        wrapperPath = "gradle/wrapper/gradle-wrapper.jar",
-                                    },
-                                },
-                                filetypes = { "groovy", "java", "kotlin" },
-                                root_dir = lspconfig.util.root_pattern(
-                                    "build.gradle",
-                                    "build.gradle.kts",
-                                    "settings.gradle",
-                                    "settings.gradle.kts"
-                                ),
-                            })
-                        else
-                            lspconfig[server_name].setup({})
-                        end
-                    end,
-                },
-            })
-        end,
     },
     {
         "neovim/nvim-lspconfig",
@@ -76,16 +36,6 @@ return {
     {
         "jose-elias-alvarez/null-ls.nvim",
         dependencies = { "nvim-lua/plenary.nvim" },
-        config = function()
-            local null_ls = require("null-ls")
-            null_ls.setup({
-                sources = {
-                    null_ls.builtins.formatting.prettier,
-                    null_ls.builtins.diagnostics.eslint,
-                    null_ls.builtins.code_actions.eslint,
-                },
-            })
-        end,
     },
     {
         "rcarriga/nvim-dap-ui",
@@ -105,7 +55,10 @@ return {
     {
         "rose-pine/neovim",
         name = "rose-pine",
+        lazy = false,
+        priority = 1000,
         config = function()
+            vim.g.rose_pine_variant = "alt"
             vim.cmd("colorscheme rose-pine")
         end,
     },
@@ -124,36 +77,15 @@ return {
     },
     {
         "github/copilot.vim",
-        event = "InsertEnter",
-        config = function()
-            vim.g.copilot_no_tab_map = true
-            vim.g.copilot_assume_mapped = true
-            vim.g.copilot_tab_fallback = ""
-        end,
+        lazy = false,
     },
     {
         "nvim-tree/nvim-tree.lua",
         dependencies = { "nvim-tree/nvim-web-devicons" },
-        config = function()
-            require("nvim-tree").setup({
-                view = {
-                    width = 30,
-                },
-                renderer = {
-                    group_empty = true,
-                },
-                filters = {
-                    dotfiles = false,
-                },
-            })
-        end,
     },
     {
         "MeanderingProgrammer/render-markdown.nvim",
         dependencies = { "nvim-treesitter", "nvim-tree/nvim-web-devicons" },
-        config = function()
-            require("render-markdown").setup({})
-        end,
     },
     {
         "nvim-lualine/lualine.nvim",

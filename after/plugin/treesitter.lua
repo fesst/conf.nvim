@@ -6,7 +6,6 @@ require("nvim-treesitter.configs").setup({
         "kotlin",
         "java",
         "scala",
-        "groovy",
         "c_sharp",
         "c",
         "cpp",
@@ -16,10 +15,8 @@ require("nvim-treesitter.configs").setup({
         "awk",
         "asm",
         "go",
-        "dockerfile",
         "bash",
         "sql",
-        "awk",
         "diff",
         "gitignore",
         "javascript",
@@ -29,16 +26,12 @@ require("nvim-treesitter.configs").setup({
         "css",
         "json",
         "yaml",
-        "vue",
-        "angular",
         "graphql",
-        "svelte",
         "query",
         "haskell",
         "ocaml",
         "scheme",
         "clojure",
-        "fennel",
         "racket",
         "commonlisp",
         "rust",
@@ -56,11 +49,9 @@ require("nvim-treesitter.configs").setup({
         "glsl",
         "jq",
         "passwd",
-        "clojure",
         "toml",
         "elixir",
         "erlang",
-        "fsharp",
         "csv",
         "swift",
         "dart",
@@ -70,7 +61,6 @@ require("nvim-treesitter.configs").setup({
         "xml",
         "markdown",
         "markdown_inline",
-        "latex",
         "r",
         "julia",
     },
@@ -93,5 +83,35 @@ require("nvim-treesitter.configs").setup({
         -- Using this option may slow down your editor, and you may see some duplicate highlights.
         -- Instead of true it can also be a list of languages
         additional_vim_regex_highlighting = false,
+    },
+
+    -- Add incremental selection
+    incremental_selection = {
+        enable = true,
+        keymaps = {
+            init_selection = "gnn",
+            node_incremental = "grn",
+            scope_incremental = "grc",
+            node_decremental = "grm",
+        },
+    },
+
+    -- Add indentation
+    indent = {
+        enable = true,
+    },
+
+    -- Add text objects
+    textobjects = {
+        select = {
+            enable = true,
+            lookahead = true,
+            keymaps = {
+                ["af"] = "@function.outer",
+                ["if"] = "@function.inner",
+                ["ac"] = "@class.outer",
+                ["ic"] = "@class.inner",
+            },
+        },
     },
 })
