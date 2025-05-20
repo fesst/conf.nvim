@@ -1,8 +1,8 @@
-I like setup separation with one or more file per plugin. All plugin setup should be in after/plugins
+I like setup separation with one or more file per plugin. All plugin setup should be in after/plugins.
 
 I would like to have a good groupped information about all mappings we set up in wiki/mappings.md Also highlight which defaults are overriden.
 
-Plugins should be in after/plugins
+Plugins should be in after/plugin (that is important path!)
 General should be in lua./motleyfesst
 
 Additional installation scripts should be in infra/ folder.

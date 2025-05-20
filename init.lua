@@ -1,9 +1,7 @@
--- Set leader key before anything else
-vim.g.mapleader = " "
-
 --remove netrw
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
+-- Set leader key before anything else
 require("motleyfesst.remap")
 require("motleyfesst.set")
 
