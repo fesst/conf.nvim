@@ -63,6 +63,14 @@ require("nvim-treesitter.configs").setup({
         "markdown_inline",
         "r",
         "julia",
+        -- Previously disabled parsers, now enabled
+        "angular",
+        "dockerfile",
+        "fennel",
+        "groovy",
+        "latex",
+        "svelte",
+        "vue",
     },
 
     -- Install parsers synchronously (only applied to `ensure_installed`)

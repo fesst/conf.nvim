@@ -85,6 +85,7 @@ require("mason-lspconfig").setup({
         "rust_analyzer", -- Rust
         "elixirls", -- Elixir
         "zls", -- Zig
+        "sqlls", -- SQL
 
         "gradle_ls", -- Gradle
 
@@ -327,6 +328,98 @@ local configs = {
                     alignComments = true,
                     compactArrays = true,
                     compactInlineTables = true,
+                },
+            },
+        },
+    },
+
+    -- SQL LSP configuration
+    sqlls = {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        settings = {
+            sqlLanguageServer = {
+                connections = {
+                    -- Development database
+                    {
+                        name = "PostgreSQL Dev",
+                        adapter = "postgresql",
+                        host = "localhost",
+                        port = 5432,
+                        database = "dev_db",
+                        user = "dev_user",
+                        password = "", -- Set this in your environment or use .pgpass
+                    },
+                    -- Production database (commented out for safety)
+                    -- {
+                    --     name = "PostgreSQL Prod",
+                    --     adapter = "postgresql",
+                    --     host = "prod.example.com",
+                    --     port = 5432,
+                    --     database = "prod_db",
+                    --     user = "prod_user",
+                    --     password = "", -- Set this in your environment or use .pgpass
+                    -- },
+                    -- Test database
+                    {
+                        name = "PostgreSQL Test",
+                        adapter = "postgresql",
+                        host = "localhost",
+                        port = 5432,
+                        database = "test_db",
+                        user = "test_user",
+                        password = "", -- Set this in your environment or use .pgpass
+                    },
+                },
+                format = {
+                    language = "postgresql",
+                    uppercase = true,
+                    linesBetweenQueries = 2,
+                    keywordCase = "upper", -- Options: "upper", "lower", "capitalize"
+                    identifierCase = "lower", -- Options: "upper", "lower", "capitalize"
+                    dataTypeCase = "upper", -- Options: "upper", "lower", "capitalize"
+                    functionCase = "lower", -- Options: "upper", "lower", "capitalize"
+                    indentStyle = "standard", -- Options: "standard", "tabularLeft", "tabularRight"
+                    maxLineLength = 100,
+                    commaStyle = "end", -- Options: "end", "start"
+                    logicalOperatorNewLine = "before", -- Options: "before", "after"
+                },
+                lint = {
+                    enable = true,
+                    dialect = "postgresql",
+                    rules = {
+                        ["keyword-case"] = "error",
+                        ["identifier-case"] = "warning",
+                        ["quoted-identifier-case"] = "off",
+                        ["function-case"] = "warning",
+                        ["data-type-case"] = "error",
+                        ["table-name-case"] = "warning",
+                        ["column-name-case"] = "warning",
+                        ["schema-name-case"] = "warning",
+                        ["view-name-case"] = "warning",
+                        ["materialized-view-name-case"] = "warning",
+                        ["function-name-case"] = "warning",
+                        ["procedure-name-case"] = "warning",
+                        ["trigger-name-case"] = "warning",
+                        ["index-name-case"] = "warning",
+                        ["constraint-name-case"] = "warning",
+                        ["sequence-name-case"] = "warning",
+                        ["type-name-case"] = "warning",
+                        ["domain-name-case"] = "warning",
+                    },
+                },
+                completion = {
+                    enable = true,
+                    showTables = true,
+                    showViews = true,
+                    showFunctions = true,
+                    showProcedures = true,
+                    showTriggers = true,
+                    showIndexes = true,
+                    showConstraints = true,
+                    showSequences = true,
+                    showTypes = true,
+                    showDomains = true,
                 },
             },
         },

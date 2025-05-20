@@ -82,6 +82,54 @@
 - `<leader>e` - Show diagnostics (via ESLint)
 - `<leader>ca` - Code actions (via ESLint)
 
+### SQL/PostgreSQL
+- `<leader>sf` - Format SQL file
+- `<leader>se` - Explain selected query
+- `<leader>sr` - Run selected query
+- `<leader>st` - Show table structure
+- `<leader>sd` - Show database sizes
+- `<leader>ss` - Show table sizes
+- `<leader>si` - Show index usage
+- `<leader>sl` - Show long-running queries
+- `<leader>sk` - Show locks
+- `<leader>sv` - Show vacuum status
+
+#### PostgreSQL Query Templates
+- `<leader>qt` - Insert query template (interactive selection)
+- `<leader>ql` - Show long-running queries template
+- `<leader>qk` - Show locks template
+- `<leader>qs` - Show table stats template
+- `<leader>qi` - Show index stats template
+
+#### PostgreSQL Connection Management
+- `<leader>qc` - Switch database connection (interactive selection)
+
+#### PostgreSQL Query Results
+- `<leader>qf` - Format query results
+
+#### PostgreSQL Query Templates Available
+1. `explain` - EXPLAIN ANALYZE template
+2. `create_table` - CREATE TABLE template with common fields
+3. `create_index` - CREATE INDEX template
+4. `vacuum_analyze` - VACUUM ANALYZE template
+5. `table_stats` - Table statistics query
+6. `index_stats` - Index statistics query
+7. `long_running` - Long-running queries query
+8. `locks` - Lock information query
+
+#### PostgreSQL Connection Configuration
+The configuration supports multiple database connections:
+- Development (dev)
+- Test (test)
+- Production (prod)
+
+Each connection can be configured with:
+- Host
+- Port
+- Database name
+- Username
+- Password (via .pgpass)
+
 ## Language-Specific Mappings
 
 ### Run/Test Commands
