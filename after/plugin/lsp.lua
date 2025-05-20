@@ -243,6 +243,7 @@ local configs = {
             ["rust-analyzer"] = {
                 checkOnSave = {
                     command = "clippy",
+                    extraArgs = { "--all-targets" },
                 },
             },
         },
