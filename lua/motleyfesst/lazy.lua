@@ -1,4 +1,3 @@
-require("motleyfesst.remap")
 return {
     -- Plugin specifications
     {
