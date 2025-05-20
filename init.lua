@@ -1,9 +1,10 @@
-require("motleyfesst.remap")
+-- Set leader key before anything else
+vim.g.mapleader = " "
 
 --remove netrw
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
-
+require("motleyfesst.remap")
 require("motleyfesst.set")
 
 vim.opt.runtimepath:append({ "/opt/homebrew/opt/fzf" })
