@@ -1,4 +1,4 @@
-I like setup separation with one or more file per plugin.
+I like setup separation with one or more file per plugin. All plugin setup should be in after/plugins
 
 I would like to have a good groupped information about all mappings we set up in wiki/mappings.md Also highlight which defaults are overriden.
 

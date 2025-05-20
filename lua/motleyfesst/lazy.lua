@@ -1,4 +1,4 @@
--- Remove the require("motleyfesst.remap") line as it's already in init.lua
+require("motleyfesst.remap")
 return {
     -- Plugin specifications
     {
@@ -86,7 +86,26 @@ return {
     {
         "nvim-treesitter/nvim-treesitter",
         version = "v0.9.2",
-        build = ":TSUpdate"
+        build = ":TSUpdate",
+        config = function()
+            require('nvim-treesitter.configs').setup({
+                ensure_installed = {
+                    "javascript",
+                    "typescript",
+                    "lua",
+                    "vim",
+                    "vimdoc",
+                    "query",
+                    "markdown",
+                    "markdown_inline"
+                },
+                sync_install = false,
+                auto_install = true,
+                highlight = {
+                    enable = true,
+                },
+            })
+        end
     },
     {
         "nvim-treesitter/playground",
@@ -102,7 +121,18 @@ return {
     },
     {
         "github/copilot.vim",
-        version = "v1.0.0"
+        version = "v1.0.0",
+        event = "InsertEnter",
+        config = function()
+            vim.g.copilot_no_tab_map = true
+            vim.g.copilot_assume_mapped = true
+            vim.g.copilot_tab_fallback = ""
+            
+            -- Set up the mappings using vim.keymap.set
+            vim.keymap.set("i", "<C-Enter>", "<Plug>(copilot-accept)", { silent = true, expr = true })
+            vim.keymap.set("i", "<C-j>", "<Plug>(copilot-next)", { silent = true })
+            vim.keymap.set("i", "<C-k>", "<Plug>(copilot-previous)", { silent = true })
+        end
     },
     {
         "nvim-tree/nvim-tree.lua",
