@@ -9,7 +9,7 @@
 #### Lua files structure
 
 - Plugins should be in after/plugin (that is important path!)
-- General should be in lua./motleyfesst
+- General should be in lua/motleyfesst
 
 ##### New lua files rules
 
