@@ -40,14 +40,24 @@ for package in "${BREW_PACKAGES[@]}"; do
     fi
 done
 
-# Install Homebrew casks
+# Install MacTeX
+if ! check_mactex; then
+    print_status "Installing MacTeX..."
+    brew install --cask mactex
+else
+    print_warning "MacTeX is already installed"
+fi
+
+# Install other Homebrew casks
 print_status "Installing Homebrew casks..."
 for cask in "${BREW_CASKS[@]}"; do
-    if ! check_brew_cask "$cask"; then
-        print_status "Installing $cask..."
-        brew install --cask "$cask"
-    else
-        print_warning "$cask is already installed"
+    if [ "$cask" != "mactex" ]; then  # Skip mactex as it's handled separately
+        if ! check_brew_cask "$cask"; then
+            print_status "Installing $cask..."
+            brew install --cask "$cask"
+        else
+            print_warning "$cask is already installed"
+        fi
     fi
 done
 

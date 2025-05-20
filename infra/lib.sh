@@ -93,6 +93,23 @@ run_final_checks() {
     fi
 }
 
+# Function to check MacTeX installation status
+check_mactex() {
+    if check_command latexmk; then
+        return 0
+    fi
+
+    if check_brew_cask "mactex-no-gui"; then
+        return 0
+    fi
+
+    if check_brew_cask "mactex"; then
+        return 0
+    fi
+
+    return 1
+}
+
 # Export all functions
 export -f print_status
 export -f print_warning
@@ -107,4 +124,5 @@ export -f check_luarocks_package
 export -f check_cargo_package
 export -f check_command
 export -f ensure_cargo_path
-export -f run_final_checks 
+export -f run_final_checks
+export -f check_mactex 

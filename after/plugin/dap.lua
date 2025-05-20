@@ -201,11 +201,11 @@ dap.configurations.go = {
 -- Note: Requires manual installation of CodeLLDB:
 -- cargo install codelldb
 dap.adapters.codelldb = {
-    type = "executable",
-    command = vim.fn.stdpath("data") .. "/mason/packages/codelldb/extension/adapter/codelldb",
-    args = { "--port", "13000" },
-    env = {
-        DYLD_LIBRARY_PATH = vim.fn.stdpath("data") .. "/mason/packages/codelldb/extension/adapter",
+    type = "server",
+    port = "${port}",
+    executable = {
+        command = vim.fn.stdpath("data") .. "/mason/packages/codelldb/extension/adapter/codelldb",
+        args = { "--port", "${port}" },
     },
 }
 
@@ -219,6 +219,7 @@ dap.configurations.rust = {
         end,
         cwd = "${workspaceFolder}",
         stopOnEntry = false,
+        showDisassembly = "never",
     },
     {
         type = "codelldb",
@@ -230,20 +231,15 @@ dap.configurations.rust = {
         cwd = "${workspaceFolder}",
         args = { "--test" },
         stopOnEntry = false,
+        showDisassembly = "never",
     },
 }
 
 -- C/C++ DAP configuration
-dap.adapters.lldb = {
-    type = "executable",
-    command = "lldb",
-    name = "lldb",
-}
-
 dap.configurations.cpp = {
     {
         name = "Launch file",
-        type = "lldb",
+        type = "codelldb",
         request = "launch",
         program = function()
             return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
@@ -251,11 +247,11 @@ dap.configurations.cpp = {
         cwd = "${workspaceFolder}",
         stopOnEntry = false,
         args = {},
-        runInTerminal = true,
+        showDisassembly = "never",
     },
     {
         name = "Debug with arguments",
-        type = "lldb",
+        type = "codelldb",
         request = "launch",
         program = function()
             return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
@@ -266,7 +262,7 @@ dap.configurations.cpp = {
             return vim.split(args, " ")
         end,
         stopOnEntry = false,
-        runInTerminal = true,
+        showDisassembly = "never",
     },
 }
 

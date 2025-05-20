@@ -21,7 +21,7 @@ BREW_PACKAGES=(
 
 # Homebrew casks
 BREW_CASKS=(
-    "mactex-no-gui" # Required for LaTeX support
+    "mactex"        # Required for LaTeX support (includes GUI tools)
     "skim"          # Required for PDF viewing
 )
 

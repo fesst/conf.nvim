@@ -242,9 +242,12 @@ local configs = {
         on_attach = on_attach,
         settings = {
             ["rust-analyzer"] = {
-                checkOnSave = {
-                    command = "clippy",
-                    extraArgs = { "--all-targets" },
+                checkOnSave = true,
+                diagnostics = {
+                    enable = true,
+                },
+                cargo = {
+                    allFeatures = true,
                 },
             },
         },
