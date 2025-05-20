@@ -3,7 +3,6 @@ return {
     -- Plugin specifications
     {
         "williamboman/mason.nvim",
-        version = "v2.0.0",
         build = ":MasonUpdate",
         cmd = "Mason",
         dependencies = {
@@ -12,39 +11,70 @@ return {
         },
         config = function()
             require("mason").setup()
-            require("mason-lspconfig").setup()
+            require("mason-lspconfig").setup({
+                ensure_installed = {
+                    "gradle_ls",
+                },
+                handlers = {
+                    function(server_name)
+                        local lspconfig = require("lspconfig")
+                        if server_name == "gradle_ls" then
+                            lspconfig.gradle_ls.setup({
+                                init_options = {
+                                    settings = {
+                                        gradle = {
+                                            wrapperEnabled = true,
+                                            wrapperPath = "gradle/wrapper/gradle-wrapper.jar",
+                                        },
+                                    },
+                                },
+                                settings = {
+                                    gradle = {
+                                        wrapperEnabled = true,
+                                        wrapperPath = "gradle/wrapper/gradle-wrapper.jar",
+                                    },
+                                },
+                                filetypes = { "groovy", "java", "kotlin" },
+                                root_dir = lspconfig.util.root_pattern(
+                                    "build.gradle",
+                                    "build.gradle.kts",
+                                    "settings.gradle",
+                                    "settings.gradle.kts"
+                                ),
+                            })
+                        else
+                            lspconfig[server_name].setup({})
+                        end
+                    end,
+                },
+            })
         end,
     },
     {
         "neovim/nvim-lspconfig",
-        version = "v0.1.8",
         dependencies = {
             "williamboman/mason.nvim",
             "williamboman/mason-lspconfig.nvim",
             "hrsh7th/cmp-nvim-lsp",
-            "b0o/schemastore.nvim"
-        }
+            "b0o/schemastore.nvim",
+        },
     },
     {
         "hrsh7th/nvim-cmp",
-        version = "v0.1.0",
         dependencies = {
             "hrsh7th/cmp-buffer",
             "hrsh7th/cmp-path",
-            "hrsh7th/cmp-nvim-lsp"
-        }
+            "hrsh7th/cmp-nvim-lsp",
+        },
     },
     {
         "mfussenegger/nvim-dap",
-        version = "v0.6.0"
     },
     {
         "mfussenegger/nvim-jdtls",
-        version = "v0.1.0"
     },
     {
         "jose-elias-alvarez/null-ls.nvim",
-        version = "v3.0.0",
         dependencies = { "nvim-lua/plenary.nvim" },
         config = function()
             local null_ls = require("null-ls")
@@ -59,84 +89,50 @@ return {
     },
     {
         "rcarriga/nvim-dap-ui",
-        version = "v3.9.1",
-        dependencies = { 
+        dependencies = {
             "mfussenegger/nvim-dap",
-            "nvim-neotest/nvim-nio"
-        }
+            "nvim-neotest/nvim-nio",
+        },
     },
     {
         "theHamsta/nvim-dap-virtual-text",
-        version = "v1.4.4",
-        dependencies = { "mfussenegger/nvim-dap" }
+        dependencies = { "mfussenegger/nvim-dap" },
     },
     {
         "nvim-telescope/telescope.nvim",
-        version = "0.1.8",
-        dependencies = { "nvim-lua/plenary.nvim" }
+        dependencies = { "nvim-lua/plenary.nvim" },
     },
     {
         "rose-pine/neovim",
-        version = "v1.0.0",
         name = "rose-pine",
         config = function()
             vim.cmd("colorscheme rose-pine")
-        end
+        end,
     },
     {
         "nvim-treesitter/nvim-treesitter",
-        version = "v0.9.2",
         build = ":TSUpdate",
-        config = function()
-            require('nvim-treesitter.configs').setup({
-                ensure_installed = {
-                    "javascript",
-                    "typescript",
-                    "lua",
-                    "vim",
-                    "vimdoc",
-                    "query",
-                    "markdown",
-                    "markdown_inline"
-                },
-                sync_install = false,
-                auto_install = true,
-                highlight = {
-                    enable = true,
-                },
-            })
-        end
     },
     {
         "nvim-treesitter/playground",
-        version = "v0.0.1"
     },
     {
         "mbbill/undotree",
-        version = "v6.1"
     },
     {
         "theprimeagen/harpoon",
-        version = "v2.0.0"
     },
     {
         "github/copilot.vim",
-        version = "v1.0.0",
         event = "InsertEnter",
         config = function()
             vim.g.copilot_no_tab_map = true
             vim.g.copilot_assume_mapped = true
             vim.g.copilot_tab_fallback = ""
-            
-            -- Set up the mappings using vim.keymap.set
-            vim.keymap.set("i", "<C-Enter>", "<Plug>(copilot-accept)", { silent = true, expr = true })
-            vim.keymap.set("i", "<C-j>", "<Plug>(copilot-next)", { silent = true })
-            vim.keymap.set("i", "<C-k>", "<Plug>(copilot-previous)", { silent = true })
-        end
+        end,
     },
     {
         "nvim-tree/nvim-tree.lua",
-        version = "v1.0.0",
         dependencies = { "nvim-tree/nvim-web-devicons" },
         config = function()
             require("nvim-tree").setup({
@@ -154,19 +150,16 @@ return {
     },
     {
         "MeanderingProgrammer/render-markdown.nvim",
-        version = "v0.1.0",
         dependencies = { "nvim-treesitter", "nvim-tree/nvim-web-devicons" },
         config = function()
             require("render-markdown").setup({})
-        end
+        end,
     },
     {
         "nvim-lualine/lualine.nvim",
-        version = "v0.10.0",
-        dependencies = { "nvim-tree/nvim-web-devicons" }
+        dependencies = { "nvim-tree/nvim-web-devicons" },
     },
     {
         "tpope/vim-fugitive",
-        version = "v3.7"
-    }
+    },
 }

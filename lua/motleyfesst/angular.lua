@@ -1,8 +1,8 @@
 local M = {}
 
 M.setup = function()
-    local lspconfig = require('lspconfig')
-    local capabilities = require('cmp_nvim_lsp').default_capabilities()
+    local lspconfig = require("lspconfig")
+    local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
     -- Angular Language Server
     lspconfig.angularls.setup({
@@ -13,11 +13,11 @@ M.setup = function()
                 buffer = bufnr,
                 callback = function()
                     vim.lsp.buf.format()
-                end
+                end,
             })
         end,
-        filetypes = { 'typescript', 'html', 'typescriptreact', 'typescript.tsx' },
-        root_dir = lspconfig.util.root_pattern('angular.json', 'package.json'),
+        filetypes = { "typescript", "html", "typescriptreact", "typescript.tsx" },
+        root_dir = lspconfig.util.root_pattern("angular.json", "package.json"),
     })
 
     -- ESLint
@@ -26,7 +26,7 @@ M.setup = function()
         on_attach = function(client, bufnr)
             vim.api.nvim_create_autocmd("BufWritePre", {
                 buffer = bufnr,
-                command = "EslintFixAll"
+                command = "EslintFixAll",
             })
         end,
     })
@@ -42,4 +42,4 @@ M.setup = function()
     })
 end
 
-return M 
+return M

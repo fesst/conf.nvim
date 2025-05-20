@@ -6,7 +6,7 @@ vim.g.loaded_netrwPlugin = 1
 
 require("motleyfesst.set")
 
-vim.opt.runtimepath:append { "/opt/homebrew/opt/fzf" }
+vim.opt.runtimepath:append({ "/opt/homebrew/opt/fzf" })
 
 -- Install Lazy.nvim if not already installed
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
@@ -30,6 +30,6 @@ vim.api.nvim_create_autocmd("TextYankPost", {
     desc = "Hightlight selection on yank",
     pattern = "*",
     callback = function()
-        vim.highlight.on_yank { higroup = "IncSearch", timeout = 40 }
+        vim.highlight.on_yank({ higroup = "IncSearch", timeout = 40 })
     end,
 })

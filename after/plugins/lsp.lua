@@ -4,36 +4,36 @@ require("mason").setup({
         icons = {
             package_installed = "✓",
             package_pending = "➜",
-            package_uninstalled = "✗"
-        }
-    }
+            package_uninstalled = "✗",
+        },
+    },
 })
 
 require("mason-lspconfig").setup({
     ensure_installed = {
         -- Web Development
         "angularls", -- Angular
-        "ts_ls",     -- TypeScript/JavaScript
-        "eslint",    -- ESLint
-        "html",      -- HTML
-        "cssls",     -- CSS
-        "jsonls",    -- JSON
-        "yamlls",    -- YAML
-        "dockerls",  -- Docker
-        "taplo",     -- TOML
+        "ts_ls", -- TypeScript/JavaScript
+        "eslint", -- ESLint
+        "html", -- HTML
+        "cssls", -- CSS
+        "jsonls", -- JSON
+        "yamlls", -- YAML
+        "dockerls", -- Docker
+        "taplo", -- TOML
 
         -- Backend Languages
-        "pyright",                -- Python
-        "gopls",                  -- Go
-        "omnisharp",              -- C#
-        "jdtls",                  -- Java
+        "pyright", -- Python
+        "gopls", -- Go
+        "omnisharp", -- C#
+        "jdtls", -- Java
         "kotlin_language_server", -- Kotlin
-        "clangd",                 -- C/C++
-        "rust_analyzer",          -- Rust
-        "elixirls",              -- Elixir
-        "zls",                   -- Zig
+        "clangd", -- C/C++
+        "rust_analyzer", -- Rust
+        "elixirls", -- Elixir
+        "zls", -- Zig
 
-        "gradle_ls",              -- Gradle
+        "gradle_ls", -- Gradle
 
         -- Scripting
         "bashls", -- Bash
@@ -41,13 +41,13 @@ require("mason-lspconfig").setup({
         "awk_ls", -- AWK
 
         -- Markup
-        "texlab",  -- LaTeX
+        "texlab", -- LaTeX
         "lemminx", -- XML
-    }
+    },
 })
 
-local lspconfig = require("lspconfig")
 local capabilities = require("cmp_nvim_lsp").default_capabilities()
+local lspconfig = require("lspconfig")
 
 -- Enhanced on_attach function
 local on_attach = function(client, bufnr)
@@ -56,19 +56,19 @@ local on_attach = function(client, bufnr)
         buffer = bufnr,
         callback = function()
             vim.lsp.buf.format()
-        end
+        end,
     })
 
     -- Key mappings
     local opts = { buffer = bufnr, silent = true }
-    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
-    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
-    vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
-    vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, opts)
-    vim.keymap.set('n', '<leader>f', vim.lsp.buf.format, opts)
-    vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, opts)
-    vim.keymap.set('n', '[i', vim.diagnostic.goto_prev, opts)
-    vim.keymap.set('n', ']i', vim.diagnostic.goto_next, opts)
+    vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+    vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+    vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
+    vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
+    vim.keymap.set("n", "<leader>f", vim.lsp.buf.format, opts)
+    vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, opts)
+    vim.keymap.set("n", "[i", vim.diagnostic.goto_prev, opts)
+    vim.keymap.set("n", "]i", vim.diagnostic.goto_next, opts)
 end
 
 -- Language-specific configurations
@@ -77,8 +77,8 @@ local configs = {
     angularls = {
         capabilities = capabilities,
         on_attach = on_attach,
-        filetypes = { 'typescript', 'html', 'typescriptreact', 'typescript.tsx' },
-        root_dir = lspconfig.util.root_pattern('angular.json', 'package.json'),
+        filetypes = { "typescript", "html", "typescriptreact", "typescript.tsx" },
+        root_dir = lspconfig.util.root_pattern("angular.json", "package.json"),
     },
     ts_ls = {
         capabilities = capabilities,
@@ -106,7 +106,7 @@ local configs = {
         on_attach = on_attach,
         settings = {
             json = {
-                schemas = require('schemastore').json.schemas(),
+                schemas = require("schemastore").json.schemas(),
                 validate = { enable = true },
             },
         },
@@ -116,7 +116,7 @@ local configs = {
         on_attach = on_attach,
         settings = {
             yaml = {
-                schemas = require('schemastore').yaml.schemas(),
+                schemas = require("schemastore").yaml.schemas(),
             },
         },
     },
@@ -222,7 +222,7 @@ local configs = {
         settings = {
             Lua = {
                 runtime = {
-                    version = 'LuaJIT',
+                    version = "LuaJIT",
                 },
                 workspace = {
                     checkThirdParty = false,

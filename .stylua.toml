@@ -1,0 +1,23 @@
+# Stylua configuration
+# See: https://github.com/JohnnyMorganz/StyLua/blob/master/stylua.toml
+
+# Use spaces instead of tabs
+indent_type = "Spaces"
+indent_width = 4
+
+# Line endings
+line_endings = "Unix"
+
+# Quote style
+quote_style = "AutoPreferDouble"
+
+# Call parentheses
+call_parentheses = "Always"
+
+# collapse_simple_statement = "Never"  # Allow single-line tables
+
+# Column width
+column_width = 120
+
+# Sort requires
+sort_requires = { enabled = true } 

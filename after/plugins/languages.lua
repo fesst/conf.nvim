@@ -27,7 +27,7 @@ local function setup_language_settings()
             setup_tabs(4, true)
             vim.opt_local.textwidth = 88 -- Black formatter default
             setup_folding()
-        end
+        end,
     })
 
     -- JavaScript/TypeScript
@@ -36,7 +36,7 @@ local function setup_language_settings()
         callback = function()
             setup_tabs(2, true)
             setup_folding()
-        end
+        end,
     })
 
     -- HTML/CSS
@@ -45,7 +45,7 @@ local function setup_language_settings()
         callback = function()
             setup_tabs(2, true)
             setup_folding()
-        end
+        end,
     })
 
     -- Go
@@ -54,7 +54,7 @@ local function setup_language_settings()
         callback = function()
             setup_tabs(4, false)
             setup_folding()
-        end
+        end,
     })
 
     -- C/C++
@@ -63,7 +63,7 @@ local function setup_language_settings()
         callback = function()
             setup_tabs(4, true)
             setup_folding()
-        end
+        end,
     })
 
     -- Rust
@@ -77,7 +77,7 @@ local function setup_language_settings()
             vim.opt_local.foldcolumn = "4"
             vim.opt_local.foldlevel = 99
             vim.opt_local.foldminlines = 1
-            
+
             setup_tabs(4, true)
             vim.opt_local.colorcolumn = "100"
             vim.opt_local.textwidth = 100
@@ -86,7 +86,7 @@ local function setup_language_settings()
             vim.opt_local.formatoptions:append("r") -- Auto-insert comment leader after hitting <Enter>
             vim.opt_local.formatoptions:append("n") -- Recognize numbered lists
             vim.opt_local.formatoptions:append("j") -- Remove comment leader when joining lines
-        end
+        end,
     })
 
     -- LaTeX
@@ -97,7 +97,7 @@ local function setup_language_settings()
             vim.opt_local.wrap = true
             vim.opt_local.linebreak = true
             setup_folding()
-        end
+        end,
     })
 
     -- Lua
@@ -105,7 +105,7 @@ local function setup_language_settings()
         pattern = "lua",
         callback = function()
             setup_folding()
-        end
+        end,
     })
 
     -- Shell scripts
@@ -113,7 +113,7 @@ local function setup_language_settings()
         pattern = { "sh", "bash", "zsh" },
         callback = function()
             setup_folding()
-        end
+        end,
     })
 
     -- JSON/YAML/TOML
@@ -121,7 +121,7 @@ local function setup_language_settings()
         pattern = { "json", "yaml", "toml" },
         callback = function()
             setup_folding()
-        end
+        end,
     })
 
     -- Markdown and other text files
@@ -129,35 +129,40 @@ local function setup_language_settings()
         pattern = { "markdown", "md", "txt", "text" },
         callback = function()
             setup_folding()
-        end
+        end,
     })
 end
 
 -- Language-specific keybindings
 local function setup_language_keybindings()
     -- Python
-    keymap('n', '<leader>yr', ':!python %<CR>', { desc = 'Run Python file' })
-    keymap('n', '<leader>yt', ':!python -m pytest %<CR>', { desc = 'Run Python tests' })
+    keymap("n", "<leader>yr", ":!python %<CR>", { desc = "Run Python file" })
+    keymap("n", "<leader>yt", ":!python -m pytest %<CR>", { desc = "Run Python tests" })
 
     -- Go
-    keymap('n', '<leader>yr', ':!go run %<CR>', { desc = 'Run Go file' })
-    keymap('n', '<leader>yt', ':!go test %<CR>', { desc = 'Run Go tests' })
+    keymap("n", "<leader>yr", ":!go run %<CR>", { desc = "Run Go file" })
+    keymap("n", "<leader>yt", ":!go test %<CR>", { desc = "Run Go tests" })
 
     -- Rust
-    keymap('n', '<leader>yr', ':!cargo run<CR>', { desc = 'Run Rust project' })
-    keymap('n', '<leader>yt', ':!cargo test<CR>', { desc = 'Run Rust tests' })
+    keymap("n", "<leader>yr", ":!cargo run<CR>", { desc = "Run Rust project" })
+    keymap("n", "<leader>yt", ":!cargo test<CR>", { desc = "Run Rust tests" })
 
     -- JavaScript/TypeScript
-    keymap('n', '<leader>yr', ':!node %<CR>', { desc = 'Run JavaScript file' })
-    keymap('n', '<leader>yt', ':!npm test<CR>', { desc = 'Run JavaScript tests' })
+    keymap("n", "<leader>yr", ":!node %<CR>", { desc = "Run JavaScript file" })
+    keymap("n", "<leader>yt", ":!npm test<CR>", { desc = "Run JavaScript tests" })
 
     -- LaTeX
-    keymap('n', '<leader>yb', ':!latexmk -pdf -synctex=1 -interaction=nonstopmode %<CR>', { desc = 'Build LaTeX document' })
-    keymap('n', '<leader>yv', ':!open -a Skim %:r.pdf<CR>', { desc = 'View LaTeX PDF' })
+    keymap(
+        "n",
+        "<leader>yb",
+        ":!latexmk -pdf -synctex=1 -interaction=nonstopmode %<CR>",
+        { desc = "Build LaTeX document" }
+    )
+    keymap("n", "<leader>yv", ":!open -a Skim %:r.pdf<CR>", { desc = "View LaTeX PDF" })
 
     -- Docker
-    keymap('n', '<leader>yd', ':!docker build .<CR>', { desc = 'Build Docker image' })
-    keymap('n', '<leader>yr', ':!docker run<CR>', { desc = 'Run Docker container' })
+    keymap("n", "<leader>yd", ":!docker build .<CR>", { desc = "Build Docker image" })
+    keymap("n", "<leader>yr", ":!docker run<CR>", { desc = "Run Docker container" })
 
     -- Git (removed as they conflict with fugitive)
     -- keymap('n', '<leader>gs', ':G<CR>', { desc = 'Git status' })
@@ -168,4 +173,3 @@ end
 -- Initialize
 setup_language_settings()
 setup_language_keybindings()
-

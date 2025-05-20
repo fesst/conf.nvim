@@ -10,15 +10,15 @@ local test_table = {
         zip = 10001,
         coordinates = {
             lat = 40.7128,
-            long = -74.0060
-        }
+            long = -74.0060,
+        },
     },
-    hobbies = {"reading", "coding", "gaming"},
+    hobbies = { "reading", "coding", "gaming" },
     scores = {
         math = 95,
         science = 88,
-        history = 92
-    }
+        history = 92,
+    },
 }
 
 -- Print the table
