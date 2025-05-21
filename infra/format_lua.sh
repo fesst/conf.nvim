@@ -20,7 +20,7 @@ fi
 stylua --config-path "$CONFIG_FILE" lua/motleyfesst/*.lua
 
 # Format after/plugins
-stylua --config-path "$CONFIG_FILE" after/plugins/*.lua
+stylua --config-path "$CONFIG_FILE" after/plugin/*.lua
 
 stylua --config-path "$CONFIG_FILE" init.lua
 

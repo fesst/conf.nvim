@@ -139,14 +139,14 @@ local function format_query_results()
     -- Get the current buffer content
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
     local formatted_lines = {}
-    
+
     for _, line in ipairs(lines) do
         -- Replace multiple spaces with a single space
         line = line:gsub("%s+", " ")
         -- Add line to formatted lines
         table.insert(formatted_lines, line)
     end
-    
+
     -- Replace buffer content with formatted lines
     vim.api.nvim_buf_set_lines(0, 0, -1, false, formatted_lines)
 end
@@ -182,10 +182,18 @@ local function setup_keybindings()
     keymap("n", "<leader>qf", format_query_results, { desc = "Format query results" })
 
     -- Quick access to common queries
-    keymap("n", "<leader>ql", function() insert_template("long_running") end, { desc = "Show long-running queries" })
-    keymap("n", "<leader>qk", function() insert_template("locks") end, { desc = "Show locks" })
-    keymap("n", "<leader>qs", function() insert_template("table_stats", vim.fn.expand("<cword>")) end, { desc = "Show table stats" })
-    keymap("n", "<leader>qi", function() insert_template("index_stats", vim.fn.expand("<cword>")) end, { desc = "Show index stats" })
+    keymap("n", "<leader>ql", function()
+        insert_template("long_running")
+    end, { desc = "Show long-running queries" })
+    keymap("n", "<leader>qk", function()
+        insert_template("locks")
+    end, { desc = "Show locks" })
+    keymap("n", "<leader>qs", function()
+        insert_template("table_stats", vim.fn.expand("<cword>"))
+    end, { desc = "Show table stats" })
+    keymap("n", "<leader>qi", function()
+        insert_template("index_stats", vim.fn.expand("<cword>"))
+    end, { desc = "Show index stats" })
 end
 
 -- Initialize
@@ -196,4 +204,4 @@ return {
     switch_connection = switch_connection,
     insert_template = insert_template,
     format_query_results = format_query_results,
-} 
+}

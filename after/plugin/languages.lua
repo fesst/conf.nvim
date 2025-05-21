@@ -157,9 +157,14 @@ local function setup_language_settings()
             -- Format current SQL file
             keymap("n", "<leader>sf", ":!pg_format -i %<CR>", { desc = "Format SQL file" })
             -- Explain current query
-            keymap("v", "<leader>se", ":!psql -c 'EXPLAIN ANALYZE ' . getreg('*')<CR>", { desc = "Explain selected query" })
+            keymap(
+                "v",
+                "<leader>se",
+                ":!psql -c 'EXPLAIN ANALYZE ' . getreg('*')<CR>",
+                { desc = "Explain selected query" }
+            )
             -- Execute current query
-            keymap("v", "<leader>sr", ":!psql -c " .. getreg('*') .. "<CR>", { desc = "Run selected query" })
+            keymap("v", "<leader>sr", ":!psql -c " .. getreg("*") .. "<CR>", { desc = "Run selected query" })
             -- Show table structure
             keymap("n", "<leader>st", ":!psql -c '\\d ' . expand('<cword>')<CR>", { desc = "Show table structure" })
             -- Show database size
@@ -167,13 +172,28 @@ local function setup_language_settings()
             -- Show table sizes
             keymap("n", "<leader>ss", ":!psql -c '\\dt+'<CR>", { desc = "Show table sizes" })
             -- Show index usage
-            keymap("n", "<leader>si", ":!psql -c 'SELECT * FROM pg_stat_user_indexes'<CR>", { desc = "Show index usage" })
+            keymap(
+                "n",
+                "<leader>si",
+                ":!psql -c 'SELECT * FROM pg_stat_user_indexes'<CR>",
+                { desc = "Show index usage" }
+            )
             -- Show long-running queries
-            keymap("n", "<leader>sl", ":!psql -c 'SELECT * FROM pg_stat_activity WHERE state = ''active'''<CR>", { desc = "Show long-running queries" })
+            keymap(
+                "n",
+                "<leader>sl",
+                ":!psql -c 'SELECT * FROM pg_stat_activity WHERE state = ''active'''<CR>",
+                { desc = "Show long-running queries" }
+            )
             -- Show locks
             keymap("n", "<leader>sk", ":!psql -c 'SELECT * FROM pg_locks'<CR>", { desc = "Show locks" })
             -- Show vacuum status
-            keymap("n", "<leader>sv", ":!psql -c 'SELECT * FROM pg_stat_user_tables'<CR>", { desc = "Show vacuum status" })
+            keymap(
+                "n",
+                "<leader>sv",
+                ":!psql -c 'SELECT * FROM pg_stat_user_tables'<CR>",
+                { desc = "Show vacuum status" }
+            )
         end,
     })
 end
