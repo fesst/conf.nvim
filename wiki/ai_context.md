@@ -2,6 +2,8 @@
 
 ## General repo rules
 
+Lazy is package manager.
+
 
 ### File structure
 

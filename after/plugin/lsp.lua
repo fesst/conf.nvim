@@ -160,9 +160,44 @@ local configs = {
     },
     ts_ls = {
         capabilities = capabilities,
-        on_attach = on_attach,
+        on_attach = function(client, bufnr)
+            -- Enable formatting on save
+            vim.api.nvim_create_autocmd("BufWritePre", {
+                buffer = bufnr,
+                callback = function()
+                    vim.lsp.buf.format()
+                end,
+            })
+
+            -- Set up folding for JavaScript/TypeScript
+            vim.opt_local.foldmethod = "expr"
+            vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
+
+            -- Key mappings
+            local opts = { buffer = bufnr, silent = true }
+            vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+            vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+            vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
+            vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
+            vim.keymap.set("n", "<leader>f", vim.lsp.buf.format, opts)
+            vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, opts)
+            vim.keymap.set("n", "[i", vim.diagnostic.goto_prev, opts)
+            vim.keymap.set("n", "]i", vim.diagnostic.goto_next, opts)
+        end,
         filetypes = { "typescript", "javascript", "typescriptreact", "typescript.tsx" },
         root_dir = lspconfig.util.root_pattern("package.json", "tsconfig.json"),
+        settings = {
+            typescript = {
+                folding = true,
+            },
+            javascript = {
+                folding = true,
+            },
+        },
     },
     eslint = {
         capabilities = capabilities,
@@ -171,21 +206,113 @@ local configs = {
     },
     html = {
         capabilities = capabilities,
-        on_attach = on_attach,
+        on_attach = function(client, bufnr)
+            -- Enable formatting on save
+            vim.api.nvim_create_autocmd("BufWritePre", {
+                buffer = bufnr,
+                callback = function()
+                    vim.lsp.buf.format()
+                end,
+            })
+
+            -- Set up folding for HTML
+            vim.opt_local.foldmethod = "expr"
+            vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
+
+            -- Key mappings
+            local opts = { buffer = bufnr, silent = true }
+            vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+            vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+            vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
+            vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
+            vim.keymap.set("n", "<leader>f", vim.lsp.buf.format, opts)
+            vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, opts)
+            vim.keymap.set("n", "[i", vim.diagnostic.goto_prev, opts)
+            vim.keymap.set("n", "]i", vim.diagnostic.goto_next, opts)
+        end,
         filetypes = { "html", "htmldjango" },
+        settings = {
+            html = {
+                folding = true,
+            },
+        },
     },
     cssls = {
         capabilities = capabilities,
-        on_attach = on_attach,
+        on_attach = function(client, bufnr)
+            -- Enable formatting on save
+            vim.api.nvim_create_autocmd("BufWritePre", {
+                buffer = bufnr,
+                callback = function()
+                    vim.lsp.buf.format()
+                end,
+            })
+
+            -- Set up folding for CSS
+            vim.opt_local.foldmethod = "expr"
+            vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
+
+            -- Key mappings
+            local opts = { buffer = bufnr, silent = true }
+            vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+            vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+            vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
+            vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
+            vim.keymap.set("n", "<leader>f", vim.lsp.buf.format, opts)
+            vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, opts)
+            vim.keymap.set("n", "[i", vim.diagnostic.goto_prev, opts)
+            vim.keymap.set("n", "]i", vim.diagnostic.goto_next, opts)
+        end,
         filetypes = { "css", "scss", "less" },
+        settings = {
+            css = {
+                folding = true,
+            },
+        },
     },
     jsonls = {
         capabilities = capabilities,
-        on_attach = on_attach,
+        on_attach = function(client, bufnr)
+            -- Enable formatting on save
+            vim.api.nvim_create_autocmd("BufWritePre", {
+                buffer = bufnr,
+                callback = function()
+                    vim.lsp.buf.format()
+                end,
+            })
+
+            -- Set up folding for JSON
+            vim.opt_local.foldmethod = "expr"
+            vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
+
+            -- Key mappings
+            local opts = { buffer = bufnr, silent = true }
+            vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+            vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+            vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
+            vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
+            vim.keymap.set("n", "<leader>f", vim.lsp.buf.format, opts)
+            vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, opts)
+            vim.keymap.set("n", "[i", vim.diagnostic.goto_prev, opts)
+            vim.keymap.set("n", "]i", vim.diagnostic.goto_next, opts)
+        end,
         settings = {
             json = {
                 schemas = require("schemastore").json.schemas(),
                 validate = { enable = true },
+                folding = true,
             },
         },
     },
@@ -206,7 +333,26 @@ local configs = {
     -- Backend Languages
     pyright = {
         capabilities = capabilities,
-        on_attach = on_attach,
+        on_attach = function(client, bufnr)
+            -- Enable formatting on save
+            vim.api.nvim_create_autocmd("BufWritePre", {
+                buffer = bufnr,
+                callback = function()
+                    vim.lsp.buf.format()
+                end,
+            })
+
+            -- Key mappings
+            local opts = { buffer = bufnr, silent = true }
+            vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+            vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+            vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
+            vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
+            vim.keymap.set("n", "<leader>f", vim.lsp.buf.format, opts)
+            vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, opts)
+            vim.keymap.set("n", "[i", vim.diagnostic.goto_prev, opts)
+            vim.keymap.set("n", "]i", vim.diagnostic.goto_next, opts)
+        end,
         settings = {
             python = {
                 analysis = {
@@ -252,13 +398,45 @@ local configs = {
     },
     clangd = {
         capabilities = capabilities,
-        on_attach = on_attach,
+        on_attach = function(client, bufnr)
+            -- Enable formatting on save
+            vim.api.nvim_create_autocmd("BufWritePre", {
+                buffer = bufnr,
+                callback = function()
+                    vim.lsp.buf.format()
+                end,
+            })
+
+            -- Set up folding for C/C++
+            vim.opt_local.foldmethod = "expr"
+            vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
+            vim.opt_local.foldenable = true
+            vim.opt_local.foldcolumn = "4"
+            vim.opt_local.foldlevel = 99
+            vim.opt_local.foldminlines = 1
+
+            -- Key mappings
+            local opts = { buffer = bufnr, silent = true }
+            vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+            vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+            vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
+            vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
+            vim.keymap.set("n", "<leader>f", vim.lsp.buf.format, opts)
+            vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, opts)
+            vim.keymap.set("n", "[i", vim.diagnostic.goto_prev, opts)
+            vim.keymap.set("n", "]i", vim.diagnostic.goto_next, opts)
+        end,
         cmd = {
             "clangd",
             "--background-index",
             "--suggest-missing-includes",
             "--clang-tidy",
             "--header-insertion=iwyu",
+        },
+        settings = {
+            clangd = {
+                folding = true,
+            },
         },
     },
     rust_analyzer = {
