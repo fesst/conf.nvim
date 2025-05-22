@@ -1,8 +1,12 @@
 # Neovim Configuration
 
-A modern Neovim configuration with a focus on development productivity and debugging capabilities.
+A modern Neovim configuration with a focus on development productivity and debugging capabilities with MacOS-specific installation script.
 
 ## Features
+
+### Plugins
+
+Installed with [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 - **Language Support**: Comprehensive support for multiple programming languages
 - **Debugging**: Integrated debugging support with DAP (Debug Adapter Protocol)
@@ -10,6 +14,15 @@ A modern Neovim configuration with a focus on development productivity and debug
 - **Telescope**: Fuzzy finding and searching capabilities
 - **Treesitter**: Advanced syntax highlighting and code navigation
 - **Mason**: Automatic language server and debugger installation
+- **Fugitive** simple git integration
+- **Harpoon** ThePrimeAgen plugin for quick file hooks
+- **NvimTree** as a less buggy project view wtih tree-view support (netrw is buggy in such mode at the moment of setting things up)
+
+### Setup
+
+- Autofolding for multiple languages
+- Github actions CI with sanity check test (but still requires manual check)
+- Various custom mappings settings
 
 ## Installation
 
@@ -47,6 +60,8 @@ The installation script will:
 - Installed via Homebrew
 
 ## Key Mappings
+
+[Custom mappings within current configuration](wiki/mappings.md)
 
 ### Debugging
 - `<leader>dc` - Start/Continue debugging
