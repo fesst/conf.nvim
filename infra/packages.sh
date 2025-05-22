@@ -33,6 +33,7 @@ NPM_PACKAGES=(
     "eslint"        # Required for linting
     "@angular/cli"  # Required for Angular development
     "sql-language-server" # Required for SQL support
+    "eslint_d"      # Required for null-ls ESLint integration
 )
 
 # Python packages
@@ -40,6 +41,7 @@ PIP_PACKAGES=(
     "pynvim"        # Required for Python integration
     "black"         # Required for Python formatting
     "flake8"        # Required for Python linting
+    "isort"         # Required for Python import sorting
 )
 
 # LuaRocks packages

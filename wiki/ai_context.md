@@ -8,7 +8,7 @@
 
 #### Lua files structure
 
-- Plugins should be in after/plugin (that is important path!)
+- Plugins setup should be in after/plugin (that is important path!)
 - General should be in lua/motleyfesst
 
 ##### New lua files rules
@@ -74,3 +74,11 @@
 
 - pushall means:
 add everything, read and summarize and then commit and push. One-line command is preferrable choice until there are reasons to separate.
+
+
+## null-ls specialty (important)
+
+- **null-ls.nvim** is a Neovim plugin that acts as a bridge between external formatters/linters and the built-in LSP client. It is **not** a language server itself and should **not** be set up via `lspconfig` as a server.
+- All null-ls configuration should be placed in `after/plugin/` (e.g., `after/plugin/null-ls.lua`).
+- Do **not** attempt to register null-ls as an LSP server in `lspconfig`.
+- This specialty is important for avoiding misconfiguration and errors.
