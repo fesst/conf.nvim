@@ -68,18 +68,15 @@ fi
 # Install other Homebrew casks
 print_status "Installing Homebrew casks..."
 if [ "$CI" = "true" ]; then
-    # In CI, install all casks at once (except mactex)
-    CASKS=("${BREW_CASKS[@]/mactex/}")
-    brew install --cask "${CASKS[@]}"
+    # In CI, install all casks at once
+    brew install --cask "${BREW_CASKS[@]}"
 else
     for cask in "${BREW_CASKS[@]}"; do
-        if [ "$cask" != "mactex" ]; then
-            if ! check_brew_cask "$cask"; then
-                print_status "Installing $cask..."
-                brew install --cask "$cask"
-            else
-                print_warning "$cask is already installed"
-            fi
+        if ! check_brew_cask "$cask"; then
+            print_status "Installing $cask..."
+            brew install --cask "$cask"
+        else
+            print_warning "$cask is already installed"
         fi
     done
 fi
