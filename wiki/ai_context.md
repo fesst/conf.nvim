@@ -29,6 +29,16 @@
 #### Test apps
 
 - test/ folder contains some test lua scripts and test applications to check LSP and DAP functionality.
+- test/setup/sanity_nvim_start.sh contains automated tests organized into functions:
+  - test_basic_functionality(): Basic Neovim operations (startup, file opening)
+  - test_health_check(): Runs checkhealth and verifies output
+  - test_core_plugins(): Verifies loading of core plugins (Lazy, Treesitter, LSP, Mason, Telescope)
+  - test_treesitter(): Checks Treesitter functionality and status
+  - test_harpoon(): Verifies Harpoon plugin loading and mark functionality
+  - test_postgres(): Tests PostgreSQL/SQL LSP loading and configuration
+  - cleanup(): Handles test file cleanup
+  These tests run in headless mode and will fail if any critical functionality is broken.
+  Each function is self-contained and can be run independently if needed.
 
 
 #### Infrastructure
@@ -68,6 +78,7 @@
 
 - Always test install.sh on its change.
 - Always test nvim configuration on nvim plugin changes, do it with --headless and do not forget to quit after if needed.
+- Run sanity tests (test/setup/sanity_nvim_start.sh) after making changes to verify basic functionality.
 
 
 ## VCS
@@ -82,3 +93,10 @@ add everything, read and summarize and then commit and push. One-line command is
 - All null-ls configuration should be placed in `after/plugin/` (e.g., `after/plugin/null-ls.lua`).
 - Do **not** attempt to register null-ls as an LSP server in `lspconfig`.
 - This specialty is important for avoiding misconfiguration and errors.
+
+
+## CI/CD Rules
+
+- All CI (GitHub Actions) must only run scripts that are present in the repository (e.g., infra/install.sh, test/setup/sanity_nvim_start.sh).
+- Do not use raw shell commands directly in the workflow YAML; always invoke scripts from the repo.
+- This ensures reproducibility, security, and easier local testing.

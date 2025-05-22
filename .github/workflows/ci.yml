@@ -1,0 +1,32 @@
+name: Neovim CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Install Neovim
+        run: brew install neovim
+
+      - name: Install dependencies
+        run: |
+          if [ -f infra/install.sh ]; then
+            chmod +x infra/install.sh
+            ./infra/install.sh
+          fi
+
+      - name: Run sanity tests
+        run: |
+          chmod +x test/setup/sanity_nvim_start.sh
+          ./test/setup/sanity_nvim_start.sh 

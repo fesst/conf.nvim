@@ -38,6 +38,39 @@ require("mason-lspconfig").setup({
     },
 })
 
+-- Configure filetype-specific LSP settings
+vim.api.nvim_create_autocmd("FileType", {
+    pattern = { "text", "txt", "markdown", "md" },
+    callback = function()
+        -- Prevent LSP from attaching to text files
+        vim.api.nvim_buf_set_option(0, "omnifunc", "")
+        -- Clear any existing LSP clients
+        local clients = vim.lsp.get_clients()
+        for _, client in ipairs(clients) do
+            if client.name == "textlsp" then
+                vim.lsp.stop_client(client.id)
+            end
+        end
+    end,
+})
+
+-- Configure global diagnostic settings
+vim.diagnostic.config({
+    virtual_text = true,
+    signs = true,
+    underline = true,
+    update_in_insert = false,
+    severity_sort = false,
+})
+
+-- Disable diagnostics for specific filetypes
+vim.api.nvim_create_autocmd("BufReadPost", {
+    pattern = { "*.txt", "*.text", "*.md", "*.markdown" },
+    callback = function()
+        vim.diagnostic.hide()
+    end,
+})
+
 -- Render Markdown configuration
 require("render-markdown").setup({})
 
@@ -90,6 +123,7 @@ require("mason-lspconfig").setup({
     },
 })
 
+-- Ensure LSP capabilities are properly set up
 local capabilities = require("cmp_nvim_lsp").default_capabilities()
 local lspconfig = require("lspconfig")
 
@@ -248,8 +282,6 @@ local configs = {
         settings = {
             elixirLS = {
                 dialyzerEnabled = true,
-                fetchDeps = true,
-                mixEnv = "dev",
             },
         },
     },
@@ -272,11 +304,11 @@ local configs = {
                 runtime = {
                     version = "LuaJIT",
                 },
+                diagnostics = {
+                    globals = { "vim" },
+                },
                 workspace = {
-                    checkThirdParty = false,
-                    library = {
-                        vim.env.VIMRUNTIME,
-                    },
+                    library = vim.api.nvim_get_runtime_file("", true),
                 },
                 telemetry = {
                     enable = false,
@@ -293,19 +325,6 @@ local configs = {
     texlab = {
         capabilities = capabilities,
         on_attach = on_attach,
-        settings = {
-            texlab = {
-                build = {
-                    executable = "latexmk",
-                    args = { "-pdf", "-interaction=nonstopmode", "-synctex=1", "%f" },
-                    forwardSearchAfter = true,
-                },
-                forwardSearch = {
-                    executable = "displayline",
-                    args = { "%l", "%p", "%f" },
-                },
-            },
-        },
     },
     lemminx = {
         capabilities = capabilities,
@@ -419,9 +438,9 @@ local configs = {
     },
 }
 
--- Setup all language servers
-for server, config in pairs(configs) do
-    lspconfig[server].setup(config)
+-- Set up each LSP server
+for server_name, config in pairs(configs) do
+    lspconfig[server_name].setup(config)
 end
 
 -- Additional diagnostics configuration
