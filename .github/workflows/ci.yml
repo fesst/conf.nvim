@@ -26,6 +26,12 @@ jobs:
             ./infra/install.sh
           fi
 
+      - name: Set up Python virtual environment
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install pynvim
+
       - name: Run sanity tests
         run: |
           chmod +x test/setup/sanity_nvim_start.sh
