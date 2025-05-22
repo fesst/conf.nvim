@@ -1,0 +1,11 @@
+{
+    "diagnostics": {
+        "globals": ["vim"]
+    },
+    "workspace": {
+        "library": {
+            "vim": true,
+            "neovim": true
+        }
+    }
+} 

@@ -2,12 +2,8 @@ local keymap = vim.keymap.set
 
 -- Helper function to set up common folding settings
 local function setup_folding()
-    vim.opt_local.foldmethod = "expr"
-    vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr() or nvim_treesitter#foldexpr()"
-    vim.opt_local.foldenable = true
-    vim.opt_local.foldcolumn = "4"
-    vim.opt_local.foldlevel = 99
-    vim.opt_local.foldminlines = 1
+    -- Folding is now handled in treesitter.lua
+    return
 end
 
 -- Helper function to set up common tab settings
@@ -160,11 +156,11 @@ local function setup_language_settings()
             keymap(
                 "v",
                 "<leader>se",
-                ":!psql -c 'EXPLAIN ANALYZE ' . getreg('*')<CR>",
+                ":!psql -c 'EXPLAIN ANALYZE ' . vim.fn.getreg('*')<CR>",
                 { desc = "Explain selected query" }
             )
             -- Execute current query
-            keymap("v", "<leader>sr", ":!psql -c " .. getreg("*") .. "<CR>", { desc = "Run selected query" })
+            keymap("v", "<leader>sr", ":!psql -c " .. vim.fn.getreg("*") .. "<CR>", { desc = "Run selected query" })
             -- Show table structure
             keymap("n", "<leader>st", ":!psql -c '\\d ' . expand('<cword>')<CR>", { desc = "Show table structure" })
             -- Show database size

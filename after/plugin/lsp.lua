@@ -1,9 +1,10 @@
--- Mason configuration
-require("mason").setup()
+-- Mason configuration is now handled in lazy.lua
+
 require("mason-lspconfig").setup({
     ensure_installed = {
         "gradle_ls",
     },
+    automatic_installation = true,
     handlers = {
         function(server_name)
             local lspconfig = require("lspconfig")
@@ -74,17 +75,6 @@ vim.api.nvim_create_autocmd("BufReadPost", {
 -- Render Markdown configuration
 require("render-markdown").setup({})
 
--- Initialize Mason
-require("mason").setup({
-    ui = {
-        icons = {
-            package_installed = "✓",
-            package_pending = "➜",
-            package_uninstalled = "✗",
-        },
-    },
-})
-
 require("mason-lspconfig").setup({
     ensure_installed = {
         -- Web Development
@@ -121,6 +111,7 @@ require("mason-lspconfig").setup({
         "texlab", -- LaTeX
         "lemminx", -- XML
     },
+    automatic_installation = true,
 })
 
 -- Ensure LSP capabilities are properly set up
@@ -133,7 +124,7 @@ local on_attach = function(client, bufnr)
     vim.api.nvim_create_autocmd("BufWritePre", {
         buffer = bufnr,
         callback = function()
-            vim.lsp.buf.format()
+            vim.lsp.buf.format({ async = false })
         end,
     })
 
@@ -165,7 +156,7 @@ local configs = {
             vim.api.nvim_create_autocmd("BufWritePre", {
                 buffer = bufnr,
                 callback = function()
-                    vim.lsp.buf.format()
+                    vim.lsp.buf.format({ async = false })
                 end,
             })
 
@@ -211,7 +202,7 @@ local configs = {
             vim.api.nvim_create_autocmd("BufWritePre", {
                 buffer = bufnr,
                 callback = function()
-                    vim.lsp.buf.format()
+                    vim.lsp.buf.format({ async = false })
                 end,
             })
 
@@ -248,7 +239,7 @@ local configs = {
             vim.api.nvim_create_autocmd("BufWritePre", {
                 buffer = bufnr,
                 callback = function()
-                    vim.lsp.buf.format()
+                    vim.lsp.buf.format({ async = false })
                 end,
             })
 
@@ -285,7 +276,7 @@ local configs = {
             vim.api.nvim_create_autocmd("BufWritePre", {
                 buffer = bufnr,
                 callback = function()
-                    vim.lsp.buf.format()
+                    vim.lsp.buf.format({ async = false })
                 end,
             })
 
@@ -338,7 +329,7 @@ local configs = {
             vim.api.nvim_create_autocmd("BufWritePre", {
                 buffer = bufnr,
                 callback = function()
-                    vim.lsp.buf.format()
+                    vim.lsp.buf.format({ async = false })
                 end,
             })
 
@@ -403,7 +394,7 @@ local configs = {
             vim.api.nvim_create_autocmd("BufWritePre", {
                 buffer = bufnr,
                 callback = function()
-                    vim.lsp.buf.format()
+                    vim.lsp.buf.format({ async = false })
                 end,
             })
 
@@ -491,6 +482,7 @@ local configs = {
                 telemetry = {
                     enable = false,
                 },
+                folding = true,
             },
         },
     },

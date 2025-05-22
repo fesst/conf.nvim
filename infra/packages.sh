@@ -17,6 +17,8 @@ BREW_PACKAGES=(
     "luarocks"      # Required for Lua package management
     "postgresql"    # Required for PostgreSQL support
     "pgformatter"   # Required for PostgreSQL formatting
+    "shellcheck"    # Required for shell script linting
+    "shfmt"         # Required for shell script formatting
 )
 
 # Homebrew casks
