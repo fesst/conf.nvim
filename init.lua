@@ -21,9 +21,10 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
--- Configure Lazy.nvim
+-- Configure Lazy.nvim and load plugins
 require("lazy").setup("motleyfesst.lazy")
 
+-- Set up highlight on yank
 vim.api.nvim_create_autocmd("TextYankPost", {
     group = vim.api.nvim_create_augroup("highlight_yank", {}),
     desc = "Hightlight selection on yank",

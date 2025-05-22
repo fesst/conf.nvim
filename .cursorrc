@@ -1,0 +1,7 @@
+{
+  "ai": {
+    "defaultContext": {
+      "files": ["wiki/ai_context.md"]
+    }
+  }
+} 

@@ -1,0 +1,68 @@
+name: Neovim CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+
+      - name: Cache Homebrew packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Homebrew
+          key: ${{ runner.os }}-homebrew-${{ hashFiles('**/packages.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-
+
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/packages.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Cache npm packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/packages.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install Neovim
+        run: brew install neovim
+
+      - name: Set up Python virtual environment
+        run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+          python3 -m pip install --upgrade pip
+
+      - name: Install dependencies
+        run: |
+          if [ -f infra/install.sh ]; then
+            chmod +x infra/install.sh
+            source .venv/bin/activate
+            CI=true ./infra/install.sh
+          fi
+
+      - name: Run sanity tests
+        run: |
+          chmod +x test/setup/sanity_nvim_start.sh
+          source .venv/bin/activate
+          ./test/setup/sanity_nvim_start.sh 

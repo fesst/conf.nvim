@@ -18,8 +18,6 @@ local function open_nvim_tree(data)
     require("nvim-tree.api").tree.open()
 end
 
-vim.api.nvim_create_autocmd({ "VimEnter" }, { callback = open_nvim_tree })
-
 -- Nvim-tree configuration
 require("nvim-tree").setup({
     sync_root_with_cwd = true,
@@ -111,5 +109,19 @@ require("nvim-tree").setup({
 })
 
 -- Key mappings
-vim.api.nvim_set_keymap("n", "<leader>pv", ":NvimTreeFindFile<CR>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<leader>p-", ":NvimTreeToggle<CR>", { noremap = true, silent = true })
+vim.keymap.set("n", "<leader>pv", ":NvimTreeFindFile<CR>", { noremap = true, silent = true })
+vim.keymap.set("n", "<leader>p-", ":NvimTreeToggle<CR>", { noremap = true, silent = true })
+
+-- Set up VimEnter autocmd after nvim-tree is initialized
+vim.api.nvim_create_autocmd({ "VimEnter" }, { 
+    callback = function(data)
+        -- Only open nvim-tree if we're opening a directory
+        if vim.fn.isdirectory(data.file) == 1 then
+            -- Use vim.schedule to ensure this runs after other initializations
+            vim.schedule(function()
+                open_nvim_tree(data)
+            end)
+        end
+    end,
+    group = vim.api.nvim_create_augroup("NvimTreeInit", { clear = true })
+})
