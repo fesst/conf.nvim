@@ -183,6 +183,12 @@ fi
 # Install CodeLLDB
 "$(dirname "$0")/codelldb.sh"
 
+# Install Lua tools
+if ! command -v stylua &> /dev/null; then
+    echo "Installing stylua..."
+    cargo install stylua
+fi
+
 # Run final checks (skip in CI)
 if [ "$CI" != "true" ]; then
     run_final_checks
