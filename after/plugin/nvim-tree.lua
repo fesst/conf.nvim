@@ -113,7 +113,7 @@ vim.keymap.set("n", "<leader>pv", ":NvimTreeFindFile<CR>", { noremap = true, sil
 vim.keymap.set("n", "<leader>p-", ":NvimTreeToggle<CR>", { noremap = true, silent = true })
 
 -- Set up VimEnter autocmd after nvim-tree is initialized
-vim.api.nvim_create_autocmd({ "VimEnter" }, { 
+vim.api.nvim_create_autocmd({ "VimEnter" }, {
     callback = function(data)
         -- Only open nvim-tree if we're opening a directory
         if vim.fn.isdirectory(data.file) == 1 then
@@ -123,5 +123,5 @@ vim.api.nvim_create_autocmd({ "VimEnter" }, {
             end)
         end
     end,
-    group = vim.api.nvim_create_augroup("NvimTreeInit", { clear = true })
+    group = vim.api.nvim_create_augroup("NvimTreeInit", { clear = true }),
 })

@@ -1,27 +1,30 @@
 #!/bin/bash
 
-# Format all Lua files in lua/motleyfesst and after/plugins using stylua
-
+# Exit on error
 set -e
 
-CONFIG_FILE=".stylua.toml"
-
+# Install required tools if not present
 if ! command -v stylua &> /dev/null; then
-  echo "stylua is not installed. Please install it first (e.g., cargo install stylua)."
-  exit 1
+    echo "Installing stylua..."
+    cargo install stylua
 fi
 
-if [ ! -f "$CONFIG_FILE" ]; then
-  echo ".stylua.toml config file not found in the project root."
-  exit 1
+if ! command -v luacheck &> /dev/null; then
+    echo "Installing luacheck..."
+    luarocks install luacheck
 fi
 
-# Format lua/motleyfesst
-stylua --config-path "$CONFIG_FILE" lua/motleyfesst/*.lua
+# Format Lua files
+echo "Formatting Lua files..."
+stylua lua/ after/plugin/
 
-# Format after/plugins
-stylua --config-path "$CONFIG_FILE" after/plugin/*.lua
+# Remove trailing whitespace and empty lines
+echo "Cleaning up whitespace..."
+find lua/ after/plugin/ -type f -name "*.lua" -exec sed -i 's/[[:space:]]*$//' {} +
+find lua/ after/plugin/ -type f -name "*.lua" -exec sed -i '/^[[:space:]]*$/d' {} +
 
-stylua --config-path "$CONFIG_FILE" init.lua
+# Run luacheck
+echo "Running luacheck..."
+luacheck lua/ after/plugin/ --codes --ranges --formatter plain
 
-echo "All Lua files formatted successfully." 
+echo "Formatting complete!" 
