@@ -2,7 +2,7 @@
 
 A modern Neovim configuration with a focus on development productivity and debugging capabilities with MacOS-specific installation script.
 
-## Features
+## Configured features
 
 ### Plugins
 
@@ -17,12 +17,14 @@ Installed with [lazy.nvim](https://github.com/folke/lazy.nvim)
 - **Fugitive** simple git integration
 - **Harpoon** ThePrimeAgen plugin for quick file hooks
 - **NvimTree** as a less buggy project view wtih tree-view support (netrw is buggy in such mode at the moment of setting things up)
+- **Rose Pine alt** as a color theme
 
 ### Setup
 
 - Autofolding for multiple languages
 - Github actions CI with sanity check test (but still requires manual check)
-- Various custom mappings settings
+- Various custom settings and mappings (with focus on preservation compatibility with help)
+- Installation script for MacOS ([brew](https://brew.sh/))
 
 ## Installation
 
@@ -99,6 +101,9 @@ brew uninstall rust llvm@19
 rm -rf ~/.local/share/nvim/mason/packages/codelldb
 ```
 
+[Project rules](wiki/ai_context.md)
+e.g. CI should use infra scripts as much as possible to have a single source of truth for CI and local pipeline.
+
 ## Directory Structure
 
 ```
@@ -107,6 +112,7 @@ rm -rf ~/.local/share/nvim/mason/packages/codelldb
 ├── infra/          # Installation and maintenance scripts
 ├── lua/            # Lua configurations
 │   └── motleyfesst/ # Core configuration
+├── test/           # sanity check and occasional manual test
 └── wiki/           # Documentation and notes
 ```
 
