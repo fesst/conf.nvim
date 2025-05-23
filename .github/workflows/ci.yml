@@ -20,9 +20,9 @@ jobs:
 
       - name: Set up cache directories
         run: |
-          mkdir -p $HOME/.cache/pip
-          mkdir -p $HOME/.npm
-          mkdir -p $HOME/Library/Caches/Homebrew
+          mkdir -p "$HOME/.cache/pip"
+          mkdir -p "$HOME/.npm"
+          mkdir -p "$HOME/Library/Caches/Homebrew"
 
       - name: Cache Homebrew packages
         uses: actions/cache@v3
