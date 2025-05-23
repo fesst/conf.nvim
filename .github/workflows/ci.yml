@@ -18,12 +18,18 @@ jobs:
         env:
           HOMEBREW_NO_AUTO_UPDATE: 1
 
+      - name: Set up cache directories
+        run: |
+          mkdir -p $HOME/.cache/pip
+          mkdir -p $HOME/.npm
+          mkdir -p $HOME/Library/Caches/Homebrew
+
       - name: Cache Homebrew packages
         uses: actions/cache@v3
         with:
           path: |
-            ${{ env.HOMEBREW_CACHE }}
-            ${{ env.HOMEBREW_PREFIX }}
+            $HOME/Library/Caches/Homebrew
+            /usr/local/Homebrew
           key: ${{ runner.os }}-homebrew-${{ hashFiles('**/packages.sh') }}
           restore-keys: |
             ${{ runner.os }}-homebrew-
@@ -31,7 +37,7 @@ jobs:
       - name: Cache pip packages
         uses: actions/cache@v3
         with:
-          path: ${{ env.PIP_CACHE_DIR }}
+          path: $HOME/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/packages.sh') }}
           restore-keys: |
             ${{ runner.os }}-pip-
@@ -39,19 +45,10 @@ jobs:
       - name: Cache npm packages
         uses: actions/cache@v3
         with:
-          path: ${{ env.NPM_CACHE_DIR }}
+          path: $HOME/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('**/packages.sh') }}
           restore-keys: |
             ${{ runner.os }}-npm-
-
-      - name: Set up cache directories
-        run: |
-          mkdir -p $HOME/.cache/pip
-          mkdir -p $HOME/.npm
-          echo "PIP_CACHE_DIR=$HOME/.cache/pip" >> $GITHUB_ENV
-          echo "NPM_CACHE_DIR=$HOME/.npm" >> $GITHUB_ENV
-          echo "HOMEBREW_CACHE=$HOME/Library/Caches/Homebrew" >> $GITHUB_ENV
-          echo "HOMEBREW_PREFIX=/usr/local/Homebrew" >> $GITHUB_ENV
 
       - name: Install Neovim
         run: brew install neovim
