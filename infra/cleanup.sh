@@ -132,6 +132,12 @@ if check_command nvim; then
     nvim --headless -c "MasonUninstallAll" -c "qa"
 fi
 
+# Remove Lua tools
+if command -v stylua &> /dev/null; then
+    echo "Removing stylua..."
+    cargo uninstall stylua
+fi
+
 # Final message
 print_status "Cleanup completed successfully!"
 print_status "Note: Some configuration files may still exist in your home directory."
