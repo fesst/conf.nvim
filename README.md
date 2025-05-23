@@ -21,6 +21,12 @@ Installed with [lazy.nvim](https://github.com/folke/lazy.nvim)
 - **Rose Pine alt** as a color theme
 - **Lualine**: status line, aligned with main color theme
 
+to see names of github repos for plugin, run:
+
+```sh
+grep "\".*/.*\""  lua/motleyfesst/lazy.lua
+```
+
 ### Setttings and CI
 
 - Autofolding for multiple languages (using LSP and treesitter, except indent for python)
