@@ -130,6 +130,52 @@ Each connection can be configured with:
 - Username
 - Password (via .pgpass)
 
+### Bracket Operations
+#### Surround Operations
+- `<leader>b(` - Surround with parentheses
+- `<leader>b[` - Surround with square brackets
+- `<leader>b{` - Surround with curly braces
+- `<leader>b<` - Surround with angle brackets
+- `<leader>b'` - Surround with single quotes
+- `<leader>b"` - Surround with double quotes
+- `<leader>b`` - Surround with backticks
+
+#### Delete Surrounding Brackets
+- `<leader>bd(` - Delete surrounding parentheses
+- `<leader>bd[` - Delete surrounding square brackets
+- `<leader>bd{` - Delete surrounding curly braces
+- `<leader>bd<` - Delete surrounding angle brackets
+- `<leader>bd'` - Delete surrounding single quotes
+- `<leader>bd"` - Delete surrounding double quotes
+- `<leader>bd`` - Delete surrounding backticks
+
+#### Change Surrounding Brackets
+- `<leader>bc(` - Change to parentheses
+- `<leader>bc[` - Change to square brackets
+- `<leader>bc{` - Change to curly braces
+- `<leader>bc<` - Change to angle brackets
+- `<leader>bc'` - Change to single quotes
+- `<leader>bc"` - Change to double quotes
+- `<leader>bc`` - Change to backticks
+
+#### Add Brackets at End of Line
+- `<leader>ba(` - Add parentheses at end
+- `<leader>ba[` - Add square brackets at end
+- `<leader>ba{` - Add curly braces at end
+- `<leader>ba<` - Add angle brackets at end
+- `<leader>ba'` - Add single quotes at end
+- `<leader>ba"` - Add double quotes at end
+- `<leader>ba`` - Add backticks at end
+
+#### Add Brackets at Start of Line
+- `<leader>bi(` - Add parentheses at start
+- `<leader>bi[` - Add square brackets at start
+- `<leader>bi{` - Add curly braces at start
+- `<leader>bi<` - Add angle brackets at start
+- `<leader>bi'` - Add single quotes at start
+- `<leader>bi"` - Add double quotes at start
+- `<leader>bi`` - Add backticks at start
+
 ## Language-Specific Mappings
 
 ### Run/Test Commands
