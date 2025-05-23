@@ -85,7 +85,7 @@ Lazy is package manager.
   - Error handling
   - Platform detection
 
-##### CI/CD
+##### CI
 
 - All CI (GitHub Actions) must only run scripts that are present in the repository (e.g., infra/install.sh, test/setup/sanity_nvim_start.sh).
 - Do not use raw shell commands directly in the workflow YAML; always invoke scripts from the repo.
@@ -130,6 +130,7 @@ Lazy is package manager.
   - Code scanning results from CodeQL
   - Changes must be made through pull requests
   - No direct pushes to master allowed
+- Always create a branch before pushing. Use a naming convention such as `feature/`, `hotfix/`, or `bugfix/` to categorize branches based on their purpose.
 
 
 ## General remapping rules
