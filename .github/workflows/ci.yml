@@ -1,13 +1,16 @@
-name: Neovim CI
+name: "CI"
 
 on:
   push:
-    branches: [ master ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ master ]
+    branches: [ "master" ]
+  schedule:
+    - cron: '33 12 * * 1'
 
 jobs:
   test:
+    name: Test
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -72,3 +75,39 @@ jobs:
           chmod +x test/setup/sanity_nvim_start.sh
           source .venv/bin/activate
           ./test/setup/sanity_nvim_start.sh 
+
+  analyze:
+    name: Analyze
+    runs-on: macos-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: actions
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:actions"
+
+      - name: Install Lua and LuaRocks
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.4 luarocks
+
+      - name: Install luacheck
+        run: |
+          sudo luarocks install luacheck
+
+      - name: Run luacheck
+        run: |
+          luacheck lua/ after/plugin/ --codes --ranges --formatter plain 

@@ -91,25 +91,37 @@ Lazy is package manager.
 - Do not use raw shell commands directly in the workflow YAML; always invoke scripts from the repo.
 - This ensures reproducibility, security, and easier local testing.
 
-###### Code Quality Tools
-- Lua Analysis:
-  - Uses `luacheck` for linting and `stylua` for formatting
-  - Configuration files:
-    - `.luacheckrc`: Defines global variables, ignores, and other linting rules
-    - `.stylua.toml`: Defines formatting rules
-  - Run formatting and linting using `infra/format.sh`
-  - GitHub Actions workflow `.github/workflows/lua-analysis.yml` runs weekly and on PRs
+###### Workflows
+- CodeQL Analysis (`.github/workflows/codeql.yml`):
+  - Analyzes GitHub Actions workflows for security
+  - Runs on:
+    - Push to master
+    - Pull requests to master
+    - Weekly (Mondays at 12:33 UTC)
+  - Uses security-extended query pack
+  - Requires permissions:
+    - security-events: write
+    - packages: read
+    - actions: read
+    - contents: read
 
-- CodeQL Analysis:
-  - Analyzes GitHub Actions workflows for security and best practices
-  - Configuration in `.github/codeql/codeql-config.yml`
-  - Runs on every push and PR
-
-- Auto-approve Workflow:
-  - `.github/workflows/auto-approve.yml` enables automatic PR approval
-  - Triggered when @fesst comments "APPROVED" on a PR
-  - Adds an approval review with comment "Auto-approved by @fesst"
-  - Requires pull-requests: write permission
+- Lua Analysis (`.github/workflows/lua-analysis.yml`):
+  - Analyzes Lua code using luacheck
+  - Runs on:
+    - Push to master
+    - Pull requests to master
+    - Weekly (Mondays at 12:33 UTC)
+  - Installs:
+    - Lua 5.4
+    - LuaRocks
+    - luacheck
+  - Analyzes:
+    - lua/ directory
+    - after/plugin/ directory
+  - Uses:
+    - --codes: Shows warning codes
+    - --ranges: Shows line and column ranges
+    - --formatter plain: Uses plain text output
 
 ###### Branch Protection
 - Master branch is protected
