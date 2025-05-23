@@ -71,13 +71,4 @@ jobs:
         run: |
           chmod +x test/setup/sanity_nvim_start.sh
           source .venv/bin/activate
-          ./test/setup/sanity_nvim_start.sh
-
-  # Skip CodeQL analysis for this repository
-  skip-codeql:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Skip CodeQL
-        run: |
-          echo "Skipping CodeQL analysis for Neovim configuration repository"
-          exit 0 
+          ./test/setup/sanity_nvim_start.sh 
