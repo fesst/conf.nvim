@@ -18,11 +18,17 @@ jobs:
         env:
           HOMEBREW_NO_AUTO_UPDATE: 1
 
+      - name: Set up cache directories
+        run: |
+          mkdir -p "$HOME/.cache/pip"
+          mkdir -p "$HOME/.npm"
+          mkdir -p "$HOME/Library/Caches/Homebrew"
+
       - name: Cache Homebrew packages
         uses: actions/cache@v3
         with:
           path: |
-            ~/Library/Caches/Homebrew
+            $HOME/Library/Caches/Homebrew
             /usr/local/Homebrew
           key: ${{ runner.os }}-homebrew-${{ hashFiles('**/packages.sh') }}
           restore-keys: |
@@ -31,7 +37,7 @@ jobs:
       - name: Cache pip packages
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip
+          path: $HOME/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/packages.sh') }}
           restore-keys: |
             ${{ runner.os }}-pip-
@@ -39,7 +45,7 @@ jobs:
       - name: Cache npm packages
         uses: actions/cache@v3
         with:
-          path: ~/.npm
+          path: $HOME/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('**/packages.sh') }}
           restore-keys: |
             ${{ runner.os }}-npm-
