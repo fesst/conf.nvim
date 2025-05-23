@@ -118,6 +118,7 @@ Lazy is package manager.
   - Code scanning results from CodeQL
   - Changes must be made through pull requests
   - No direct pushes to master allowed
+- Always create branch before push
 
 
 ## General remapping rules
