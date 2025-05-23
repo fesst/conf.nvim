@@ -4,6 +4,6 @@ queries:
 languages:
   - actions
 paths-ignore:
-  - '**'
+  - '**/*'
 paths:
   - '.github/workflows/**' 
