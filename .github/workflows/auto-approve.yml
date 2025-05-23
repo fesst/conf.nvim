@@ -1,0 +1,25 @@
+name: "Auto Approve PR"
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  auto-approve:
+    if: github.event.issue.pull_request && github.actor == 'fesst' && contains(github.event.comment.body, 'APPROVED')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Auto approve PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pullRequestNumber = context.issue.number;
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullRequestNumber,
+              event: 'APPROVE',
+              body: 'Auto-approved by @fesst'
+            }); 
