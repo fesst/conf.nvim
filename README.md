@@ -21,7 +21,7 @@ Installed with [lazy.nvim](https://github.com/folke/lazy.nvim)
 - **Rose Pine alt** as a color theme
 - **Lualine**: status line, aligned with main color theme
 
-to see names of github repos for plugin, run:
+to see names of github repos for the plugins, run:
 
 ```sh
 grep "\".*/.*\"" lua/motleyfesst/lazy.lua
