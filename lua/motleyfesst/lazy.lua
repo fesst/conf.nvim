@@ -66,9 +66,12 @@ return {
             if builtins.formatting then
                 table.insert(sources, builtins.formatting.stylua)
                 if builtins.formatting.shfmt then
-                    table.insert(sources, builtins.formatting.shfmt.with({
-                        extra_args = { "-i", "2", "-ci" },
-                    }))
+                    table.insert(
+                        sources,
+                        builtins.formatting.shfmt.with({
+                            extra_args = { "-i", "2", "-ci" },
+                        })
+                    )
                 end
             end
 
@@ -76,9 +79,12 @@ return {
             if builtins.diagnostics then
                 local shellcheck = builtins.diagnostics.shellcheck
                 if shellcheck then
-                    table.insert(sources, shellcheck.with({
-                        filetypes = { "sh", "bash", "zsh" }
-                    }))
+                    table.insert(
+                        sources,
+                        shellcheck.with({
+                            filetypes = { "sh", "bash", "zsh" },
+                        })
+                    )
                 else
                     vim.notify("shellcheck not found in null-ls builtins", vim.log.levels.WARN)
                 end

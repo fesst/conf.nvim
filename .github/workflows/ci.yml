@@ -74,21 +74,11 @@ jobs:
         run: |
           chmod +x test/setup/sanity_nvim_start.sh
           source .venv/bin/activate
-          ./test/setup/sanity_nvim_start.sh
+          ./test/setup/sanity_nvim_start.sh 
 
-<<<<<<< Updated upstream
-  # Skip CodeQL analysis for this repository
-  skip-codeql:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Skip CodeQL
-        run: |
-          echo "Skipping CodeQL analysis for Neovim configuration repository"
-          exit 0 
-=======
   analyze:
     name: Analyze
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     permissions:
       security-events: write
       packages: read
@@ -121,4 +111,3 @@ jobs:
       - name: Run luacheck
         run: |
           luacheck lua/ after/plugin/ --codes --ranges --formatter plain 
->>>>>>> Stashed changes

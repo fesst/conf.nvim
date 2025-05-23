@@ -117,10 +117,18 @@ local current_connection = "dev"
 local function switch_connection(conn_name)
     if connections[conn_name] then
         current_connection = conn_name
-        vim.notify("Switched to " .. connections[conn_name].name .. " database", vim.log.levels.INFO)
+        vim.notify(
+            "Switched to " .. connections[conn_name].name .. " database (" .. current_connection .. ")",
+            vim.log.levels.INFO
+        )
     else
         vim.notify("Connection " .. conn_name .. " not found", vim.log.levels.ERROR)
     end
+end
+
+-- Function to get current connection
+local function get_current_connection()
+    return current_connection
 end
 
 -- Function to insert query template

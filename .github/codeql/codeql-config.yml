@@ -1,7 +1,11 @@
 name: "CodeQL Config"
 queries:
   - uses: security-extended
-paths-ignore:
-  - '**'
+languages:
+  - actions
 paths:
-  - '!**' 
+  - '.github/workflows/'
+paths-ignore:
+  - '.github/workflows/**/*.md'
+  - '.github/workflows/**/*.txt'
+  - '.github/workflows/**/*.json' 

@@ -1,0 +1,33 @@
+name: "Lua Analysis"
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  schedule:
+    - cron: '33 12 * * 1'
+
+jobs:
+  analyze:
+    name: Analyze Lua
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Lua and LuaRocks
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y lua5.4 luarocks
+
+    - name: Install luacheck
+      run: |
+        sudo luarocks install luacheck
+
+    - name: Run luacheck
+      run: |
+        luacheck lua/ after/plugin/ --codes --ranges --formatter plain 

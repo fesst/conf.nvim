@@ -9,18 +9,18 @@ local function setup_base_folding()
 end
 
 -- Set up Python folding with indent-based method
-vim.api.nvim_create_autocmd({"BufReadPost", "BufNewFile", "FileType"}, {
+vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "FileType" }, {
     pattern = { "*.py", "python" },
     callback = function()
         setup_base_folding()
         vim.opt_local.foldmethod = "indent"
-        vim.opt_local.foldexpr = ""  -- Clear any expr-based folding
+        vim.opt_local.foldexpr = "" -- Clear any expr-based folding
     end,
     group = vim.api.nvim_create_augroup("PythonFolding", { clear = true }),
 })
 
 -- Set up Lua folding
-vim.api.nvim_create_autocmd({"BufReadPost", "BufNewFile", "FileType"}, {
+vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "FileType" }, {
     pattern = { "*.lua", "lua" },
     callback = function()
         setup_base_folding()
@@ -30,12 +30,12 @@ vim.api.nvim_create_autocmd({"BufReadPost", "BufNewFile", "FileType"}, {
 })
 
 -- Set up Shell script folding
-vim.api.nvim_create_autocmd({"BufReadPost", "BufNewFile", "FileType"}, {
+vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "FileType" }, {
     pattern = { "*.sh", "*.bash", "*.zsh", "sh", "bash", "zsh" },
     callback = function()
         setup_base_folding()
         vim.opt_local.foldmethod = "indent"
-        vim.opt_local.foldexpr = ""  -- Clear any expr-based folding
+        vim.opt_local.foldexpr = "" -- Clear any expr-based folding
     end,
     group = vim.api.nvim_create_augroup("ShellFolding", { clear = true }),
 })
@@ -91,7 +91,7 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 -- Set up default folding for all other file types
-vim.api.nvim_create_autocmd({"BufReadPost", "BufNewFile", "FileType"}, {
+vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "FileType" }, {
     pattern = { "*" },
     callback = function()
         -- Skip files that have specific folding configurations
@@ -117,11 +117,11 @@ vim.api.nvim_create_autocmd({"BufReadPost", "BufNewFile", "FileType"}, {
             scss = true,
             less = true,
         }
-        
+
         if skip_filetypes[vim.bo.filetype] then
             return
         end
-        
+
         setup_base_folding()
         vim.opt_local.foldexpr = "nvim_treesitter#foldexpr()"
     end,
