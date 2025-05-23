@@ -14,17 +14,19 @@ Installed with [lazy.nvim](https://github.com/folke/lazy.nvim)
 - **Telescope**: Fuzzy finding and searching capabilities
 - **Treesitter**: Advanced syntax highlighting and code navigation
 - **Mason**: Automatic language server and debugger installation
-- **Fugitive** simple git integration
-- **Harpoon** ThePrimeAgen plugin for quick file hooks
+- **UndoTree**: inifinite undo/redo tree with support of keeping the tree on buffer close (potentially infinitely).
+- **Fugitive**: simple git integration
+- **Harpoon**: ThePrimeAgen plugin for quick file hooks
 - **NvimTree** as a less buggy project view wtih tree-view support (netrw is buggy in such mode at the moment of setting things up)
 - **Rose Pine alt** as a color theme
+- **Lualine**: status line, aligned with main color theme
 
-### Setup
+### Setttings and CI
 
-- Autofolding for multiple languages
-- Github actions CI with sanity check test (but still requires manual check)
+- Autofolding for multiple languages (using LSP and treesitter, except indent for python)
 - Various custom settings and mappings (with focus on preservation compatibility with help)
 - Installation script for MacOS ([brew](https://brew.sh/))
+- Github actions CI with sanity check test (but still requires manual check for all the features)
 
 ## Installation
 
@@ -100,6 +102,8 @@ To completely remove development tools:
 brew uninstall rust llvm@19
 rm -rf ~/.local/share/nvim/mason/packages/codelldb
 ```
+
+## Config starts with init.lua
 
 [Project rules](wiki/ai_context.md)
 e.g. CI should use infra scripts as much as possible to have a single source of truth for CI and local pipeline.
