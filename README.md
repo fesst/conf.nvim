@@ -1,6 +1,6 @@
 # Neovim Configuration
 
-A modern Neovim configuration with a focus on development productivity and debugging capabilities with MacOS-specific installation script.
+A modern Neovim configuration with a focus on development productivity and debugging capabilities with MacOS-specific installation script
 
 ## Configured features
 
@@ -14,14 +14,14 @@ Installed with [lazy.nvim](https://github.com/folke/lazy.nvim)
 - **Telescope**: Fuzzy finding and searching capabilities
 - **Treesitter**: Advanced syntax highlighting and code navigation
 - **Mason**: Automatic language server and debugger installation
-- **UndoTree**: inifinite undo/redo tree with support of keeping the tree on buffer close (potentially infinitely).
+- **UndoTree**: inifinite undo/redo tree with support of keeping the tree on buffer close (potentially infinitely)
 - **Fugitive**: simple git integration
 - **Harpoon**: ThePrimeAgen plugin for quick file hooks
 - **NvimTree** as a less buggy project view wtih tree-view support (netrw is buggy in such mode at the moment of setting things up)
 - **Rose Pine alt** as a color theme
 - **Lualine**: status line, aligned with main color theme
 
-to see names of github repos for the plugins, run:
+To see names of github repos for the plugins run:
 
 ```sh
 grep "\".*/.*\"" lua/motleyfesst/lazy.lua
@@ -118,7 +118,7 @@ rm -rf ~/.local/share/nvim/mason/packages/codelldb
 ## Config starts with init.lua
 
 [Project rules](wiki/ai_context.md)
-e.g. CI should use infra scripts as much as possible to have a single source of truth for CI and local pipeline.
+e.g. CI should use infra scripts as much as possible to have a single source of truth for CI and local pipeline
 
 ## Directory Structure
 
