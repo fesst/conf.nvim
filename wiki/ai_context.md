@@ -58,6 +58,66 @@ Lazy is package manager.
 - Duplication in install.sh and cleanup.sh should be avoided by putting it into lib.sh.
 - We do not support cross-platform for now.
 
+##### Infrastructure Scripts
+- `install.sh`: Main installation script that sets up all dependencies in order:
+  - System packages (brew)
+  - Node.js packages (npm)
+  - Rust packages (cargo)
+  - Python packages (pip)
+  - Neovim configuration
+  - Language servers and tools
+
+- `cleanup.sh`: Removes all installed components in reverse order:
+  - Python packages
+  - Rust packages
+  - Node.js packages
+  - System packages
+  - Neovim configuration
+
+- `format.sh`: Code quality script that:
+  - Installs and runs `stylua` for Lua formatting
+  - Installs and runs `luacheck` for Lua linting
+  - Cleans up whitespace and formatting issues
+
+- `lib.sh`: Shared functions and variables used by other scripts:
+  - Common installation functions
+  - Version checks
+  - Error handling
+  - Platform detection
+
+##### CI/CD
+
+- All CI (GitHub Actions) must only run scripts that are present in the repository (e.g., infra/install.sh, test/setup/sanity_nvim_start.sh).
+- Do not use raw shell commands directly in the workflow YAML; always invoke scripts from the repo.
+- This ensures reproducibility, security, and easier local testing.
+
+###### Code Quality Tools
+- Lua Analysis:
+  - Uses `luacheck` for linting and `stylua` for formatting
+  - Configuration files:
+    - `.luacheckrc`: Defines global variables, ignores, and other linting rules
+    - `.stylua.toml`: Defines formatting rules
+  - Run formatting and linting using `infra/format.sh`
+  - GitHub Actions workflow `.github/workflows/lua-analysis.yml` runs weekly and on PRs
+
+- CodeQL Analysis:
+  - Analyzes GitHub Actions workflows for security and best practices
+  - Configuration in `.github/codeql/codeql-config.yml`
+  - Runs on every push and PR
+
+- Auto-approve Workflow:
+  - `.github/workflows/auto-approve.yml` enables automatic PR approval
+  - Triggered when @fesst comments "APPROVED" on a PR
+  - Adds an approval review with comment "Auto-approved by @fesst"
+  - Requires pull-requests: write permission
+
+###### Branch Protection
+- Master branch is protected
+- Requires:
+  - CI status check to pass
+  - Code scanning results from CodeQL
+  - Changes must be made through pull requests
+  - No direct pushes to master allowed
 
 
 ## General remapping rules
@@ -95,10 +155,3 @@ add everything, read and summarize and then commit and push. One-line command is
 - All null-ls configuration should be placed in `after/plugin/` (e.g., `after/plugin/null-ls.lua`).
 - Do **not** attempt to register null-ls as an LSP server in `lspconfig`.
 - This specialty is important for avoiding misconfiguration and errors.
-
-
-## CI/CD Rules
-
-- All CI (GitHub Actions) must only run scripts that are present in the repository (e.g., infra/install.sh, test/setup/sanity_nvim_start.sh).
-- Do not use raw shell commands directly in the workflow YAML; always invoke scripts from the repo.
-- This ensures reproducibility, security, and easier local testing.
