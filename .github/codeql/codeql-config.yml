@@ -2,11 +2,8 @@ name: "CodeQL Config"
 queries:
   - uses: security-extended
 languages:
-  - lua
   - actions
 paths-ignore:
   - '**'
 paths:
-  - 'lua/**'
-  - 'after/plugin/**'
   - '.github/workflows/**' 
