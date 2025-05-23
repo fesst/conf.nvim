@@ -1,7 +1,10 @@
 name: "CodeQL Config"
 queries:
   - uses: security-extended
+languages:
+  - lua
 paths-ignore:
   - '**'
 paths:
-  - '!**' 
+  - 'lua/**'
+  - 'after/plugin/**' 
