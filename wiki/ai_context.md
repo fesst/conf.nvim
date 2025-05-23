@@ -130,7 +130,7 @@ Lazy is package manager.
   - Code scanning results from CodeQL
   - Changes must be made through pull requests
   - No direct pushes to master allowed
-- Always create branch before push
+- Always create a branch before pushing. Use a naming convention such as `feature/`, `hotfix/`, or `bugfix/` to categorize branches based on their purpose.
 
 
 ## General remapping rules
