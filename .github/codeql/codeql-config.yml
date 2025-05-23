@@ -3,8 +3,9 @@ queries:
   - uses: security-extended
 languages:
   - actions
-paths-ignore:
-  - '**/*'
 paths:
-  - '.github/workflows/*.yml'
-  - '.github/workflows/*.yaml' 
+  - '.github/workflows/'
+paths-ignore:
+  - '.github/workflows/**/*.md'
+  - '.github/workflows/**/*.txt'
+  - '.github/workflows/**/*.json' 
