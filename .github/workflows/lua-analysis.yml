@@ -1,5 +1,8 @@
 name: "Lua Analysis"
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ "master" ]
