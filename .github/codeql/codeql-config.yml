@@ -1,6 +1,9 @@
 name: "CodeQL Config"
 queries:
   - uses: security-extended
+  - uses: ./queries
+  - uses: ./queries/cpp
+    exclude: true
 languages:
   - lua
 paths-ignore:
