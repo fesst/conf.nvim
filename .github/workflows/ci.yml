@@ -3,8 +3,6 @@ name: "CI"
 on:
   push:
     branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
   schedule:
     - cron: '33 12 * * 1'
 
@@ -76,9 +74,9 @@ jobs:
           source .venv/bin/activate
           ./test/setup/sanity_nvim_start.sh 
 
-  analyze:
-    name: Analyze
-    runs-on: macos-latest
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
     permissions:
       security-events: write
       packages: read
@@ -98,6 +96,13 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:actions"
+
+  lua-analysis:
+    name: Lua Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Install Lua and LuaRocks
         run: |
