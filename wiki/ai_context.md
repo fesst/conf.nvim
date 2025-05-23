@@ -85,7 +85,7 @@ Lazy is package manager.
   - Error handling
   - Platform detection
 
-##### CI/CD
+##### CI
 
 - All CI (GitHub Actions) must only run scripts that are present in the repository (e.g., infra/install.sh, test/setup/sanity_nvim_start.sh).
 - Do not use raw shell commands directly in the workflow YAML; always invoke scripts from the repo.
