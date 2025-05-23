@@ -24,7 +24,13 @@ Installed with [lazy.nvim](https://github.com/folke/lazy.nvim)
 to see names of github repos for plugin, run:
 
 ```sh
-grep "\".*/.*\""  lua/motleyfesst/lazy.lua
+grep "\".*/.*\"" lua/motleyfesst/lazy.lua
+```
+
+or
+
+```sh
+grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g' | sort | uniq
 ```
 
 ### Setttings and CI
