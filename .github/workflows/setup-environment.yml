@@ -47,14 +47,15 @@ jobs:
         if: inputs.setup_python
         id: venv
         run: |
-          python -m venv .venv
-          echo "virtual_env=$PWD/.venv" >> $GITHUB_OUTPUT
-          echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
-          echo "$PWD/.venv/bin" >> $GITHUB_PATH
-          echo "PYTHONPATH=$PWD/.venv/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
-          echo "PIP_TARGET=$PWD/.venv/lib/python3.12/site-packages" >> $GITHUB_ENV
-          echo "PIP_PREFIX=$PWD/.venv" >> $GITHUB_ENV
-          source .venv/bin/activate
+          VENV_PATH="$RUNNER_TEMP/venv"
+          python -m venv "$VENV_PATH"
+          echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
+          echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
+          echo "$VENV_PATH/bin" >> $GITHUB_PATH
+          echo "PYTHONPATH=$VENV_PATH/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
+          echo "PIP_TARGET=$VENV_PATH/lib/python3.12/site-packages" >> $GITHUB_ENV
+          echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
+          source "$VENV_PATH/bin/activate"
           python -m pip install --upgrade pip
 
       - name: Set up Rust
