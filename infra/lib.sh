@@ -138,8 +138,13 @@ manage_packages() {
             ;;
         pip)
             if [ "$CI" = "true" ]; then
-                install_cmd="python3 -m pip install --quiet"
-                uninstall_cmd="python3 -m pip uninstall -y"
+                # In CI, ensure we're using the virtual environment's pip
+                if [ -z "$VIRTUAL_ENV" ]; then
+                    print_error "Virtual environment not activated in CI"
+                    exit 1
+                fi
+                install_cmd="$VIRTUAL_ENV/bin/pip install --quiet"
+                uninstall_cmd="$VIRTUAL_ENV/bin/pip uninstall -y"
             else
                 install_cmd="python3 -m pip install --quiet"
                 uninstall_cmd="python3 -m pip uninstall -y"

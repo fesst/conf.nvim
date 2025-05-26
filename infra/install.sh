@@ -66,7 +66,14 @@ install_cargo_packages "${CARGO_PACKAGES[@]}"
 # Install Python packages
 print_status "Installing Python packages..."
 if [ "$CI" = "true" ]; then
-    # In CI, we assume the virtual environment is already activated
+    # In CI, ensure we're in the virtual environment
+    if [ -z "$VIRTUAL_ENV" ]; then
+        print_error "Virtual environment not activated in CI"
+        exit 1
+    fi
+    # Ensure pip is using the virtual environment
+    export PIP_TARGET="$VIRTUAL_ENV/lib/python3.*/site-packages"
+    export PIP_PREFIX="$VIRTUAL_ENV"
     install_pip_packages "${PIP_PACKAGES[@]}"
 else
     if ! check_command python3; then

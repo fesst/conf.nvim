@@ -81,6 +81,10 @@ jobs:
           # Ensure Python and pip are in PATH
           export PATH="$VIRTUAL_ENV/bin:$PATH"
           export PYTHONPATH="$VIRTUAL_ENV/lib/python3.*/site-packages:$PYTHONPATH"
+          # Save environment variables for subsequent steps
+          echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
+          echo "PATH=$VIRTUAL_ENV/bin:$PATH" >> $GITHUB_ENV
+          echo "PYTHONPATH=$VIRTUAL_ENV/lib/python3.*/site-packages:$PYTHONPATH" >> $GITHUB_ENV
         shell: bash
 
       - name: Install dependencies
