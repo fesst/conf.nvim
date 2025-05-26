@@ -1,6 +1,6 @@
 # Neovim Configuration
 
-A modern Neovim configuration with a focus on development productivity and debugging capabilities with MacOS-specific installation script.
+A modern Neovim configuration with a focus on development productivity and debugging capabilities, supporting both macOS and Windows platforms.
 
 ## Quick Start
 
@@ -43,7 +43,8 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
   - Manual check still required for all features
   - Efficient caching strategy for:
     - Python virtual environments
-    - Homebrew packages
+    - Homebrew packages (macOS)
+    - Chocolatey packages (Windows)
     - Node.js packages
     - Rust packages
     - LuaRocks packages
@@ -63,16 +64,16 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
    ./infra/install.sh
    ```
 
-   Note: Currently optimized for macOS, but includes Windows compatibility in CI. Consider creating an issue or PR for full Windows support, see [how to contribute](#contributing).
+   Note: The installation script supports both macOS and Windows environments. On macOS, it uses Homebrew for package management, while on Windows it uses Chocolatey.
 
 The installation script will:
 
-- Install required system dependencies via Homebrew.
-- Set up Python packages.
-- Install Node.js and npm packages.
-- Install Rust and related tools.
-- Install CodeLLDB for Rust/C++ debugging.
-- Configure tmux.
+- Install required system dependencies via Homebrew (macOS) or Chocolatey (Windows)
+- Set up Python packages
+- Install Node.js and npm packages
+- Install Rust and related tools
+- Install CodeLLDB for Rust/C++ debugging
+- Configure tmux
 
 ## Debugging Setup
 
@@ -147,8 +148,8 @@ To clean up the installation:
 
 ### System Requirements
 
-- macOS (tested on 24.5.0)
-- Homebrew
+- macOS (tested on 24.5.0) or Windows
+- Homebrew (macOS) or Chocolatey (Windows)
 - Git
 
 ### Required Packages
@@ -169,4 +170,4 @@ For detailed information about dependencies and tools, see [Shared Tools](wiki/s
 4. Push to the branch
 5. Create a new Pull Request
 
-Note: When contributing, please ensure your changes work on both macOS and Windows environments. The CI pipeline includes automated tests for both platforms.
+Note: When contributing, please ensure your changes work on both macOS and Windows environments. The CI pipeline includes automated tests for both platforms, using Homebrew for macOS and Chocolatey for Windows package management.

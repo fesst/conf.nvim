@@ -16,7 +16,8 @@ This document describes the infrastructure scripts used in the Neovim configurat
 ### Package Management
 
 - `packages/`: Directory containing package installation scripts
-  - `brew.sh`: Homebrew package installation
+  - `brew.sh`: Homebrew package installation (macOS)
+  - `choco.sh`: Chocolatey package installation (Windows)
   - `npm.sh`: Node.js package installation
   - `cargo.sh`: Rust package installation
   - `pip.sh`: Python package installation
@@ -131,10 +132,15 @@ When adding new infrastructure scripts:
 
 The CI workflow uses caching for:
 
-1. Homebrew packages:
-   - Supports both Intel and Apple Silicon paths
-   - Architecture-specific cache keys
-   - Automatic cache restoration
+1. Package Manager:
+   - Homebrew packages (macOS)
+     - Supports both Intel and Apple Silicon paths
+     - Architecture-specific cache keys
+     - Automatic cache restoration
+   - Chocolatey packages (Windows)
+     - System-wide package cache
+     - Automatic cache restoration
+     - Version-specific caching
 
 2. Language-specific packages:
    - npm packages
@@ -147,4 +153,9 @@ The CI workflow uses caching for:
 Currently supported platforms:
 
 - macOS (Intel and Apple Silicon)
+  - Uses Homebrew for package management
+  - Native system integration
+- Windows
+  - Uses Chocolatey for package management
+  - PowerShell-based automation
 - Docker container for cross-platform development
