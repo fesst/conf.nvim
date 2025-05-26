@@ -15,30 +15,52 @@ ARG TARGETVARIANT
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies in groups
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install basic development tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     build-essential \
     cmake \
     pkg-config \
     libssl-dev \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python and related tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install search and formatting tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ripgrep \
     fd-find \
     fzf \
     shellcheck \
     shfmt \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PostgreSQL and related tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql \
     postgresql-client \
     pgformatter \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Lua and compiler tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
     luarocks \
     llvm \
     clang \
     gcc \
-    make \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 20.x (Latest LTS)
