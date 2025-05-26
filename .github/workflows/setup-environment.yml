@@ -168,9 +168,9 @@ jobs:
           $jobs = @()
 
           if ($env:CI -eq "true") {
-            # Install Neovim and Tree-sitter first as they're required for tests
-            choco install neovim -y
-            choco install tree-sitter -y
+            # Install Neovim and tree-sitter first as they're required for tests
+            Write-Output "Installing Neovim and tree-sitter..."
+            choco install neovim tree-sitter -y
 
             # Refresh environment after installations
             refreshenv
@@ -188,6 +188,16 @@ jobs:
               exit 1
             }
             Write-Output "Neovim found at: $($nvimPath.Source)"
+
+            # Verify tree-sitter installation
+            Write-Output "Verifying tree-sitter installation..."
+            $treeSitterPath = Get-Command tree-sitter -ErrorAction SilentlyContinue
+            if (-not $treeSitterPath) {
+              Write-Error "tree-sitter not found in PATH after installation"
+              Write-Output "Current PATH: $env:Path"
+              exit 1
+            }
+            Write-Output "tree-sitter found at: $($treeSitterPath.Source)"
           }
 
           # Install other packages in parallel
