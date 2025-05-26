@@ -84,6 +84,8 @@ jobs:
           key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}
           restore-keys: |
             ${{ runner.os }}-homebrew-
+        env:
+          ACTIONS_CACHE_URL: ${{ secrets.ACTIONS_CACHE_URL || 'https://cache.actions.githubusercontent.com' }}
 
       - name: Cache LuaRocks packages
         uses: actions/cache@v4
@@ -96,6 +98,8 @@ jobs:
           key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
           restore-keys: |
             ${{ runner.os }}-luarocks-
+        env:
+          ACTIONS_CACHE_URL: ${{ secrets.ACTIONS_CACHE_URL || 'https://cache.actions.githubusercontent.com' }}
 
       - name: Cache Neovim plugins
         uses: actions/cache@v4
@@ -108,10 +112,23 @@ jobs:
           key: ${{ runner.os }}-nvim-plugins-${{ hashFiles('lua/**/*.lua', 'after/plugin/**/*.lua', 'infra/packages/nvim.sh') }}
           restore-keys: |
             ${{ runner.os }}-nvim-plugins-
+        env:
+          ACTIONS_CACHE_URL: ${{ secrets.ACTIONS_CACHE_URL || 'https://cache.actions.githubusercontent.com' }}
 
       - name: Install minimal dependencies
         run: |
-          brew install neovim tree-sitter
+          # Retry brew install with exponential backoff
+          for i in {1..3}; do
+            if brew install neovim tree-sitter; then
+              break
+            fi
+            if [ $i -eq 3 ]; then
+              echo "Failed to install dependencies after 3 attempts"
+              exit 1
+            fi
+            sleep $((2 ** $i))
+          done
+
           source $GITHUB_WORKSPACE/.venv/bin/activate
           CI=true ./infra/install.sh
 
