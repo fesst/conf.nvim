@@ -138,8 +138,8 @@ manage_packages() {
             ;;
         pip)
             if [ "$CI" = "true" ]; then
-                install_cmd="$VIRTUAL_ENV/bin/pip install --quiet"
-                uninstall_cmd="$VIRTUAL_ENV/bin/pip uninstall -y"
+                install_cmd="python3 -m pip install --quiet"
+                uninstall_cmd="python3 -m pip uninstall -y"
             else
                 install_cmd="python3 -m pip install --quiet"
                 uninstall_cmd="python3 -m pip uninstall -y"

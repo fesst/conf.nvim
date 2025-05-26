@@ -76,6 +76,9 @@ jobs:
           source .venv/bin/activate
           python3 -m pip install --upgrade pip
           python3 -m pip install pynvim black flake8 isort
+          # Ensure Python and pip are in PATH
+          export PATH="$VIRTUAL_ENV/bin:$PATH"
+          export PYTHONPATH="$VIRTUAL_ENV/lib/python3.*/site-packages:$PYTHONPATH"
         shell: bash
 
       - name: Install dependencies
