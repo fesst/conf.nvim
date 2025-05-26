@@ -222,10 +222,11 @@ jobs:
         if: inputs.setup_node && runner.os == 'Windows'
         shell: pwsh
         run: |
-          & "$GITHUB_WORKSPACE/infra/packages/npm.ps1" || {
+          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "infra/packages/npm.ps1"
+          & $scriptPath || {
             Write-Error "Failed to install Node.js packages. Retrying..."
             npm cache clean --force
-            & "$GITHUB_WORKSPACE/infra/packages/npm.ps1"
+            & $scriptPath
           }
 
       - name: Install Node.js packages (macOS)
