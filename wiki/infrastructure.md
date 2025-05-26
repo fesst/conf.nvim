@@ -13,14 +13,15 @@ This document describes the infrastructure scripts used in the Neovim configurat
   - Installs Rust and related tools
   - Configures tmux
 
-- `packages.sh`: Manages package installations
-  - Handles Homebrew package installation
-  - Manages Python package installation
-  - Sets up Node.js packages
+### Package Management
 
-- `codelldb.sh`: CodeLLDB installation and setup
-  - Installs CodeLLDB for Rust/C++ debugging
-  - Configures LLVM 19 integration
+- `packages/`: Directory containing package installation scripts
+  - `brew.sh`: Homebrew package installation
+  - `npm.sh`: Node.js package installation
+  - `cargo.sh`: Rust package installation
+  - `pip.sh`: Python package installation
+  - `luarocks.sh`: Lua package installation
+  - `nvim.sh`: Neovim configuration installation
 
 ### Docker Support
 
@@ -41,17 +42,20 @@ This document describes the infrastructure scripts used in the Neovim configurat
   - Applies project-specific formatting rules
   - Integrates with CI/CD pipeline
 
+### Testing
+
+- `nvim_sanity_test.sh`: Neovim configuration testing
+  - Tests basic functionality
+  - Verifies plugin loading
+  - Checks LSP configuration
+  - Validates debugging setup
+
 ### Utility Scripts
 
 - `lib.sh`: Shared library functions
   - Common shell functions
   - Error handling utilities
   - Logging functions
-
-- `example.sh`: Example script template
-  - Basic script structure
-  - Common patterns
-  - Best practices
 
 - `gh_example.sh`: GitHub Actions example
   - Workflow templates
@@ -84,13 +88,30 @@ This document describes the infrastructure scripts used in the Neovim configurat
 ./infra/format_lua.sh
 ```
 
+### Testing
+
+```bash
+./infra/nvim_sanity_test.sh
+```
+
 ## Integration with CI/CD
 
 The infrastructure scripts are integrated with the CI/CD pipeline:
 
-1. `format_lua.sh` is used in the Lua analysis workflow
-2. `docker.sh` is used for container testing
-3. `lib.sh` provides common functions for CI scripts
+1. Package Management:
+   - Separate scripts for each package manager
+   - Automatic retry on failure
+   - Cache management for faster builds
+
+2. Testing:
+   - Automated sanity tests
+   - Plugin verification
+   - LSP configuration checks
+
+3. Environment Setup:
+   - Virtual environment management
+   - Cross-platform compatibility
+   - Architecture-specific paths (Intel/Apple Silicon)
 
 ## Error Handling
 
@@ -99,12 +120,36 @@ All scripts use the error handling utilities from `lib.sh`:
 - Proper exit code handling
 - Error message formatting
 - Logging to appropriate channels
+- Automatic retry mechanisms for package installation
 
 ## Contributing
 
 When adding new infrastructure scripts:
 
-1. Follow the patterns in `example.sh`
+1. Place package-specific scripts in `packages/` directory
 2. Use functions from `lib.sh`
 3. Include proper error handling
 4. Add documentation to this file
+5. Update CI workflow if necessary
+
+## Cache Management
+
+The CI workflow uses caching for:
+
+1. Homebrew packages:
+   - Supports both Intel and Apple Silicon paths
+   - Architecture-specific cache keys
+   - Automatic cache restoration
+
+2. Language-specific packages:
+   - npm packages
+   - Cargo packages
+   - pip packages
+   - LuaRocks packages
+
+## Platform Support
+
+Currently supported platforms:
+
+- macOS (Intel and Apple Silicon)
+- Docker container for cross-platform development
