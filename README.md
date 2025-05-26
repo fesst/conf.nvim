@@ -21,13 +21,7 @@ Installed with [lazy.nvim](https://github.com/folke/lazy.nvim)
 - **Rose Pine alt** as a color theme
 - **Lualine**: status line, aligned with main color theme
 
-To see names of github repos for the plugins run:
-
-```sh
-grep "\".*/.*\"" lua/motleyfesst/lazy.lua
-```
-
-or
+To see the names of the github repos for the plugins to run:
 
 ```sh
 grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g' | sort | uniq
