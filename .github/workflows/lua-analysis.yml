@@ -14,12 +14,17 @@ on:
 jobs:
   analyze:
     name: Analyze Lua
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Fetch all history for all branches and tags
+
+    - name: Fetch base branch and commits
+      run: |
+        git fetch origin ${{ github.base_ref }} || true
+        git fetch origin ${{ github.sha }} || true
 
     - name: Check if tests should run (test/, infra/, *.lua)
       id: test_check
@@ -40,21 +45,22 @@ jobs:
         echo "No test/infra/.lua changes. Skipping tests."
         exit 0
 
-    - name: Install Lua and LuaRocks
+    - name: Install Neovim
       if: steps.test_check.outputs.run_tests == 'true'
       run: |
-        sudo apt-get update
-        sudo apt-get install -y lua5.4 luarocks
+        brew install neovim
 
-    - name: Install luacheck
+    - name: Install dependencies
       if: steps.test_check.outputs.run_tests == 'true'
       run: |
-        sudo luarocks install luacheck
+        chmod +x infra/install.sh
+        CI=true ./infra/install.sh
 
     - name: Run luacheck
       if: steps.test_check.outputs.run_tests == 'true'
       run: |
         luacheck lua/ after/plugin/ --codes --ranges --formatter plain 
+
     - name: Run Neovim sanity tests
       if: steps.test_check.outputs.run_tests == 'true'
       run: |
