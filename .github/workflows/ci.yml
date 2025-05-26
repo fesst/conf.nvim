@@ -42,7 +42,7 @@ jobs:
 
       - name: Install packages
         run: |
-          source ${{ needs.setup.outputs.virtual_env }}/bin/activate
+          source "${{ needs.setup.outputs.virtual_env }}/bin/activate"
           export VIRTUAL_ENV="${{ needs.setup.outputs.virtual_env }}"
           export PATH="$VIRTUAL_ENV/bin:$PATH"
           export PYTHONPATH="$VIRTUAL_ENV/lib/python3.12/site-packages:$PYTHONPATH"
@@ -53,6 +53,7 @@ jobs:
       - name: Run sanity tests
         run: |
           chmod +x infra/nvim_sanity_test.sh
+          source "${{ needs.setup.outputs.virtual_env }}/bin/activate"
           export VIRTUAL_ENV="${{ needs.setup.outputs.virtual_env }}"
           ./infra/nvim_sanity_test.sh
         env:

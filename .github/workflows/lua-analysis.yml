@@ -86,7 +86,12 @@ jobs:
         if: steps.test_check.outputs.run_tests == 'true'
         run: |
           chmod +x infra/install.sh
-          source ${{ needs.setup.outputs.virtual_env }}/bin/activate
+          source "${{ needs.setup.outputs.virtual_env }}/bin/activate"
+          export VIRTUAL_ENV="${{ needs.setup.outputs.virtual_env }}"
+          export PATH="$VIRTUAL_ENV/bin:$PATH"
+          export PYTHONPATH="$VIRTUAL_ENV/lib/python3.12/site-packages:$PYTHONPATH"
+          export PIP_TARGET="$VIRTUAL_ENV/lib/python3.12/site-packages"
+          export PIP_PREFIX="$VIRTUAL_ENV"
           CI=true ./infra/install.sh
 
       - name: Update PATH
