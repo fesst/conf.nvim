@@ -54,7 +54,7 @@ else
 
     ensure_cargo_path
 
-    if ! check_brew_package rust-analyzer; then
+    if ! check_package brew rust-analyzer; then
         print_status "Installing rust-analyzer..."
         brew install rust-analyzer
     else

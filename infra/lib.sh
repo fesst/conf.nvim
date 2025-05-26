@@ -42,40 +42,35 @@ check_homebrew() {
     fi
 }
 
-# Function to check if a package is installed via Homebrew
-check_brew_package() {
-    local package=$1
-    brew list "$package" &>/dev/null
-}
+# Generic package check function
+check_package() {
+    local type=$1
+    local package=$2
 
-# Function to check if a cask is installed via Homebrew
-check_brew_cask() {
-    local cask=$1
-    brew list --cask "$cask" &>/dev/null
-}
-
-# Function to check if an npm package is installed globally
-check_npm_package() {
-    local package=$1
-    npm list -g "$package" &>/dev/null
-}
-
-# Function to check if a pip package is installed
-check_pip_package() {
-    local package=$1
-    python3 -m pip show "$package" &>/dev/null
-}
-
-# Function to check if a LuaRocks package is installed
-check_luarocks_package() {
-    local package=$1
-    luarocks list | grep -q "^$package "
-}
-
-# Function to check if a Cargo package is installed
-check_cargo_package() {
-    local package=$1
-    cargo install --list | grep -q "^$package "
+    case $type in
+        brew)
+            brew list "$package" &>/dev/null
+            ;;
+        brew_cask)
+            brew list --cask "$package" &>/dev/null
+            ;;
+        npm)
+            npm list -g "$package" &>/dev/null
+            ;;
+        pip)
+            python3 -m pip show "$package" &>/dev/null
+            ;;
+        luarocks)
+            luarocks list | grep -q "^$package "
+            ;;
+        cargo)
+            cargo install --list | grep -q "^$package "
+            ;;
+        *)
+            print_error "Unknown package type: $type"
+            return 1
+            ;;
+    esac
 }
 
 # Function to check if a command exists
@@ -106,11 +101,11 @@ check_mactex() {
         return 0
     fi
 
-    if check_brew_cask "mactex-no-gui"; then
+    if check_package brew_cask "mactex-no-gui"; then
         return 0
     fi
 
-    if check_brew_cask "mactex"; then
+    if check_package brew_cask "mactex"; then
         return 0
     fi
 
@@ -118,174 +113,89 @@ check_mactex() {
 }
 
 # Generic package management functions
-install_brew_packages() {
+manage_packages() {
+    local action=$1  # install or uninstall
+    local type=$2    # package type
+    shift 2
     local packages=("$@")
-    if [ "$CI" = "true" ]; then
-        brew install "${packages[@]}"
-    else
+
+    local install_cmd
+    local uninstall_cmd
+    local check_func="check_package $type"
+
+    case $type in
+        brew)
+            install_cmd="brew install"
+            uninstall_cmd="brew uninstall"
+            ;;
+        brew_cask)
+            install_cmd="brew install --cask"
+            uninstall_cmd="brew uninstall --cask"
+            ;;
+        npm)
+            install_cmd="npm install -g ${NPM_CONFIG[@]}"
+            uninstall_cmd="npm uninstall -g"
+            ;;
+        pip)
+            install_cmd="python3 -m pip install --quiet"
+            uninstall_cmd="python3 -m pip uninstall -y"
+            ;;
+        luarocks)
+            install_cmd="luarocks install"
+            uninstall_cmd="luarocks remove"
+            ;;
+        cargo)
+            install_cmd="cargo install"
+            uninstall_cmd="cargo uninstall"
+            ;;
+        *)
+            print_error "Unknown package type: $type"
+            return 1
+            ;;
+    esac
+
+    if [ "$action" = "install" ]; then
+        if [ "$CI" = "true" ]; then
+            $install_cmd "${packages[@]}"
+        else
+            for package in "${packages[@]}"; do
+                if ! $check_func "$package"; then
+                    print_status "Installing $package..."
+                    $install_cmd "$package"
+                else
+                    print_warning "$package is already installed"
+                fi
+            done
+        fi
+    elif [ "$action" = "uninstall" ]; then
         for package in "${packages[@]}"; do
-            if ! check_brew_package "$package"; then
-                print_status "Installing $package..."
-                brew install "$package"
+            if $check_func "$package"; then
+                print_status "Uninstalling $package..."
+                $uninstall_cmd "$package"
             else
-                print_warning "$package is already installed"
+                print_warning "$package is not installed"
             fi
         done
-    fi
-}
-
-install_brew_casks() {
-    local casks=("$@")
-    if [ "$CI" = "true" ]; then
-        brew install --cask "${casks[@]}"
     else
-        for cask in "${casks[@]}"; do
-            if ! check_brew_cask "$cask"; then
-                print_status "Installing $cask..."
-                brew install --cask "$cask"
-            else
-                print_warning "$cask is already installed"
-            fi
-        done
+        print_error "Unknown action: $action"
+        return 1
     fi
 }
 
-install_npm_packages() {
-    local packages=("$@")
-    if [ "$CI" = "true" ]; then
-        npm install -g "${NPM_CONFIG[@]}" "${packages[@]}"
-    else
-        for package in "${packages[@]}"; do
-            if ! check_npm_package "$package"; then
-                print_status "Installing $package..."
-                npm install -g "${NPM_CONFIG[@]}" "$package"
-            else
-                print_warning "$package is already installed"
-            fi
-        done
-    fi
-}
+# Convenience functions for backward compatibility
+install_brew_packages() { manage_packages install brew "$@"; }
+install_brew_casks() { manage_packages install brew_cask "$@"; }
+install_npm_packages() { manage_packages install npm "$@"; }
+install_cargo_packages() { manage_packages install cargo "$@"; }
+install_pip_packages() { manage_packages install pip "$@"; }
+install_luarocks_packages() { manage_packages install luarocks "$@"; }
 
-install_cargo_packages() {
-    local packages=("$@")
-    if [ "$CI" = "true" ]; then
-        cargo install "${packages[@]}"
-    else
-        for package in "${packages[@]}"; do
-            if ! check_cargo_package "$package"; then
-                print_status "Installing $package..."
-                cargo install "$package"
-            else
-                print_warning "$package is already installed"
-            fi
-        done
-    fi
-}
-
-install_pip_packages() {
-    local packages=("$@")
-    if [ "$CI" = "true" ]; then
-        python3 -m pip install --quiet "${packages[@]}"
-    else
-        for package in "${packages[@]}"; do
-            if ! check_pip_package "$package"; then
-                print_status "Installing $package..."
-                python3 -m pip install --quiet "$package"
-            else
-                print_warning "$package is already installed"
-            fi
-        done
-    fi
-}
-
-install_luarocks_packages() {
-    local packages=("$@")
-    if [ "$CI" = "true" ]; then
-        luarocks install "${packages[@]}"
-    else
-        for package in "${packages[@]}"; do
-            if ! check_luarocks_package "$package"; then
-                print_status "Installing $package..."
-                luarocks install "$package"
-            else
-                print_warning "$package is already installed"
-            fi
-        done
-    fi
-}
-
-# Generic package uninstall functions
-uninstall_brew_packages() {
-    local packages=("$@")
-    for package in "${packages[@]}"; do
-        if check_brew_package "$package"; then
-            print_status "Uninstalling $package..."
-            brew uninstall "$package"
-        else
-            print_warning "$package is not installed"
-        fi
-    done
-}
-
-uninstall_brew_casks() {
-    local casks=("$@")
-    for cask in "${casks[@]}"; do
-        if check_brew_cask "$cask"; then
-            print_status "Uninstalling $cask..."
-            brew uninstall --cask "$cask"
-        else
-            print_warning "$cask is not installed"
-        fi
-    done
-}
-
-uninstall_npm_packages() {
-    local packages=("$@")
-    for package in "${packages[@]}"; do
-        if check_npm_package "$package"; then
-            print_status "Uninstalling $package..."
-            npm uninstall -g "$package"
-        else
-            print_warning "$package is not installed"
-        fi
-    done
-}
-
-uninstall_cargo_packages() {
-    local packages=("$@")
-    for package in "${packages[@]}"; do
-        if check_cargo_package "$package"; then
-            print_status "Uninstalling $package..."
-            cargo uninstall "$package"
-        else
-            print_warning "$package is not installed"
-        fi
-    done
-}
-
-uninstall_pip_packages() {
-    local packages=("$@")
-    for package in "${packages[@]}"; do
-        if check_pip_package "$package"; then
-            print_status "Uninstalling $package..."
-            python3 -m pip uninstall -y "$package"
-        else
-            print_warning "$package is not installed"
-        fi
-    done
-}
-
-uninstall_luarocks_packages() {
-    local packages=("$@")
-    for package in "${packages[@]}"; do
-        if check_luarocks_package "$package"; then
-            print_status "Uninstalling $package..."
-            luarocks remove "$package"
-        else
-            print_warning "$package is not installed"
-        fi
-    done
-}
+uninstall_brew_packages() { manage_packages uninstall brew "$@"; }
+uninstall_brew_casks() { manage_packages uninstall brew_cask "$@"; }
+uninstall_npm_packages() { manage_packages uninstall npm "$@"; }
+uninstall_cargo_packages() { manage_packages uninstall cargo "$@"; }
+uninstall_pip_packages() { manage_packages uninstall pip "$@"; }
+uninstall_luarocks_packages() { manage_packages uninstall luarocks "$@"; }
 
 # Export all functions
 export -f print_status
@@ -293,16 +203,12 @@ export -f print_warning
 export -f print_error
 export -f check_macos
 export -f check_homebrew
-export -f check_brew_package
-export -f check_brew_cask
-export -f check_npm_package
-export -f check_pip_package
-export -f check_luarocks_package
-export -f check_cargo_package
+export -f check_package
 export -f check_command
 export -f ensure_cargo_path
 export -f run_final_checks
 export -f check_mactex
+export -f manage_packages
 export -f install_brew_packages
 export -f install_brew_casks
 export -f install_npm_packages
