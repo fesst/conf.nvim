@@ -70,8 +70,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Rust with minimal components and cleanup
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain stable --profile minimal && \
-    source "$HOME/.cargo/env" && \
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y --no-modify-path --default-toolchain stable --profile minimal && \
+    . "$HOME/.cargo/env" && \
     cargo install sccache && \
     mkdir -p $HOME/.cargo && \
     echo '[build]' > $HOME/.cargo/config.toml && \
@@ -98,10 +98,10 @@ RUN cargo install tree-sitter-cli && \
     rm -rf /tmp/* /var/tmp/*
 
 # Install Neovim based on architecture
-RUN curl -L -o nvim-linux-aarch64.tar.gz https://github.com/neovim/neovim/releases/latest/download/nvim-linux-aarch64.tar.gz && \
-    tar -C /opt -xzf nvim-linux-aarch64.tar.gz && \
-    ln -sf /opt/nvim-linux-aarch64/bin/nvim /usr/local/bin/nvim && \
-    rm nvim-linux-aarch64.tar.gz
+RUN curl -L -o nvim-linux-arm64.tar.gz https://github.com/neovim/neovim/releases/download/v0.11.1/nvim-linux-arm64.tar.gz && \
+    tar -C /opt -xzf nvim-linux-arm64.tar.gz && \
+    ln -sf /opt/nvim-linux-arm64/bin/nvim /usr/local/bin/nvim && \
+    rm nvim-linux-arm64.tar.gz
 
 # Create neovim config directory and copy configuration files
 RUN mkdir -p /root/.config/nvim

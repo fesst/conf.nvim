@@ -97,7 +97,7 @@ RUN cargo install tree-sitter-cli && \
     rm -rf /tmp/* /var/tmp/*
 
 # Install Neovim based on architecture
-RUN curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz && \
+RUN curl -LO https://github.com/neovim/neovim/releases/download/v0.11.1/nvim-linux-x86_64.tar.gz && \
     tar -C /opt -xzf nvim-linux-x86_64.tar.gz && \
     ln -s /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim && \
     rm nvim-linux-x86_64.tar.gz
