@@ -1,12 +1,21 @@
-name: "PR Windows Tests"
+name: "PR macOS Tests"
 
 on:
   pull_request:
     branches: ["master"]
 
 jobs:
-  windows-test:
-    runs-on: windows-latest
+  setup:
+    uses: ./.github/workflows/setup-environment.yml
+    with:
+      setup_python: true
+      setup_rust: true
+      setup_node: true
+      setup_lua: true
+
+  macos-test:
+    needs: setup
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -53,3 +62,7 @@ jobs:
         run: |
           stylua --check lua/
           stylua --check after/plugin/
+
+      - name: Run performance tests
+        run: |
+          nvim --headless -c "lua require('test.performance')" -c "quit"
