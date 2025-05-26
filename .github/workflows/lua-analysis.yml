@@ -41,29 +41,40 @@ jobs:
             ${{ runner.os }}-homebrew-
 
       - name: Cache LuaRocks packages
+        id: cache-luarocks
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/luarocks
             ~/.luarocks
-          key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
+          key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh', 'infra/packages/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-luarocks-
 
       - name: Cache virtual environment
+        id: cache-venv
         uses: actions/cache@v4
         with:
           path: .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-venv-
 
       - name: Download virtual environment
+        id: download-venv
         if: steps.cache-venv.outputs.cache-hit != 'true'
         uses: actions/download-artifact@v4
         with:
           name: venv
           path: .venv
+
+      - name: Set up Python virtual environment
+        if: steps.cache-venv.outputs.cache-hit != 'true' && steps.download-venv.outcome == 'failure'
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r infra/packages/requirements.txt
 
       - name: Activate virtual environment
         run: |
