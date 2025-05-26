@@ -15,14 +15,12 @@ ARG TARGETVARIANT
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies in groups
+# Install all required packages in a single RUN command
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    # System dependencies
     ca-certificates \
     gnupg \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install basic development tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Basic development tools
     curl \
     git \
     build-essential \
