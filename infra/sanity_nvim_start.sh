@@ -165,7 +165,8 @@ test_text_file_handling() {
 
 cleanup() {
     print_status "Cleaning up test files..."
-    rm -f "$TEST_DIR/test.lua" "$TEST_DIR/test.md" "$TEST_DIR/test.py" "$TEST_DIR/test.txt" "$TEST_DIR/checkhealth.log"
+    rm -rf "$TEST_DIR"
+    rm -f "$LOG_FILE"
 }
 
 # Main test execution
