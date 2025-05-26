@@ -73,7 +73,6 @@ if [ "$CI" = "true" ]; then
     fi
     # Ensure pip is using the virtual environment
     export PIP_TARGET="$VIRTUAL_ENV/lib/python3.*/site-packages"
-    export PIP_PREFIX="$VIRTUAL_ENV"
     install_pip_packages "${PIP_PACKAGES[@]}"
 else
     if ! check_command python3; then

@@ -23,61 +23,6 @@ jobs:
       setup_node: true
       setup_lua: true
 
-  test:
-    name: Test
+  lua-analysis:
     needs: setup
-    runs-on: macos-latest
-    permissions:
-      contents: read
-      packages: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Create and activate virtual environment
-        run: |
-          python -m venv $GITHUB_WORKSPACE/.venv
-          echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
-          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
-          echo "PYTHONPATH=$GITHUB_WORKSPACE/.venv/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
-          echo "PIP_TARGET=$GITHUB_WORKSPACE/.venv/lib/python3.12/site-packages" >> $GITHUB_ENV
-          echo "PIP_PREFIX=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
-          source $GITHUB_WORKSPACE/.venv/bin/activate
-          python -m pip install --upgrade pip
-
-      - name: Install Neovim
-        run: brew install neovim
-        shell: bash
-
-      - name: Install packages
-        run: |
-          source $GITHUB_WORKSPACE/.venv/bin/activate
-          ./infra/install.sh
-
-      - name: Run sanity tests
-        run: |
-          chmod +x infra/nvim_sanity_test.sh
-          source $GITHUB_WORKSPACE/.venv/bin/activate
-          ./infra/nvim_sanity_test.sh
-        env:
-          CI: true
-          NVIM_LOG_FILE: infra/nvim.log
-        continue-on-error: false
-        shell: bash
-
-      - name: Upload test logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-logs
-          path: |
-            infra/nvim.log
-            infra/test_files/checkhealth.log
-          if-no-files-found: warn
+    uses: ./.github/workflows/lua-analysis.yml
