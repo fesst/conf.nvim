@@ -160,6 +160,10 @@ jobs:
             Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
           }
 
+          # Import Chocolatey profile module
+          Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
+          refreshenv
+
           # Install required Windows packages using Chocolatey in parallel
           $jobs = @()
 
@@ -168,12 +172,12 @@ jobs:
             choco install neovim -y
             choco install tree-sitter -y
 
-            # Add Neovim to PATH immediately and refresh environment
+            # Refresh environment after installations
+            refreshenv
+
+            # Add Neovim to PATH immediately
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
-
-            # Force refresh environment variables
-            refreshenv
 
             # Verify Neovim installation
             Write-Output "Verifying Neovim installation..."
@@ -205,6 +209,9 @@ jobs:
           # Wait for all jobs to complete
           $jobs | Wait-Job | Receive-Job
 
+          # Refresh environment after all installations
+          refreshenv
+
           # Install stylua if Rust is being set up
           if (${{ inputs.setup_rust }}) {
             Write-Output "Installing stylua..."
@@ -221,7 +228,8 @@ jobs:
             Write-Output "stylua found at: $($styluaPath.Source)"
           }
 
-          # Refresh environment variables
+          # Final environment refresh
+          refreshenv
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           if (${{ inputs.setup_rust }}) {
             $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
