@@ -177,6 +177,11 @@ Currently supported platforms:
 - macOS (Intel and Apple Silicon)
   - Uses Homebrew for package management
   - Native system integration
+- Windows
+  - Uses Chocolatey for package management
+  - Combined installation of Neovim and tree-sitter
+  - Automatic PATH updates and environment verification
+  - Parallel package installation for better performance
 - Docker container for cross-platform development
 
 ##### CI
@@ -207,11 +212,21 @@ Currently supported platforms:
   - Sets up environment variables for Python packages
   - Implements caching strategy for:
     - Python virtual environments
-    - Homebrew packages
+    - Homebrew packages (macOS)
+    - Chocolatey packages (Windows)
     - Node.js packages
     - Rust packages
     - LuaRocks packages
     - Neovim plugins
+  - Platform-specific optimizations:
+    - Windows:
+      - Combined Neovim and tree-sitter installation
+      - Automatic PATH management
+      - Installation verification
+      - Parallel package installation
+    - macOS:
+      - Homebrew package management
+      - Native system integration
 
 - Neovim Tests (`.github/workflows/neovim-tests.yml`):
   - Optimized workflow that combines Lua analysis and Neovim testing

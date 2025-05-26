@@ -32,3 +32,8 @@ BREW_CASKS=(
 # Export variables
 export BREW_PACKAGES
 export BREW_CASKS
+
+# Install Homebrew packages
+for package in "${BREW_PACKAGES[@]}"; do
+    brew install "$package"
+done
