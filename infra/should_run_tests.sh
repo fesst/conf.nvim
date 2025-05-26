@@ -52,11 +52,14 @@ fi
 
 # Check if any changed files match our criteria
 for file in $CHANGED; do
-  if [[ "$file" =~ ^test/ ]] || [[ "$file" =~ ^infra/ ]] || [[ "$file" =~ \.lua$ ]]; then
-    echo "Found changes in test/, infra/, or .lua files. Running tests."
+  if [[ "$file" =~ ^test/ ]] || \
+     [[ "$file" =~ ^infra/ ]] || \
+     [[ "$file" =~ ^\.github/workflows/ ]] || \
+     [[ "$file" =~ \.lua$ ]]; then
+    echo "Found changes in test/, infra/, .github/workflows/, or .lua files. Running tests."
     exit 0
   fi
 done
 
 echo "No test/infra/.lua changes. Skipping tests."
-exit 1 
+exit 1
