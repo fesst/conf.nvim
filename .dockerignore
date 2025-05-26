@@ -26,7 +26,6 @@ npm-debug.log
 *.swo
 
 # Docker
-Dockerfile
 .dockerignore
 
 # Test files
