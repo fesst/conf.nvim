@@ -74,17 +74,10 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install Neovim based on architecture
-RUN if [ "$TARGETARCH" = "amd64" ]; then \
-        curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz && \
-        tar -C /opt -xzf nvim-linux-x86_64.tar.gz && \
-        ln -s /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim && \
-        rm nvim-linux-x86_64.tar.gz; \
-    elif [ "$TARGETARCH" = "arm64" ]; then \
-        curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-arm64.tar.gz && \
-        tar -C /opt -xzf nvim-linux-arm64.tar.gz && \
-        ln -s /opt/nvim-linux-arm64/bin/nvim /usr/local/bin/nvim && \
-        rm nvim-linux-arm64.tar.gz; \
-    fi
+RUN curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz && \
+    tar -C /opt -xzf nvim-linux-x86_64.tar.gz && \
+    ln -s /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim && \
+    rm nvim-linux-x86_64.tar.gz
 
 # Create neovim config directory
 RUN mkdir -p /root/.config/nvim
