@@ -79,6 +79,11 @@ jobs:
         chmod +x infra/install.sh
         CI=true ./infra/install.sh
 
+    - name: Update PATH
+      if: steps.test_check.outputs.run_tests == 'true'
+      run: |
+        eval "$(/usr/libexec/path_helper)"
+
     - name: Cache Lua packages
       if: steps.test_check.outputs.run_tests == 'true'
       uses: actions/cache@v4
