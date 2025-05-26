@@ -70,7 +70,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
 
 # Install Rust with minimal components and cleanup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain stable --profile minimal && \
-    source "$HOME/.cargo/env" && \
+    . "$HOME/.cargo/env" && \
     cargo install sccache && \
     mkdir -p $HOME/.cargo && \
     echo '[build]' > $HOME/.cargo/config.toml && \
