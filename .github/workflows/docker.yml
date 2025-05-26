@@ -25,11 +25,6 @@ env:
   DOCKER_BUILDKIT: 1
   BUILDKIT_INLINE_CACHE: 1
   CACHE_TIMEOUT: 1800 # 30 minutes timeout for cache operations
-  DOCKER_BUILD_ARGS: |
-    --build-arg BUILDKIT_INLINE_CACHE=1
-    --build-arg DOCKER_BUILDKIT=1
-    --build-arg COMPILE_PARALLEL=1
-    --build-arg RUSTC_WRAPPER=sccache
 
 jobs:
   build-and-push-amd64:
@@ -49,7 +44,6 @@ jobs:
           driver-opts: |
             image=moby/buildkit:v0.12.3
             network=host
-            max-parallelism=4
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -88,7 +82,11 @@ jobs:
           cache-to: |
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-amd64,mode=max
           platforms: linux/amd64
-          build-args: ${{ env.DOCKER_BUILD_ARGS }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            DOCKER_BUILDKIT=1
+            COMPILE_PARALLEL=1
+            RUSTC_WRAPPER=sccache
           provenance: false
           sbom: false
           outputs: type=registry
@@ -108,7 +106,11 @@ jobs:
           tags: ${{ steps.meta-amd64.outputs.tags }}
           labels: ${{ steps.meta-amd64.outputs.labels }}
           platforms: linux/amd64
-          build-args: ${{ env.DOCKER_BUILD_ARGS }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            DOCKER_BUILDKIT=1
+            COMPILE_PARALLEL=1
+            RUSTC_WRAPPER=sccache
           provenance: false
           sbom: false
           outputs: type=registry
@@ -135,7 +137,6 @@ jobs:
           driver-opts: |
             image=moby/buildkit:v0.12.3
             network=host
-            max-parallelism=4
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -174,7 +175,11 @@ jobs:
           cache-to: |
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-arm64,mode=max
           platforms: linux/arm64
-          build-args: ${{ env.DOCKER_BUILD_ARGS }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            DOCKER_BUILDKIT=1
+            COMPILE_PARALLEL=1
+            RUSTC_WRAPPER=sccache
           provenance: false
           sbom: false
           outputs: type=registry
@@ -194,7 +199,11 @@ jobs:
           tags: ${{ steps.meta-arm64.outputs.tags }}
           labels: ${{ steps.meta-arm64.outputs.labels }}
           platforms: linux/arm64
-          build-args: ${{ env.DOCKER_BUILD_ARGS }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            DOCKER_BUILDKIT=1
+            COMPILE_PARALLEL=1
+            RUSTC_WRAPPER=sccache
           provenance: false
           sbom: false
           outputs: type=registry
