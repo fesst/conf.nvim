@@ -84,59 +84,85 @@ jobs:
 
       - name: Install minimal dependencies
         if: inputs.install_deps
+        shell: pwsh
         run: |
-          if [ "${{ inputs.platform }}" = "macos" ]; then
+          if ("${{ inputs.platform }}" -eq "macos") {
             # Retry brew install with exponential backoff
-            for i in {1..3}; do
-              if brew install neovim tree-sitter; then
+            for ($i = 1; $i -le 3; $i++) {
+              if (brew install neovim tree-sitter) {
                 break
-              fi
-              if [ $i -eq 3 ]; then
-                echo "Failed to install dependencies after 3 attempts"
+              }
+              if ($i -eq 3) {
+                Write-Error "Failed to install dependencies after 3 attempts"
                 exit 1
-              fi
-              sleep $((2 ** $i))
-            done
-          fi
+              }
+              Start-Sleep -Seconds (2 ** $i)
+            }
+          }
 
-          source "${{ inputs.venv_path }}/${{ inputs.platform == 'windows' && 'Scripts' || 'bin' }}/activate"
-          CI=true ./infra/install.sh
+          if ("${{ inputs.platform }}" -eq "windows") {
+            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+          } else {
+            source "${{ inputs.venv_path }}/bin/activate"
+          }
+          $env:CI = "true"
+          ./infra/install.sh
 
       - name: Run basic Neovim tests
-        shell: bash
+        shell: pwsh
         run: |
-          source "${{ inputs.venv_path }}/${{ inputs.platform == 'windows' && 'Scripts' || 'bin' }}/activate"
+          if ("${{ inputs.platform }}" -eq "windows") {
+            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+          } else {
+            source "${{ inputs.venv_path }}/bin/activate"
+          }
           nvim --headless -c "lua require('test.core')" -c "quit"
 
       - name: Run LSP tests
-        shell: bash
+        shell: pwsh
         run: |
-          source "${{ inputs.venv_path }}/${{ inputs.platform == 'windows' && 'Scripts' || 'bin' }}/activate"
+          if ("${{ inputs.platform }}" -eq "windows") {
+            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+          } else {
+            source "${{ inputs.venv_path }}/bin/activate"
+          }
           nvim --headless -c "lua require('test.lsp')" -c "quit"
 
       - name: Run Treesitter tests
-        shell: bash
+        shell: pwsh
         run: |
-          source "${{ inputs.venv_path }}/${{ inputs.platform == 'windows' && 'Scripts' || 'bin' }}/activate"
+          if ("${{ inputs.platform }}" -eq "windows") {
+            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+          } else {
+            source "${{ inputs.venv_path }}/bin/activate"
+          }
           nvim --headless -c "lua require('test.treesitter')" -c "quit"
 
       - name: Check formatting
-        shell: bash
+        shell: pwsh
         run: |
-          source "${{ inputs.venv_path }}/${{ inputs.platform == 'windows' && 'Scripts' || 'bin' }}/activate"
+          if ("${{ inputs.platform }}" -eq "windows") {
+            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+          } else {
+            source "${{ inputs.venv_path }}/bin/activate"
+          }
           stylua --check lua/
           stylua --check after/plugin/
 
       - name: Run sanity tests
         if: inputs.install_deps
-        shell: bash
+        shell: pwsh
         run: |
-          source "${{ inputs.venv_path }}/${{ inputs.platform == 'windows' && 'Scripts' || 'bin' }}/activate"
-          ./infra/nvim_sanity_test.sh > test-results.log 2>&1 || test_exit_code=$?
+          if ("${{ inputs.platform }}" -eq "windows") {
+            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+          } else {
+            source "${{ inputs.venv_path }}/bin/activate"
+          }
+          ./infra/nvim_sanity_test.sh > test-results.log 2>&1; $test_exit_code = $LASTEXITCODE
 
           # Display test results
-          echo "Test results:"
-          cat test-results.log
+          Write-Output "Test results:"
+          Get-Content test-results.log
 
           # Exit with the test exit code
-          exit ${test_exit_code:-0}
+          exit $test_exit_code
