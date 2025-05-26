@@ -24,9 +24,9 @@ jobs:
     - name: Fetch commits
       run: |
         echo "Fetching base branch: ${{ github.base_ref }}"
-        git fetch origin ${{ github.base_ref }} --depth=1
+        git fetch origin ${{ github.base_ref }} --depth=1 || true
         echo "Fetching commit: ${{ github.sha }}"
-        git fetch origin ${{ github.sha }} --depth=1
+        git fetch origin ${{ github.sha }} --depth=1 || true
         echo "Current git refs:"
         git show-ref
         echo "Current git log:"
@@ -35,10 +35,9 @@ jobs:
     - name: Check if tests should run (test/, infra/, *.lua)
       id: test_check
       run: |
-        chmod +x infra/should_run_tests.sh
-        bash infra/should_run_tests.sh ${{ github.base_ref }} ${{ github.sha }}
-        exit_code=$?
-        case $exit_code in
+        chmod +x infra/should_run_tests.sh || true
+        bash infra/should_run_tests.sh ${{ github.base_ref }} ${{ github.sha }} || exit_code=$?
+        case ${exit_code:-0} in
           0)
             echo "run_tests=true" >> $GITHUB_OUTPUT
             ;;
@@ -46,7 +45,7 @@ jobs:
             echo "run_tests=false" >> $GITHUB_OUTPUT
             ;;
           *)
-            echo "Unexpected error occurred (exit code: $exit_code). Running tests to be safe."
+            echo "Unexpected error occurred (exit code: ${exit_code:-0}). Running tests to be safe."
             echo "run_tests=true" >> $GITHUB_OUTPUT
             ;;
         esac
