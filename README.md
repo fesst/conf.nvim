@@ -176,10 +176,6 @@ For detailed information about dependencies and tools, see [Shared Tools](wiki/s
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on how to contribute to this project.
 
-Note: When contributing, please ensure your changes work on both macOS and Windows environments. The CI pipeline includes automated tests for both platforms, using Homebrew for macOS and Chocolatey for Windows package management.
+Note: When contributing, please ensure your changes work on both macOS and Windows environments. The CI pipeline includes automated tests for both platforms, using Homebrew for macOS and winget/Chocolatey for Windows package management.

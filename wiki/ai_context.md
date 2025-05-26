@@ -6,6 +6,36 @@ Lazy is package manager.
 
 ### File structure
 
+#### Root level files
+
+Documentation:
+
+- `README.md`: Main project documentation and quick start guide
+- `CONTRIBUTING.md`: Detailed contribution guidelines and development setup
+- `LICENSE`: Project license (MIT)
+
+Configuration:
+
+- `.github/`: GitHub-specific configurations and workflows
+- `infra/`: Installation and infrastructure scripts
+- `test/`: Test files and applications
+- `wiki/`: Detailed documentation
+- `Dockerfile.arm64`: Container definition for ARM64 architecture
+- `Dockerfile.amd64`: Container definition for AMD64 architecture
+- `.dockerignore`: Docker build exclusions
+- `.gitignore`: Git exclusions
+- `.editorconfig`: Editor configuration
+- `.stylua.toml`: Lua code formatting rules
+- `.luacheckrc`: Lua code linting rules
+- `.luarc.json`: Lua language server configuration
+- `.cursorrc`: Cursor IDE configuration
+- `.cursorignore`: Cursor IDE exclusions
+- `lazy-lock.json`: Lazy.nvim plugin lock file
+- `init.lua`: Neovim initialization file
+- `after/`: Plugin configurations
+- `lua/`: Lua configurations
+- `.venv/`: Python virtual environment (gitignored)
+
 #### Lua files structure
 
 - Plugins setup should be in after/plugin (that is important path!)
