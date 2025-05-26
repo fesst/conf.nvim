@@ -19,12 +19,16 @@ print_error() {
 
 # Function to ensure virtual environment is activated
 ensure_venv() {
-    if [ ! -d "$VENV_DIR" ]; then
+    if [ -n "${VIRTUAL_ENV:-}" ]; then
+        print_status "Using existing virtual environment: $VIRTUAL_ENV"
+        source "$VIRTUAL_ENV/bin/activate" || {
+            print_error "Failed to activate virtual environment"
+            exit 1
+        }
+    elif [ ! -d "$VENV_DIR" ]; then
         print_error "Virtual environment not found at $VENV_DIR"
         exit 1
-    fi
-
-    if [ -z "${VIRTUAL_ENV:-}" ]; then
+    else
         print_status "Activating virtual environment..."
         source "$VENV_DIR/bin/activate" || {
             print_error "Failed to activate virtual environment"

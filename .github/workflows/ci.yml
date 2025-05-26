@@ -53,7 +53,7 @@ jobs:
       - name: Run sanity tests
         run: |
           chmod +x infra/nvim_sanity_test.sh
-          source ${{ needs.setup.outputs.virtual_env }}/bin/activate
+          export VIRTUAL_ENV="${{ needs.setup.outputs.virtual_env }}"
           ./infra/nvim_sanity_test.sh
         env:
           CI: true
@@ -98,7 +98,8 @@ jobs:
 
   lua-analysis:
     name: Lua Analysis
-    runs-on: ubuntu-latest
+    needs: setup
+    runs-on: macos-latest
     permissions:
       contents: read
       packages: read
@@ -110,16 +111,16 @@ jobs:
 
       - name: Install Lua and LuaRocks
         run: |
-          sudo apt-get update
-          sudo apt-get install -y lua5.4 luarocks
+          brew install lua luarocks
         shell: bash
 
       - name: Install luacheck
         run: |
-          sudo luarocks install luacheck
+          luarocks install luacheck
         shell: bash
 
       - name: Run luacheck
         run: |
+          source ${{ needs.setup.outputs.virtual_env }}/bin/activate
           luacheck lua/ after/plugin/ --codes --ranges --formatter plain
         shell: bash
