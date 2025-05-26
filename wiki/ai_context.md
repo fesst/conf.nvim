@@ -90,13 +90,27 @@ Configuration:
   - Python packages (pip)
   - Neovim configuration
   - Language servers and tools
+  - Lua tools (stylua)
+  - Neovim Mason packages
 
 - `cleanup.sh`: Removes all installed components in reverse order:
+  - Neovim Mason packages
+  - Lua tools (stylua)
+  - CodeLLDB
+  - LuaRocks packages
   - Python packages
-  - Rust packages
-  - Node.js packages
-  - System packages
-  - Neovim configuration
+  - Rust and Cargo packages
+  - Node.js and npm packages
+  - Homebrew casks
+  - Homebrew packages
+  - Configuration files cleanup
+
+- `docker.sh`: Docker container management script that:
+  - Supports both ARM64 and AMD64 architectures
+  - Uses Dockerfile.arm64 or Dockerfile.amd64 based on architecture
+  - Creates persistent volumes for data storage
+  - Handles local builds and GitHub Container Registry pulls
+  - Container packages are managed through Dockerfiles and cleaned up automatically on container removal
 
 - `format.sh`: Code quality script that:
   - Installs and runs `stylua` for Lua formatting
@@ -108,6 +122,62 @@ Configuration:
   - Version checks
   - Error handling
   - Platform detection
+  - Package management utilities
+
+##### Package Management
+
+- Package installation and cleanup are handled symmetrically:
+  - `install.sh` and `cleanup.sh` use the same package collections from `packages.sh`
+  - Both scripts use shared utility functions from `lib.sh`
+  - Package removal follows the reverse order of installation
+  - Each package type has corresponding install/uninstall functions
+
+- Package Management Structure:
+  - `packages/`: Directory containing package installation scripts
+    - `brew.sh`: Homebrew package installation (macOS)
+    - `npm.sh`: Node.js package installation
+    - `cargo.sh`: Rust package installation
+    - `pip.sh`: Python package installation
+    - `luarocks.sh`: Lua package installation
+    - `nvim.sh`: Neovim configuration installation
+  - `packages.sh`: Main package management script that orchestrates all installations
+  - `should_run_tests.sh`: Determines if tests should run based on changed files
+  - `codelldb.sh`: Sets up CodeLLDB for debugging support
+
+- Error Handling:
+  - All scripts use error handling utilities from `lib.sh`
+  - Proper exit code handling
+  - Error message formatting
+  - Logging to appropriate channels
+  - Automatic retry mechanisms for package installation
+
+- Cache Management:
+  - Package Manager:
+    - Homebrew packages (macOS)
+      - Supports both Intel and Apple Silicon paths
+      - Architecture-specific cache keys
+      - Automatic cache restoration
+  - Language-specific packages:
+    - npm packages
+    - Cargo packages
+    - pip packages
+    - LuaRocks packages
+
+- Docker Integration:
+  - Docker containers use the same package management system
+  - Packages are installed during container build via Dockerfiles
+  - Package cleanup is handled automatically on container removal
+  - Persistent data is stored in Docker volumes
+  - Container images are available for both ARM64 and AMD64 architectures
+
+##### Platform Support
+
+Currently supported platforms:
+
+- macOS (Intel and Apple Silicon)
+  - Uses Homebrew for package management
+  - Native system integration
+- Docker container for cross-platform development
 
 ##### CI
 

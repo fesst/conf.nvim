@@ -110,6 +110,10 @@ jobs:
             # Install dependencies using Chocolatey
             choco install neovim -y
             choco install tree-sitter -y
+
+            # Add Chocolatey bin to PATH
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            $env:Path = "$env:Path;C:\tools\neovim\Neovim\bin"
           }
 
           if ("${{ inputs.platform }}" -eq "windows") {
@@ -125,6 +129,9 @@ jobs:
         run: |
           if ("${{ inputs.platform }}" -eq "windows") {
             & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+            # Ensure Neovim is in PATH
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            $env:Path = "$env:Path;C:\tools\neovim\Neovim\bin"
           } else {
             source "${{ inputs.venv_path }}/bin/activate"
           }
@@ -135,6 +142,9 @@ jobs:
         run: |
           if ("${{ inputs.platform }}" -eq "windows") {
             & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+            # Ensure Neovim is in PATH
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            $env:Path = "$env:Path;C:\tools\neovim\Neovim\bin"
           } else {
             source "${{ inputs.venv_path }}/bin/activate"
           }
@@ -145,6 +155,9 @@ jobs:
         run: |
           if ("${{ inputs.platform }}" -eq "windows") {
             & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+            # Ensure Neovim is in PATH
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            $env:Path = "$env:Path;C:\tools\neovim\Neovim\bin"
           } else {
             source "${{ inputs.venv_path }}/bin/activate"
           }
@@ -155,6 +168,9 @@ jobs:
         run: |
           if ("${{ inputs.platform }}" -eq "windows") {
             & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+            # Ensure stylua is in PATH
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
           } else {
             source "${{ inputs.venv_path }}/bin/activate"
           }
@@ -167,6 +183,9 @@ jobs:
         run: |
           if ("${{ inputs.platform }}" -eq "windows") {
             & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+            # Ensure all tools are in PATH
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            $env:Path = "$env:Path;C:\tools\neovim\Neovim\bin;$env:USERPROFILE\.cargo\bin"
           } else {
             source "${{ inputs.venv_path }}/bin/activate"
           }
