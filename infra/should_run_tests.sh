@@ -6,7 +6,8 @@
 #   1 - Tests should be skipped
 #   2 - Error occurred
 
-set -e  # Exit on any error
+# Remove set -e to handle errors more gracefully
+# set -e  # Exit on any error
 
 BASE_REF="$1"
 SHA="$2"
@@ -17,13 +18,15 @@ if [ -n "$BASE_REF" ] && [ -n "$SHA" ]; then
   if ! CHANGED=$(git diff --name-only "$BASE_REF" "$SHA" 2>/dev/null); then
     echo "Error: Could not compare $BASE_REF with $SHA"
     echo "Tip: Make sure both commits are fetched. Try: git fetch origin $BASE_REF && git fetch origin $SHA"
-    exit 2
+    echo "Unexpected error occurred (exit code: 2). Running tests to be safe."
+    exit 0  # Run tests when in doubt
   fi
 elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
   # If HEAD^ exists, compare with it
   if ! CHANGED=$(git diff --name-only HEAD^ HEAD 2>/dev/null); then
     echo "Error: Could not compare HEAD^ with HEAD"
-    exit 2
+    echo "Unexpected error occurred. Running tests to be safe."
+    exit 0  # Run tests when in doubt
   fi
 else
   # If neither exists, try to get the base branch from GitHub context
@@ -31,7 +34,8 @@ else
     # Use the base branch from the pull request
     if ! CHANGED=$(git diff --name-only "origin/$GITHUB_BASE_REF" HEAD 2>/dev/null); then
       echo "Error: Could not compare origin/$GITHUB_BASE_REF with HEAD"
-      exit 2
+      echo "Unexpected error occurred. Running tests to be safe."
+      exit 0  # Run tests when in doubt
     fi
   else
     # If all else fails, run the tests to be safe
