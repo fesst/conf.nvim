@@ -61,6 +61,21 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Python virtual environment
+        run: |
+          VENV_PATH="$GITHUB_WORKSPACE/.venv"
+          python -m venv "$VENV_PATH"
+          echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
+          echo "$VENV_PATH/bin" >> $GITHUB_PATH
+          echo "PYTHONPATH=$VENV_PATH/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
+          source "$VENV_PATH/bin/activate"
+          python -m pip install --upgrade pip
+
       - name: Cache Homebrew packages
         uses: actions/cache@v4
         with:
@@ -81,41 +96,9 @@ jobs:
             ~/.cache/luarocks
             ~/.luarocks
             ~/.cache/luarocks-server
-          key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh', 'infra/packages/requirements.txt') }}
+          key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
           restore-keys: |
             ${{ runner.os }}-luarocks-
-
-      - name: Cache virtual environment
-        id: cache-venv
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-venv-
-
-      - name: Download virtual environment
-        id: download-venv
-        if: steps.cache-venv.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: venv
-          path: .venv
-
-      - name: Set up Python virtual environment
-        if: steps.cache-venv.outputs.cache-hit != 'true' && steps.download-venv.outcome == 'failure'
-        run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install -r infra/packages/requirements.txt
-
-      - name: Activate virtual environment
-        run: |
-          echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
-          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
-          echo "PYTHONPATH=$GITHUB_WORKSPACE/.venv/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
-          source $GITHUB_WORKSPACE/.venv/bin/activate
 
       - name: Cache Neovim plugins
         uses: actions/cache@v4
@@ -151,6 +134,21 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Python virtual environment
+        run: |
+          VENV_PATH="$GITHUB_WORKSPACE/.venv"
+          python -m venv "$VENV_PATH"
+          echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
+          echo "$VENV_PATH/bin" >> $GITHUB_PATH
+          echo "PYTHONPATH=$VENV_PATH/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
+          source "$VENV_PATH/bin/activate"
+          python -m pip install --upgrade pip
+
       - name: Cache Homebrew packages
         uses: actions/cache@v4
         with:
@@ -162,38 +160,6 @@ jobs:
           key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}
           restore-keys: |
             ${{ runner.os }}-homebrew-
-
-      - name: Cache virtual environment
-        id: cache-venv
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-venv-
-
-      - name: Download virtual environment
-        id: download-venv
-        if: steps.cache-venv.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: venv
-          path: .venv
-
-      - name: Set up Python virtual environment
-        if: steps.cache-venv.outputs.cache-hit != 'true' && steps.download-venv.outcome == 'failure'
-        run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install -r infra/packages/requirements.txt
-
-      - name: Activate virtual environment
-        run: |
-          echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
-          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
-          echo "PYTHONPATH=$GITHUB_WORKSPACE/.venv/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
-          source $GITHUB_WORKSPACE/.venv/bin/activate
 
       - name: Cache Neovim plugins
         uses: actions/cache@v4
