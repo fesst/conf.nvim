@@ -17,17 +17,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  setup:
-    uses: ./.github/workflows/setup-environment.yml
-    with:
-      setup_python: true
-      setup_rust: false
-      setup_node: false
-      setup_lua: true
-
   check-changes:
     name: Check for Changes
-    needs: setup
     runs-on: macos-latest
     outputs:
       run_tests: ${{ steps.test_check.outputs.run_tests }}
@@ -57,7 +48,7 @@ jobs:
 
   test:
     name: Run Tests
-    needs: [setup, check-changes]
+    needs: check-changes
     if: needs.check-changes.outputs.run_tests == 'true'
     runs-on: macos-latest
     steps:
@@ -121,129 +112,14 @@ jobs:
           source $GITHUB_WORKSPACE/.venv/bin/activate
           CI=true ./infra/install.sh
 
-      - name: Build and run tests
+      - name: Run tests
         run: |
-          cat > Dockerfile << 'EOF'
-          FROM ubuntu:22.04
+          source $GITHUB_WORKSPACE/.venv/bin/activate
+          ./infra/nvim_sanity_test.sh > test-results.log 2>&1 || test_exit_code=$?
 
-          # Set noninteractive installation
-          ENV DEBIAN_FRONTEND=noninteractive
-
-          # Function to retry apt-get commands
-          RUN echo '#!/bin/bash\n\
-          max_attempts=3\n\
-          attempt=1\n\
-          while [ $attempt -le $max_attempts ]; do\n\
-            echo "Attempt $attempt of $max_attempts"\n\
-            if "$@"; then\n\
-              break\n\
-            fi\n\
-            echo "Command failed. Retrying in 5 seconds..."\n\
-            sleep 5\n\
-            attempt=$((attempt + 1))\n\
-          done\n\
-          if [ $attempt -gt $max_attempts ]; then\n\
-            echo "All attempts failed"\n\
-            exit 1\n\
-          fi' > /usr/local/bin/retry && chmod +x /usr/local/bin/retry
-
-          # Update package lists and install basic dependencies
-          RUN retry apt-get update -y && \
-              retry apt-get install -y --no-install-recommends \
-              curl \
-              git \
-              build-essential \
-              cmake \
-              pkg-config \
-              libssl-dev \
-              make \
-              software-properties-common \
-              gnupg \
-              && rm -rf /var/lib/apt/lists/* || \
-              (echo "apt-get failed. Full error:" && cat /var/log/apt/history.log && exit 1)
-
-          # Set up Python with retry
-          RUN retry apt-get update -y && \
-              retry apt-get install -y --no-install-recommends \
-              python3 \
-              python3-pip \
-              python3-venv \
-              && rm -rf /var/lib/apt/lists/* || \
-              (echo "apt-get failed. Full error:" && cat /var/log/apt/history.log && exit 1)
-
-          # Set up Rust with retry
-          RUN retry curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          ENV PATH="/root/.cargo/bin:${PATH}"
-
-          # Set up Node.js with retry
-          RUN retry curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-              retry apt-get update -y && \
-              retry apt-get install -y --no-install-recommends nodejs && \
-              rm -rf /var/lib/apt/lists/* || \
-              (echo "apt-get failed. Full error:" && cat /var/log/apt/history.log && exit 1)
-
-          # Set up Lua with retry
-          RUN retry apt-get update -y && \
-              retry apt-get install -y --no-install-recommends \
-              lua5.4 \
-              luarocks \
-              && rm -rf /var/lib/apt/lists/* || \
-              (echo "apt-get failed. Full error:" && cat /var/log/apt/history.log && exit 1)
-
-          # Set up Neovim with retry
-          RUN retry apt-get update -y && \
-              retry apt-get install -y --no-install-recommends \
-              software-properties-common \
-              && add-apt-repository ppa:neovim-ppa/stable -y && \
-              retry apt-get update -y && \
-              retry apt-get install -y --no-install-recommends neovim && \
-              rm -rf /var/lib/apt/lists/* || \
-              (echo "apt-get failed. Full error:" && cat /var/log/apt/history.log && exit 1)
-
-          # Set up workspace
-          WORKDIR /workspace
-          COPY . .
-
-          # Create and activate virtual environment
-          RUN python3 -m venv .venv
-          ENV PATH="/workspace/.venv/bin:${PATH}"
-          ENV VIRTUAL_ENV="/workspace/.venv"
-          ENV PYTHONPATH="/workspace/.venv/lib/python3.10/site-packages"
-          ENV PIP_TARGET="/workspace/.venv/lib/python3.10/site-packages"
-          ENV PIP_PREFIX="/workspace/.venv"
-
-          # Install Python dependencies with retry
-          RUN retry pip install --no-cache-dir pynvim black flake8 isort
-
-          # Install Lua dependencies with retry
-          RUN retry luarocks install luacheck
-
-          # Run tests
-          CMD ["bash", "-c", "infra/nvim_sanity_test.sh"]
-          EOF
-
-          # Set up Docker Buildx
-          docker buildx create --use
-
-          # Build and run the container with caching
-          docker buildx build \
-            --cache-from type=gha \
-            --cache-to type=gha,mode=max \
-            --load \
-            -t neovim-tests .
-
-          # Run tests and capture output
-          docker run --rm neovim-tests > test-results.log 2>&1 || test_exit_code=$?
-
-          # Upload test results as artifact
+          # Display test results
           echo "Test results:"
           cat test-results.log
-
-          # Upload test results as artifact
-          if [ -f test-results.log ]; then
-            echo "Uploading test results..."
-            echo "::set-output name=test_results::$(cat test-results.log)"
-          fi
 
           # Exit with the test exit code
           exit ${test_exit_code:-0}
