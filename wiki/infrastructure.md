@@ -1,6 +1,6 @@
 # Infrastructure Scripts
 
-This document describes the infrastructure scripts used in the Neovim configuration.
+This document describes the infrastructure scripts used in the Neovim configuration. For contribution guidelines, please refer to [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ## Core Scripts
 
@@ -25,12 +25,15 @@ This document describes the infrastructure scripts used in the Neovim configurat
 
 - `packages/`: Directory containing package installation scripts
   - `brew.sh`: Homebrew package installation (macOS)
-  - `choco.sh`: Chocolatey package installation (Windows)
   - `npm.sh`: Node.js package installation
   - `cargo.sh`: Rust package installation
   - `pip.sh`: Python package installation
   - `luarocks.sh`: Lua package installation
   - `nvim.sh`: Neovim configuration installation
+
+- `packages.sh`: Main package management script that orchestrates the installation of all packages
+- `should_run_tests.sh`: Determines if tests should run based on changed files
+- `codelldb.sh`: Sets up CodeLLDB for debugging support
 
 ### Docker Support
 
@@ -126,16 +129,6 @@ All scripts use the error handling utilities from `lib.sh`:
 - Logging to appropriate channels
 - Automatic retry mechanisms for package installation
 
-## Contributing
-
-When adding new infrastructure scripts:
-
-1. Place package-specific scripts in `packages/` directory
-2. Use functions from `lib.sh`
-3. Include proper error handling
-4. Add documentation to this file
-5. Update CI workflow if necessary
-
 ## Cache Management
 
 The CI workflow uses caching for:
@@ -165,6 +158,6 @@ Currently supported platforms:
   - Native system integration
 - Windows
   - Uses winget by default for package management
-  - Chocolatey available as an alternative package manager
+  - Chocolatey support integrated into install.ps1
   - PowerShell-based automation
 - Docker container for cross-platform development

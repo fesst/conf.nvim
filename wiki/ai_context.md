@@ -24,7 +24,6 @@ Configuration:
 - `Dockerfile.amd64`: Container definition for AMD64 architecture
 - `.dockerignore`: Docker build exclusions
 - `.gitignore`: Git exclusions
-- `.editorconfig`: Editor configuration
 - `.stylua.toml`: Lua code formatting rules
 - `.luacheckrc`: Lua code linting rules
 - `.luarc.json`: Lua language server configuration

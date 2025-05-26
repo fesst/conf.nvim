@@ -60,6 +60,17 @@ Thank you for your interest in contributing to this Neovim configuration project
 - Infrastructure scripts should be in `infra/`
 - Documentation should be in `wiki/`
 
+### Infrastructure Scripts
+
+When adding or modifying infrastructure scripts:
+
+1. Place package-specific scripts in `infra/packages/` directory
+2. Use shared functions from `infra/lib.sh`
+3. Include proper error handling and logging
+4. Update infrastructure documentation in `wiki/infrastructure.md`
+5. Update CI workflow if necessary
+6. Test on both supported platforms (macOS and Windows)
+
 ### Lua Code Style
 
 - Follow the existing code style
