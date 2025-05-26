@@ -55,3 +55,7 @@ jobs:
       if: steps.test_check.outputs.run_tests == 'true'
       run: |
         luacheck lua/ after/plugin/ --codes --ranges --formatter plain 
+    - name: Run Neovim sanity tests
+      if: steps.test_check.outputs.run_tests == 'true'
+      run: |
+        bash test/setup/sanity_nvim_start.sh 
