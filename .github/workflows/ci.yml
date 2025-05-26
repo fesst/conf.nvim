@@ -6,16 +6,27 @@ on:
   schedule:
     - cron: "33 12 * * 1"
 
+# Set default permissions for all jobs
+permissions:
+  contents: read
+  packages: read
+  security-events: write
+
 jobs:
   test:
     name: Test
     runs-on: macos-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
+        uses: Homebrew/actions/setup-homebrew@v3
         env:
           HOMEBREW_NO_AUTO_UPDATE: 1
 
@@ -26,7 +37,7 @@ jobs:
           mkdir -p "$HOME/Library/Caches/Homebrew"
 
       - name: Cache Homebrew packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             $HOME/Library/Caches/Homebrew
@@ -36,7 +47,7 @@ jobs:
             ${{ runner.os }}-homebrew-
 
       - name: Cache pip packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: $HOME/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('infra/packages/pip.sh', 'infra/install.sh') }}
@@ -44,7 +55,7 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Cache npm packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: $HOME/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('infra/packages/npm.sh', 'infra/install.sh') }}
@@ -53,12 +64,14 @@ jobs:
 
       - name: Install Neovim
         run: brew install neovim
+        shell: bash
 
       - name: Set up Python virtual environment
         run: |
           python3 -m venv .venv
           source .venv/bin/activate
           python3 -m pip install --upgrade pip
+        shell: bash
 
       - name: Install dependencies
         run: |
@@ -67,6 +80,7 @@ jobs:
             source .venv/bin/activate
             CI=true ./infra/install.sh
           fi
+        shell: bash
 
       - name: Run sanity tests
         run: |
@@ -77,10 +91,11 @@ jobs:
           CI: true
           NVIM_LOG_FILE: infra/nvim.log
         continue-on-error: false
+        shell: bash
 
       - name: Upload test logs
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-logs
           path: |
@@ -99,6 +114,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -114,19 +131,27 @@ jobs:
   lua-analysis:
     name: Lua Analysis
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install Lua and LuaRocks
         run: |
           sudo apt-get update
           sudo apt-get install -y lua5.4 luarocks
+        shell: bash
 
       - name: Install luacheck
         run: |
           sudo luarocks install luacheck
+        shell: bash
 
       - name: Run luacheck
         run: |
           luacheck lua/ after/plugin/ --codes --ranges --formatter plain
+        shell: bash

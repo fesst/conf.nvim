@@ -38,7 +38,7 @@ jobs:
         uses: docker/setup-buildx-action@373ed2c4e77da2dc39949dce723c6a8e4d5a6b25
         with:
           driver-opts: |
-            image=moby/buildkit:latest
+            image=moby/buildkit:v0.12.3
             network=host
 
       - name: Log in to the Container registry
