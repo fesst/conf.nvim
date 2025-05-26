@@ -96,7 +96,7 @@ jobs:
                 Write-Error "Failed to install dependencies after 3 attempts"
                 exit 1
               }
-              Start-Sleep -Seconds (2 ** $i)
+              Start-Sleep -Seconds ([math]::Pow(2, $i))
             }
           } elseif ("${{ inputs.platform }}" -eq "windows") {
             # Install Chocolatey if not present
