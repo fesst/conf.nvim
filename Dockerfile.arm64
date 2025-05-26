@@ -56,7 +56,6 @@ RUN apt-get clean && \
     clang \
     gcc \
     zlib1g-dev \
-    json-xs-perl \
     sysstat \
     logrotate \
     apt-utils \
