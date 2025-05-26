@@ -1,0 +1,139 @@
+name: "Neovim Tests"
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+  schedule:
+    - cron: "33 12 * * 1"
+
+# Cancel in-progress runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup:
+    uses: ./.github/workflows/setup-environment.yml
+    with:
+      setup_python: true
+      setup_rust: false
+      setup_node: false
+      setup_lua: true
+
+  check-changes:
+    name: Check for Changes
+    needs: setup
+    runs-on: macos-latest
+    outputs:
+      run_tests: ${{ steps.test_check.outputs.run_tests }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check if tests should run (test/, infra/, *.lua)
+        id: test_check
+        run: |
+          chmod +x infra/should_run_tests.sh || true
+          bash infra/should_run_tests.sh ${{ github.base_ref }} ${{ github.sha }} || exit_code=$?
+          case ${exit_code:-0} in
+            0)
+              echo "run_tests=true" >> $GITHUB_OUTPUT
+              ;;
+            1)
+              echo "run_tests=false" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "Unexpected error occurred (exit code: ${exit_code:-0}). Running tests to be safe."
+              echo "run_tests=true" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+  test:
+    name: Run Tests
+    needs: [setup, check-changes]
+    if: needs.check-changes.outputs.run_tests == 'true'
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        test_type: [analyze, sanity]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Python virtual environment
+        run: |
+          VENV_PATH="$GITHUB_WORKSPACE/.venv"
+          python -m venv "$VENV_PATH"
+          echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
+          echo "$VENV_PATH/bin" >> $GITHUB_PATH
+          echo "PYTHONPATH=$VENV_PATH/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
+          source "$VENV_PATH/bin/activate"
+          python -m pip install --upgrade pip
+
+      - name: Cache Homebrew packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Homebrew
+            /opt/homebrew
+            ~/Library/Logs/Homebrew
+          key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-
+
+      - name: Cache LuaRocks packages
+        if: matrix.test_type == 'analyze'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/luarocks
+            ~/.luarocks
+            ~/.cache/luarocks-server
+          key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-luarocks-
+
+      - name: Cache Neovim plugins
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/nvim
+            ~/.config/nvim/plugin
+            ~/.config/nvim/lazy
+          key: ${{ runner.os }}-nvim-plugins-${{ hashFiles('lua/**/*.lua', 'after/plugin/**/*.lua', 'infra/packages/nvim.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-nvim-plugins-
+
+      - name: Install minimal dependencies
+        run: |
+          brew install neovim
+          source $GITHUB_WORKSPACE/.venv/bin/activate
+          CI=true ./infra/install.sh
+
+      - name: Run Lua Analysis
+        if: matrix.test_type == 'analyze'
+        run: |
+          source $GITHUB_WORKSPACE/.venv/bin/activate
+          luarocks install luacheck --no-doc
+          luacheck lua/ after/plugin/ --codes --ranges --formatter plain
+
+      - name: Run Neovim Sanity Tests
+        if: matrix.test_type == 'sanity'
+        run: |
+          source $GITHUB_WORKSPACE/.venv/bin/activate
+          bash infra/nvim_sanity_test.sh
