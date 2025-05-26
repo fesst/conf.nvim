@@ -16,6 +16,7 @@ if [ -n "$BASE_REF" ] && [ -n "$SHA" ]; then
   # If both base_ref and sha are provided, compare them
   if ! CHANGED=$(git diff --name-only "$BASE_REF" "$SHA" 2>/dev/null); then
     echo "Error: Could not compare $BASE_REF with $SHA"
+    echo "Tip: Make sure both commits are fetched. Try: git fetch origin $BASE_REF && git fetch origin $SHA"
     exit 2
   fi
 elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
