@@ -30,11 +30,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download virtual environment
-        uses: actions/download-artifact@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          name: venv
-          path: .venv
+          python-version: "3.12"
+
+      - name: Create and activate virtual environment
+        run: |
+          python -m venv $GITHUB_WORKSPACE/.venv
+          echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+          echo "PYTHONPATH=$GITHUB_WORKSPACE/.venv/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
+          echo "PIP_TARGET=$GITHUB_WORKSPACE/.venv/lib/python3.12/site-packages" >> $GITHUB_ENV
+          echo "PIP_PREFIX=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
+          source $GITHUB_WORKSPACE/.venv/bin/activate
+          python -m pip install --upgrade pip
 
       - name: Fetch commits
         run: |
@@ -92,12 +102,7 @@ jobs:
         if: steps.test_check.outputs.run_tests == 'true'
         run: |
           chmod +x infra/install.sh
-          source "${{ needs.setup.outputs.virtual_env }}/bin/activate"
-          export VIRTUAL_ENV="${{ needs.setup.outputs.virtual_env }}"
-          export PATH="$VIRTUAL_ENV/bin:$PATH"
-          export PYTHONPATH="$VIRTUAL_ENV/lib/python3.12/site-packages:$PYTHONPATH"
-          export PIP_TARGET="$VIRTUAL_ENV/lib/python3.12/site-packages"
-          export PIP_PREFIX="$VIRTUAL_ENV"
+          source $GITHUB_WORKSPACE/.venv/bin/activate
           CI=true ./infra/install.sh
 
       - name: Update PATH
@@ -108,9 +113,12 @@ jobs:
       - name: Run luacheck
         if: steps.test_check.outputs.run_tests == 'true'
         run: |
+          source $GITHUB_WORKSPACE/.venv/bin/activate
+          luarocks install luacheck
           luacheck lua/ after/plugin/ --codes --ranges --formatter plain
 
       - name: Run Neovim sanity tests
         if: steps.test_check.outputs.run_tests == 'true'
         run: |
+          source $GITHUB_WORKSPACE/.venv/bin/activate
           bash infra/nvim_sanity_test.sh
