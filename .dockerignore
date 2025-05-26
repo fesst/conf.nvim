@@ -1,0 +1,41 @@
+# Version control
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+.venv
+venv
+ENV
+
+# Node
+node_modules
+npm-debug.log
+
+# Neovim
+.lock
+.luarc.json
+.luacheckrc
+.stylua.toml
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Test files
+test/
+
+# Documentation
+wiki/
+
+# Cache and temporary files
+.cache
+*.log
+*.tmp
