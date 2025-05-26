@@ -38,52 +38,31 @@ RUN apt-get clean && \
     pkg-config \
     libssl-dev \
     make \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Python and related tools
-RUN apt-get clean && \
-    apt-get update --fix-missing && \
-    apt-get install -y --no-install-recommends \
+    # Python and related tools
     python3 \
     python3-pip \
     python3-venv \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install search and formatting tools
-RUN apt-get clean && \
-    apt-get update --fix-missing && \
-    apt-get install -y --no-install-recommends \
+    # Search and formatting tools
     ripgrep \
     fd-find \
     fzf \
     shellcheck \
     shfmt \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install PostgreSQL and related tools
-RUN apt-get clean && \
-    apt-get update --fix-missing && \
-    apt-get install -y --no-install-recommends \
+    # PostgreSQL and related tools
     postgresql \
     postgresql-client \
     pgformatter \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Lua and compiler tools
-RUN apt-get clean && \
-    apt-get update --fix-missing && \
-    apt-get install -y --no-install-recommends \
+    # Lua and compiler tools
     luarocks \
     llvm \
     clang \
     gcc \
-    libssl-dev \
-    pkg-config \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 20.x (Latest LTS)
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get update \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
