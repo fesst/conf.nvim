@@ -133,8 +133,8 @@ manage_packages() {
             uninstall_cmd="brew uninstall --cask"
             ;;
         npm)
-            install_cmd="npm install -g ${NPM_CONFIG[@]}"
-            uninstall_cmd="npm uninstall -g"
+            install_cmd="npm install -g --loglevel=verbose ${NPM_CONFIG[@]}"
+            uninstall_cmd="npm uninstall -g --loglevel=verbose"
             ;;
         pip)
             if [ "$CI" = "true" ]; then

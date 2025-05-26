@@ -35,6 +35,10 @@ jobs:
           mkdir -p "$HOME/.cache/pip"
           mkdir -p "$HOME/.npm"
           mkdir -p "$HOME/Library/Caches/Homebrew"
+          # Configure npm for verbose output
+          npm config set loglevel verbose
+          npm config set progress true
+          npm config set timing true
 
       - name: Cache Homebrew packages
         uses: actions/cache@v4
