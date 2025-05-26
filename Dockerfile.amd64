@@ -92,6 +92,18 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
 
 # Install Rust with minimal components and cleanup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain stable --profile minimal && \
+    . $HOME/.cargo/env && \
+    # Configure cargo for faster builds
+    mkdir -p $HOME/.cargo && \
+    echo '[build]' > $HOME/.cargo/config.toml && \
+    echo 'rustc-wrapper = "sccache"' >> $HOME/.cargo/config.toml && \
+    echo '[profile.dev]' >> $HOME/.cargo/config.toml && \
+    echo 'opt-level = 0' >> $HOME/.cargo/config.toml && \
+    echo '[profile.release]' >> $HOME/.cargo/config.toml && \
+    echo 'opt-level = 3' >> $HOME/.cargo/config.toml && \
+    # Install sccache for faster builds
+    cargo install sccache && \
+    # Clean up cargo cache
     rm -rf /root/.cargo/registry/cache && \
     rm -rf /root/.cargo/registry/index && \
     rm -rf /root/.cargo/git && \
@@ -100,6 +112,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no
     rm -rf /tmp/* /var/tmp/*
 
 ENV PATH="/root/.cargo/bin:${PATH}"
+ENV RUSTC_WRAPPER="sccache"
 
 # Install tree-sitter CLI with cleanup
 RUN cargo install tree-sitter-cli && \
@@ -163,6 +176,7 @@ USER developer
 # Set environment variables
 ENV PATH="/home/developer/.cargo/bin:${PATH}"
 ENV PATH="/home/developer/.local/bin:${PATH}"
+ENV RUSTC_WRAPPER="sccache"
 
 # Create necessary directories for the user
 RUN mkdir -p /home/developer/.config/nvim \
