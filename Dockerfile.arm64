@@ -27,71 +27,53 @@ RUN echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted univer
     echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy-security main restricted universe multiverse" >> /etc/apt/sources.list && \
     echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list
 
-# Install packages in groups with error handling
+# Install all system packages in a single layer
 RUN apt-get clean && \
-    apt-get update --fix-missing || (echo "Failed to update package lists" && exit 1)
-
-# Install essential system packages first
-RUN apt-get install -y --no-install-recommends \
+    apt-get update --fix-missing && \
+    apt-get install -y --no-install-recommends \
     ca-certificates \
     gnupg \
     curl \
     git \
-    && rm -rf /var/lib/apt/lists/* || (echo "Failed to install essential packages" && exit 1)
-
-# Install development tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     pkg-config \
     libssl-dev \
     make \
-    && rm -rf /var/lib/apt/lists/* || (echo "Failed to install development tools" && exit 1)
-
-# Install Python and related tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     python3-venv \
-    && rm -rf /var/lib/apt/lists/* || (echo "Failed to install Python tools" && exit 1)
-
-# Install search and formatting tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
     ripgrep \
     fd-find \
     fzf \
     shellcheck \
     shfmt \
-    && rm -rf /var/lib/apt/lists/* || (echo "Failed to install search and formatting tools" && exit 1)
-
-# Install PostgreSQL and related tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql \
     postgresql-client \
     pgformatter \
-    && rm -rf /var/lib/apt/lists/* || (echo "Failed to install PostgreSQL tools" && exit 1)
-
-# Install Lua and compiler tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
     luarocks \
     llvm \
     clang \
     gcc \
     zlib1g-dev \
-    && rm -rf /var/lib/apt/lists/* || (echo "Failed to install Lua and compiler tools" && exit 1)
+    json-xs-perl \
+    sysstat \
+    logrotate \
+    apt-utils \
+    locales \
+    tzdata && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 20.x (Latest LTS)
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get update \
-    && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get update && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Rust with minimal components and cleanup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain stable --profile minimal && \
     source "$HOME/.cargo/env" && \
-    # Install sccache first
     cargo install sccache && \
-    # Configure cargo for faster builds
     mkdir -p $HOME/.cargo && \
     echo '[build]' > $HOME/.cargo/config.toml && \
     echo 'rustc-wrapper = "sccache"' >> $HOME/.cargo/config.toml && \
@@ -99,7 +81,6 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no
     echo 'opt-level = 0' >> $HOME/.cargo/config.toml && \
     echo '[profile.release]' >> $HOME/.cargo/config.toml && \
     echo 'opt-level = 3' >> $HOME/.cargo/config.toml && \
-    # Clean up cargo cache
     rm -rf /root/.cargo/registry/cache && \
     rm -rf /root/.cargo/registry/index && \
     rm -rf /root/.cargo/git && \
@@ -110,39 +91,21 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no
 ENV PATH="/root/.cargo/bin:${PATH}"
 ENV RUSTC_WRAPPER="sccache"
 
-# Install tree-sitter CLI with cleanup and verification
+# Install tree-sitter CLI with cleanup
 RUN cargo install tree-sitter-cli && \
-    if ! command -v tree-sitter >/dev/null 2>&1; then \
-        echo "tree-sitter CLI not found after installation" && exit 1; \
-    fi && \
-    tree-sitter --version || (echo "tree-sitter installation verification failed" && exit 1) && \
-    # Test tree-sitter network access
-    tree-sitter init || (echo "tree-sitter network access test failed" && exit 1) && \
     rm -rf /root/.cargo/registry/cache && \
     rm -rf /root/.cargo/registry/index && \
     rm -rf /root/.cargo/git && \
     rm -rf /tmp/* /var/tmp/*
 
-# Ensure tree-sitter is in PATH for all users
-ENV PATH="/root/.cargo/bin:${PATH}"
-
 # Install Neovim based on architecture
 RUN curl -L -o nvim-linux-aarch64.tar.gz https://github.com/neovim/neovim/releases/latest/download/nvim-linux-aarch64.tar.gz && \
-    if [ ! -s nvim-linux-aarch64.tar.gz ]; then \
-        echo "Failed to download Neovim archive" && exit 1; \
-    fi && \
     tar -C /opt -xzf nvim-linux-aarch64.tar.gz && \
-    if [ ! -f /opt/nvim-linux-aarch64/bin/nvim ]; then \
-        echo "Neovim binary not found after extraction" && exit 1; \
-    fi && \
     ln -sf /opt/nvim-linux-aarch64/bin/nvim /usr/local/bin/nvim && \
-    rm nvim-linux-aarch64.tar.gz && \
-    nvim --version || (echo "Neovim installation verification failed" && exit 1)
+    rm nvim-linux-aarch64.tar.gz
 
-# Create neovim config directory
+# Create neovim config directory and copy configuration files
 RUN mkdir -p /root/.config/nvim
-
-# Copy configuration files
 COPY . /root/.config/nvim/
 
 # Install Python packages
@@ -178,9 +141,13 @@ RUN if ! cargo install stylua; then \
 # Set working directory
 WORKDIR /workspace
 
-# Create a non-root user
-RUN useradd -m -s /bin/bash developer
-RUN chown -R developer:developer /workspace /root/.config/nvim
+# Create a non-root user and set up permissions
+RUN useradd -m -s /bin/bash developer && \
+    chown -R developer:developer /workspace /root/.config/nvim && \
+    mkdir -p /home/developer/.config/nvim \
+    /home/developer/.local/share/nvim \
+    /home/developer/.cache/nvim && \
+    chown -R developer:developer /home/developer
 
 # Switch to non-root user
 USER developer
@@ -190,18 +157,12 @@ ENV PATH="/home/developer/.cargo/bin:${PATH}"
 ENV PATH="/home/developer/.local/bin:${PATH}"
 ENV RUSTC_WRAPPER="sccache"
 
-# Create necessary directories for the user
-RUN mkdir -p /home/developer/.config/nvim \
-    && mkdir -p /home/developer/.local/share/nvim \
-    && mkdir -p /home/developer/.cache/nvim
-
 # Copy configuration files to user's home
 COPY --chown=developer:developer . /home/developer/.config/nvim/
 
 # Install Neovim plugins (skip in CI)
 RUN if [ "$CI" != "true" ]; then \
-        nvim --headless -c "Lazy sync" -c "qa" && \
-        nvim --headless -c "TSInstallSync all" -c "qa"; \
+        nvim --headless -c "Lazy sync" -c "qa"; \
     fi
 
 # Set the default command
