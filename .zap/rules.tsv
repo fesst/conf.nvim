@@ -1,0 +1,34 @@
+10016	10016	IGNORE	# Web Browser XSS Protection Not Enabled
+10020	10020	IGNORE	# X-Frame-Options Header
+10021	10021	IGNORE	# X-Content-Type-Options Header Missing
+10036	10036	IGNORE	# Server Leaks Information via "X-Powered-By" HTTP Response Header Field(s)
+10037	10037	IGNORE	# Web Browser XSS Protection Not Enabled
+10038	10038	IGNORE	# Content Security Policy (CSP) Header Not Set
+10043	10043	IGNORE	# Content-Type Header Missing
+10044	10044	IGNORE	# X-Frame-Options Header
+10045	10045	IGNORE	# X-Content-Type-Options Header Missing
+10046	10046	IGNORE	# Content Security Policy (CSP) Header Not Set
+10047	10047	IGNORE	# X-Frame-Options Header
+10048	10048	IGNORE	# X-Content-Type-Options Header Missing
+10049	10049	IGNORE	# Content Security Policy (CSP) Header Not Set
+10050	10050	IGNORE	# X-Frame-Options Header
+10051	10051	IGNORE	# X-Content-Type-Options Header Missing
+10052	10052	IGNORE	# Content Security Policy (CSP) Header Not Set
+10053	10053	IGNORE	# X-Frame-Options Header
+10054	10054	IGNORE	# X-Content-Type-Options Header Missing
+10055	10055	IGNORE	# Content Security Policy (CSP) Header Not Set
+10056	10056	IGNORE	# X-Frame-Options Header
+10057	10057	IGNORE	# X-Content-Type-Options Header Missing
+10058	10058	IGNORE	# Content Security Policy (CSP) Header Not Set
+10059	10059	IGNORE	# X-Frame-Options Header
+10060	10060	IGNORE	# X-Content-Type-Options Header Missing
+10061	10061	IGNORE	# Content Security Policy (CSP) Header Not Set
+10062	10062	IGNORE	# X-Frame-Options Header
+10063	10063	IGNORE	# X-Content-Type-Options Header Missing
+10064	10064	IGNORE	# Content Security Policy (CSP) Header Not Set
+10065	10065	IGNORE	# X-Frame-Options Header
+10066	10066	IGNORE	# X-Content-Type-Options Header Missing
+10067	10067	IGNORE	# Content Security Policy (CSP) Header Not Set
+10068	10068	IGNORE	# X-Frame-Options Header
+10069	10069	IGNORE	# X-Content-Type-Options Header Missing
+10070	10070	IGNORE	# Content Security Policy (CSP) Header Not Set

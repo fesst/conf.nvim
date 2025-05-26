@@ -13,15 +13,16 @@ name: "CodeQL Analysis"
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
   schedule:
-    - cron: '33 12 * * 1'
+    - cron: "33 12 * * 1"
+  workflow_dispatch: # Manual trigger
 
 jobs:
   analyze:
-    name: Analyze GitHub Actions
+    name: Analyze Code
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -30,16 +31,26 @@ jobs:
       contents: read
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: actions
-        config-file: ./.github/codeql/codeql-config.yml
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: actions
+          config-file: ./.github/codeql/codeql-config.yml
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      with:
-        category: "/language:actions"
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:actions"
+
+      - name: Upload CodeQL results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: codeql-results
+          path: codeql-results/
+          if-no-files-found: warn

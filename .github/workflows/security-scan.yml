@@ -1,0 +1,72 @@
+name: Security Scan
+
+on:
+  workflow_dispatch: # Manual trigger
+    inputs:
+      scan_type:
+        description: "Type of security scan to run"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - zap
+          - trivy
+  schedule:
+    - cron: "0 0 * * 0" # Run weekly on Sunday at midnight
+
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+  packages: read
+
+jobs:
+  zap:
+    name: OWASP ZAP Scan
+    if: github.event_name == 'schedule' || github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'zap'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run OWASP ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.10.0
+        with:
+          target: "https://github.com/fesst/conf.nvim"
+          rules_file_name: ".zap/rules.tsv"
+          cmd_options: "-a"
+
+      - name: Upload ZAP scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-results
+          path: zap-results/
+          if-no-files-found: warn
+
+  trivy:
+    name: Trivy Vulnerability Scanner
+    if: github.event_name == 'schedule' || github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'trivy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "Dockerfile"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload Trivy scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-results
+          path: trivy-results/
+          if-no-files-found: warn

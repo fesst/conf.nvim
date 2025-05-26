@@ -20,9 +20,6 @@ on:
         type: boolean
         default: true
     outputs:
-      python_path:
-        description: "Path to Python virtual environment"
-        value: ${{ jobs.setup.outputs.python_path }}
       virtual_env:
         description: "Path to virtual environment"
         value: ${{ jobs.setup.outputs.virtual_env }}
@@ -32,37 +29,12 @@ jobs:
     name: Setup Environment
     runs-on: macos-latest
     outputs:
-      python_path: ${{ steps.setup-python.outputs.python-path }}
       virtual_env: ${{ steps.setup-python.outputs.virtual-env }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Set up Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
-        env:
-          HOMEBREW_NO_AUTO_UPDATE: 1
-
-      - name: Set up cache directories
-        run: |
-          mkdir -p "$HOME/.cache/pip"
-          mkdir -p "$HOME/.npm"
-          mkdir -p "$HOME/Library/Caches/Homebrew"
-          npm config set loglevel verbose
-          npm config set progress true
-          npm config set timing true
-
-      - name: Cache Homebrew packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            $HOME/Library/Caches/Homebrew
-            /usr/local/Homebrew
-          key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh', 'infra/install.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-homebrew-
 
       - name: Set up Python
         if: inputs.setup_python
@@ -74,8 +46,10 @@ jobs:
 
       - name: Set up Python virtual environment
         if: inputs.setup_python
+        id: venv
         run: |
           python -m venv .venv
+          echo "virtual-env=$PWD/.venv" >> $GITHUB_OUTPUT
           echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
           echo "$PWD/.venv/bin" >> $GITHUB_PATH
           echo "PYTHONPATH=$PWD/.venv/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
@@ -88,7 +62,6 @@ jobs:
         if: inputs.setup_rust
         run: |
           brew install rust rust-analyzer
-          ensure_cargo_path
 
       - name: Set up Node.js
         if: inputs.setup_node
