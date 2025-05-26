@@ -36,6 +36,58 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Cache Homebrew packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Homebrew
+            /opt/homebrew
+            ~/Library/Logs/Homebrew
+          key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-
+
+      - name: Cache npm packages
+        if: inputs.setup_node
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('infra/packages/npm.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Cache Cargo packages
+        if: inputs.setup_rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('infra/packages/cargo.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Cache pip packages
+        if: inputs.setup_python
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('infra/packages/pip.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Cache LuaRocks packages
+        if: inputs.setup_lua
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/luarocks
+            ~/.luarocks
+          key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-luarocks-
+
       - name: Set up Python
         if: inputs.setup_python
         id: setup-python
@@ -47,6 +99,7 @@ jobs:
         if: inputs.setup_python
         id: venv
         run: |
+          set -e
           VENV_PATH="$GITHUB_WORKSPACE/.venv"
           python -m venv "$VENV_PATH"
           echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
@@ -66,17 +119,67 @@ jobs:
           path: .venv
           retention-days: 1
 
-      - name: Set up Rust
-        if: inputs.setup_rust
+      - name: Install system packages
         run: |
-          brew install rust rust-analyzer
+          set -e
+          chmod +x infra/packages/brew.sh
+          ./infra/packages/brew.sh || {
+            echo "Failed to install system packages. Retrying..."
+            brew update
+            ./infra/packages/brew.sh
+          }
 
-      - name: Set up Node.js
+      - name: Install Node.js packages
         if: inputs.setup_node
         run: |
-          brew install node
+          set -e
+          chmod +x infra/packages/npm.sh
+          ./infra/packages/npm.sh || {
+            echo "Failed to install Node.js packages. Retrying..."
+            npm cache clean --force
+            ./infra/packages/npm.sh
+          }
 
-      - name: Set up Lua
+      - name: Install Rust packages
+        if: inputs.setup_rust
+        run: |
+          set -e
+          chmod +x infra/packages/cargo.sh
+          ./infra/packages/cargo.sh || {
+            echo "Failed to install Rust packages. Retrying..."
+            cargo clean
+            ./infra/packages/cargo.sh
+          }
+
+      - name: Install Python packages
+        if: inputs.setup_python
+        run: |
+          set -e
+          chmod +x infra/packages/pip.sh
+          source "$GITHUB_WORKSPACE/.venv/bin/activate"
+          ./infra/packages/pip.sh || {
+            echo "Failed to install Python packages. Retrying..."
+            pip cache purge
+            ./infra/packages/pip.sh
+          }
+
+      - name: Install Lua packages
         if: inputs.setup_lua
         run: |
-          brew install lua luarocks
+          set -e
+          chmod +x infra/packages/luarocks.sh
+          ./infra/packages/luarocks.sh || {
+            echo "Failed to install Lua packages. Retrying..."
+            luarocks config --local lua_version 5.4
+            ./infra/packages/luarocks.sh
+          }
+
+      - name: Install Neovim configuration
+        run: |
+          set -e
+          chmod +x infra/packages/nvim.sh
+          ./infra/packages/nvim.sh || {
+            echo "Failed to install Neovim configuration. Retrying..."
+            rm -rf ~/.local/share/nvim
+            ./infra/packages/nvim.sh
+          }
