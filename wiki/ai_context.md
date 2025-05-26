@@ -94,7 +94,7 @@ Lazy is package manager.
     - Pull requests to master
     - Weekly (Mondays at 12:33 UTC)
   - Uses reusable workflow for environment setup
-  - Runs tests and sanity checks
+  - Runs Neovim tests and analysis
   - Uploads test logs as artifacts
 
 - Setup Environment (`.github/workflows/setup-environment.yml`):
@@ -107,29 +107,25 @@ Lazy is package manager.
   - Creates and configures virtual environment with consistent paths
   - Sets up environment variables for Python packages
 
-- CodeQL Analysis (`.github/workflows/codeql.yml`):
-  - Analyzes GitHub Actions workflows for security
+- Neovim Tests (`.github/workflows/neovim-tests.yml`):
+  - Optimized workflow that combines Lua analysis and Neovim testing
   - Runs on:
     - Push to master
     - Pull requests to master
     - Weekly (Mondays at 12:33 UTC)
-  - Uses security-extended query pack
-  - Requires permissions:
-    - security-events: write
-    - packages: read
-    - actions: read
-    - contents: read
-
-- Lua Analysis (`.github/workflows/lua-analysis.yml`):
-  - Analyzes Lua code using luacheck
-  - Runs on:
-    - Push to master
-    - Pull requests to master
-    - Weekly (Mondays at 12:33 UTC)
-  - Installs:
-    - Lua 5.4
-    - LuaRocks
-    - luacheck
+  - Jobs:
+    - `check-changes`: Early detection of test necessity
+    - `test`: Combined job that runs:
+      - Lua code analysis with luacheck
+      - Neovim functionality tests
+  - Caching strategy:
+    - Homebrew packages (including Apple Silicon paths)
+    - LuaRocks packages and server index
+    - Neovim plugins
+  - Performance optimizations:
+    - Single job for all tests
+    - Optimized package installation
+    - Reduced redundant operations
   - Analyzes:
     - lua/ directory
     - after/plugin/ directory
@@ -137,6 +133,7 @@ Lazy is package manager.
     - --codes: Shows warning codes
     - --ranges: Shows line and column ranges
     - --formatter plain: Uses plain text output
+    - --no-doc: Faster LuaRocks installation
 
 ###### Environment Setup
 
@@ -149,6 +146,8 @@ Lazy is package manager.
     - PIP_PREFIX
   - Activated in all Python-dependent jobs
   - Used for package installation and testing
+  - Cached between workflow runs
+  - Fallback mechanism for environment creation
 
 ###### Branch Protection
 

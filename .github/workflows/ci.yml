@@ -23,6 +23,6 @@ jobs:
       setup_node: true
       setup_lua: true
 
-  lua-analysis:
+  neovim-tests:
     needs: setup
-    uses: ./.github/workflows/lua-analysis.yml
+    uses: ./.github/workflows/neovim-tests.yml

@@ -60,9 +60,6 @@ jobs:
     needs: [setup, check-changes]
     if: needs.check-changes.outputs.run_tests == 'true'
     runs-on: macos-latest
-    strategy:
-      matrix:
-        test_type: [analyze, sanity]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -97,7 +94,6 @@ jobs:
             ${{ runner.os }}-homebrew-
 
       - name: Cache LuaRocks packages
-        if: matrix.test_type == 'analyze'
         uses: actions/cache@v4
         with:
           path: |
@@ -125,15 +121,11 @@ jobs:
           source $GITHUB_WORKSPACE/.venv/bin/activate
           CI=true ./infra/install.sh
 
-      - name: Run Lua Analysis
-        if: matrix.test_type == 'analyze'
+      - name: Run Tests
         run: |
           source $GITHUB_WORKSPACE/.venv/bin/activate
+          echo "Running Lua Analysis..."
           luarocks install luacheck --no-doc
           luacheck lua/ after/plugin/ --codes --ranges --formatter plain
-
-      - name: Run Neovim Sanity Tests
-        if: matrix.test_type == 'sanity'
-        run: |
-          source $GITHUB_WORKSPACE/.venv/bin/activate
+          echo "Running Neovim Sanity Tests..."
           bash infra/nvim_sanity_test.sh
