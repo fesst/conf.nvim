@@ -235,8 +235,18 @@ jobs:
             $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
           }
 
-      - name: Install Node.js packages
-        if: inputs.setup_node
+      - name: Install Node.js packages (Windows)
+        if: inputs.setup_node && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & "$GITHUB_WORKSPACE/infra/packages/npm.ps1" || {
+            Write-Error "Failed to install Node.js packages. Retrying..."
+            npm cache clean --force
+            & "$GITHUB_WORKSPACE/infra/packages/npm.ps1"
+          }
+
+      - name: Install Node.js packages (macOS)
+        if: inputs.setup_node && runner.os == 'macOS'
         shell: bash
         run: |
           set -e
@@ -259,17 +269,24 @@ jobs:
             ./infra/packages/cargo.sh
           }
 
-      - name: Install Python packages
-        if: inputs.setup_python
+      - name: Install Python packages (Windows)
+        if: inputs.setup_python && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & "$GITHUB_WORKSPACE/.venv/Scripts/activate.ps1"
+          & "$GITHUB_WORKSPACE/infra/packages/pip.ps1" || {
+            Write-Error "Failed to install Python packages. Retrying..."
+            pip cache purge
+            & "$GITHUB_WORKSPACE/infra/packages/pip.ps1"
+          }
+
+      - name: Install Python packages (macOS)
+        if: inputs.setup_python && runner.os == 'macOS'
         shell: bash
         run: |
           set -e
           chmod +x infra/packages/pip.sh
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            source "$GITHUB_WORKSPACE/.venv/Scripts/activate"
-          else
-            source "$GITHUB_WORKSPACE/.venv/bin/activate"
-          fi
+          source "$GITHUB_WORKSPACE/.venv/bin/activate"
           ./infra/packages/pip.sh || {
             echo "Failed to install Python packages. Retrying..."
             pip cache purge
