@@ -27,8 +27,11 @@ jobs:
         chmod +x infra/should_run_tests.sh
         if bash infra/should_run_tests.sh ${{ github.base_ref }} ${{ github.sha }}; then
           echo "run_tests=true" >> $GITHUB_OUTPUT
-        else
+        elif [ $? -eq 1 ]; then
           echo "run_tests=false" >> $GITHUB_OUTPUT
+        else
+          echo "Error occurred while checking for changes. Running tests to be safe."
+          echo "run_tests=true" >> $GITHUB_OUTPUT
         fi
 
     - name: Skip if no test/infra/.lua changes
