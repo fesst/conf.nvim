@@ -45,16 +45,50 @@ jobs:
         echo "No test/infra/.lua changes. Skipping tests."
         exit 0
 
+    - name: Cache Homebrew
+      if: steps.test_check.outputs.run_tests == 'true'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/Library/Caches/Homebrew
+          /usr/local/Homebrew
+        key: ${{ runner.os }}-homebrew-${{ hashFiles('**/install.sh') }}
+        restore-keys: |
+          ${{ runner.os }}-homebrew-
+
     - name: Install Neovim
       if: steps.test_check.outputs.run_tests == 'true'
       run: |
         brew install neovim
+
+    - name: Cache dependencies
+      if: steps.test_check.outputs.run_tests == 'true'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.local/share/nvim
+          ~/.config/nvim/plugin
+          ~/.config/nvim/lazy
+        key: ${{ runner.os }}-deps-${{ hashFiles('**/install.sh') }}
+        restore-keys: |
+          ${{ runner.os }}-deps-
 
     - name: Install dependencies
       if: steps.test_check.outputs.run_tests == 'true'
       run: |
         chmod +x infra/install.sh
         CI=true ./infra/install.sh
+
+    - name: Cache Lua packages
+      if: steps.test_check.outputs.run_tests == 'true'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.luarocks
+          ~/.cache/luarocks
+        key: ${{ runner.os }}-luarocks-${{ hashFiles('**/install.sh') }}
+        restore-keys: |
+          ${{ runner.os }}-luarocks-
 
     - name: Run luacheck
       if: steps.test_check.outputs.run_tests == 'true'
@@ -64,4 +98,4 @@ jobs:
     - name: Run Neovim sanity tests
       if: steps.test_check.outputs.run_tests == 'true'
       run: |
-        bash test/setup/sanity_nvim_start.sh 
+        bash infra/sanity_nvim_start.sh 
