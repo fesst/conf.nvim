@@ -113,7 +113,7 @@ jobs:
 
             # Add Chocolatey bin to PATH and refresh environment
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            $env:Path = "$env:Path;C:\tools\neovim\Neovim\bin"
+            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
 
             # Verify Neovim installation
             Write-Output "Verifying Neovim installation..."
@@ -141,7 +141,7 @@ jobs:
             & "${{ inputs.venv_path }}/Scripts/activate.ps1"
             # Ensure Neovim is in PATH and verify it
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            $env:Path = "$env:Path;C:\tools\neovim\Neovim\bin"
+            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
 
             # Verify Neovim is available
             $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
@@ -163,7 +163,7 @@ jobs:
             & "${{ inputs.venv_path }}/Scripts/activate.ps1"
             # Ensure Neovim is in PATH
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            $env:Path = "$env:Path;C:\tools\neovim\Neovim\bin"
+            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
           } else {
             source "${{ inputs.venv_path }}/bin/activate"
           }
@@ -176,7 +176,7 @@ jobs:
             & "${{ inputs.venv_path }}/Scripts/activate.ps1"
             # Ensure Neovim is in PATH
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            $env:Path = "$env:Path;C:\tools\neovim\Neovim\bin"
+            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
           } else {
             source "${{ inputs.venv_path }}/bin/activate"
           }
@@ -204,7 +204,7 @@ jobs:
             & "${{ inputs.venv_path }}/Scripts/activate.ps1"
             # Ensure all tools are in PATH
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            $env:Path = "$env:Path;C:\tools\neovim\Neovim\bin;$env:USERPROFILE\.cargo\bin"
+            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin;$env:USERPROFILE\.cargo\bin"
           } else {
             source "${{ inputs.venv_path }}/bin/activate"
           }

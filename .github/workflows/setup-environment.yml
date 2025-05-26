@@ -164,9 +164,12 @@ jobs:
             choco install neovim -y
             choco install tree-sitter -y
 
-            # Add Neovim to PATH immediately
+            # Add Neovim to PATH immediately and refresh environment
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            $env:Path = "$env:Path;C:\tools\neovim\Neovim\bin"
+            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
+
+            # Force refresh environment variables
+            refreshenv
 
             # Verify Neovim installation
             Write-Output "Verifying Neovim installation..."
