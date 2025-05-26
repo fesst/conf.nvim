@@ -132,14 +132,6 @@ jobs:
           fi
           python -m pip install --upgrade pip
 
-      - name: Upload virtual environment
-        if: inputs.setup_python
-        uses: actions/upload-artifact@v4
-        with:
-          name: venv
-          path: .venv
-          retention-days: 1
-
       - name: Install system packages
         if: runner.os == 'macOS'
         shell: bash
@@ -192,6 +184,14 @@ jobs:
             pip cache purge
             ./infra/packages/pip.sh
           }
+
+      - name: Upload virtual environment
+        if: inputs.setup_python
+        uses: actions/upload-artifact@v4
+        with:
+          name: venv
+          path: .venv
+          retention-days: 1
 
       - name: Install Lua packages
         if: inputs.setup_lua
