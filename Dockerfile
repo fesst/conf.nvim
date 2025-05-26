@@ -8,6 +8,10 @@ LABEL org.opencontainers.image.source="https://github.com/fesst/conf.nvim"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.authors="fesst"
 
+# Add build arguments for architecture
+ARG TARGETARCH
+ARG TARGETVARIANT
+
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -43,13 +47,18 @@ RUN apt-get update && apt-get install -y \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Install Neovim
-RUN curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-arm64.tar.gz \
-    && rm -rf /opt/nvim \
-    && mkdir -p /opt/nvim \
-    && tar -C /opt -xzf nvim-linux-arm64.tar.gz \
-    && ln -s /opt/nvim-linux-arm64/bin/nvim /usr/local/bin/nvim \
-    && rm nvim-linux-arm64.tar.gz
+# Install Neovim based on architecture
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+        curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz && \
+        tar -C /opt -xzf nvim-linux-x86_64.tar.gz && \
+        ln -s /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim && \
+        rm nvim-linux-x86_64.tar.gz; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+        curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-arm64.tar.gz && \
+        tar -C /opt -xzf nvim-linux-arm64.tar.gz && \
+        ln -s /opt/nvim-linux-arm64/bin/nvim /usr/local/bin/nvim && \
+        rm nvim-linux-arm64.tar.gz; \
+    fi
 
 # Create neovim config directory
 RUN mkdir -p /root/.config/nvim
@@ -102,8 +111,10 @@ RUN mkdir -p /home/developer/.config/nvim \
 # Copy configuration files to user's home
 COPY --chown=developer:developer . /home/developer/.config/nvim/
 
-# Install Neovim plugins
-RUN nvim --headless -c "Lazy sync" -c "qa"
+# Install Neovim plugins (skip in CI)
+RUN if [ "$CI" != "true" ]; then \
+        nvim --headless -c "Lazy sync" -c "qa"; \
+    fi
 
 # Set the default command
 CMD ["nvim"]
