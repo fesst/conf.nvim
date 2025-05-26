@@ -1,0 +1,184 @@
+name: Cleanup Workflow Runs
+
+on:
+  schedule:
+    - cron: '0 */12 * * *'  # Run every 12 hours
+  workflow_dispatch:  # Allow manual triggering
+    inputs:
+      age_threshold:
+        description: 'Age threshold in hours'
+        required: false
+        default: '1'
+        type: string
+
+# Add permissions block
+permissions:
+  actions: write  # Required to delete workflow runs
+  contents: read  # Required to read repository contents
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cleanup workflow runs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ageThreshold = parseInt('${{ github.event.inputs.age_threshold }}') || 1;
+            console.log(`Using age threshold of ${ageThreshold} hours`);
+
+            const { data: workflows } = await github.rest.actions.listRepoWorkflows({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            console.log(`Found ${workflows.workflows.length} workflows to process`);
+
+            for (const workflow of workflows.workflows) {
+              console.log(`\nProcessing workflow: ${workflow.name}`);
+              
+              // Track the two latest successive successful runs
+              const latestSuccessiveRuns = new Map();
+              let page = 1;
+              let hasMoreRuns = true;
+              
+              // First pass: identify two latest successive successful runs
+              while (hasMoreRuns) {
+                try {
+                  const { data: runs } = await github.rest.actions.listWorkflowRuns({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    workflow_id: workflow.id,
+                    per_page: 100,
+                    page: page
+                  });
+
+                  if (!runs.workflow_runs || runs.workflow_runs.length === 0) {
+                    hasMoreRuns = false;
+                    break;
+                  }
+
+                  console.log(`Processing page ${page} with ${runs.workflow_runs.length} runs`);
+                  
+                  // Sort runs by date (newest first)
+                  const sortedRuns = [...runs.workflow_runs].sort((a, b) => 
+                    new Date(b.created_at) - new Date(a.created_at)
+                  );
+
+                  for (const run of sortedRuns) {
+                    const branch = run.head_branch;
+                    let branchRuns = latestSuccessiveRuns.get(branch) || [];
+                    
+                    // If we already have two successive successful runs, skip
+                    if (branchRuns.length >= 2) {
+                      continue;
+                    }
+
+                    if (run.conclusion === 'success') {
+                      // If this is the first successful run or it's consecutive with the last one
+                      if (branchRuns.length === 0 || 
+                          (branchRuns.length === 1 && 
+                           Math.abs(new Date(run.created_at) - new Date(branchRuns[0].created_at)) < 3600000)) { // 1 hour in milliseconds
+                        branchRuns.push(run);
+                        latestSuccessiveRuns.set(branch, branchRuns);
+                      }
+                    } else {
+                      // If we encounter a non-successful run, reset the count
+                      branchRuns = [];
+                      latestSuccessiveRuns.set(branch, branchRuns);
+                    }
+                  }
+                  
+                  page++;
+                } catch (error) {
+                  if (error.status === 404) {
+                    console.log(`No more runs found for workflow ${workflow.name}`);
+                    hasMoreRuns = false;
+                  } else {
+                    console.error(`Error processing page ${page}: ${error.message}`);
+                    throw error;
+                  }
+                }
+              }
+
+              // Log how many branches have successive successful runs
+              let totalSuccessiveRuns = 0;
+              for (const [branch, runs] of latestSuccessiveRuns.entries()) {
+                totalSuccessiveRuns += runs.length;
+                console.log(`Branch ${branch} has ${runs.length} successive successful runs`);
+              }
+              console.log(`Total successive successful runs to preserve: ${totalSuccessiveRuns}`);
+
+              // Second pass: delete old runs
+              page = 1;
+              hasMoreRuns = true;
+              let deletedCount = 0;
+              let preservedCount = 0;
+
+              while (hasMoreRuns) {
+                try {
+                  const { data: runs } = await github.rest.actions.listWorkflowRuns({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    workflow_id: workflow.id,
+                    per_page: 100,
+                    page: page
+                  });
+
+                  if (!runs.workflow_runs || runs.workflow_runs.length === 0) {
+                    hasMoreRuns = false;
+                    break;
+                  }
+
+                  console.log(`\nProcessing page ${page} for deletion`);
+                  
+                  for (const run of runs.workflow_runs) {
+                    const runDate = new Date(run.created_at);
+                    const thresholdTime = new Date();
+                    thresholdTime.setHours(thresholdTime.getHours() - ageThreshold);
+
+                    if (runDate < thresholdTime) {
+                      const branch = run.head_branch;
+                      const branchRuns = latestSuccessiveRuns.get(branch) || [];
+                      
+                      // Skip if this is one of the two successive successful runs
+                      if (branchRuns.some(successfulRun => successfulRun.id === run.id)) {
+                        console.log(`Skipping preserved successive successful run ${run.id} from ${branch}`);
+                        preservedCount++;
+                        continue;
+                      }
+
+                      try {
+                        await github.rest.actions.deleteWorkflowRun({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          run_id: run.id
+                        });
+                        console.log(`Deleted run ${run.id} from ${branch} (created ${runDate.toISOString()})`);
+                        deletedCount++;
+                      } catch (error) {
+                        if (error.status === 404) {
+                          console.log(`Run ${run.id} was already deleted`);
+                        } else {
+                          console.error(`Failed to delete run ${run.id}: ${error.message}`);
+                        }
+                      }
+                    }
+                  }
+                  
+                  page++;
+                } catch (error) {
+                  if (error.status === 404) {
+                    console.log(`No more runs found for workflow ${workflow.name}`);
+                    hasMoreRuns = false;
+                  } else {
+                    console.error(`Error processing page ${page}: ${error.message}`);
+                    throw error;
+                  }
+                }
+              }
+
+              console.log(`\nSummary for ${workflow.name}:`);
+              console.log(`- Deleted ${deletedCount} runs`);
+              console.log(`- Preserved ${preservedCount} successive successful runs`);
+            } 
