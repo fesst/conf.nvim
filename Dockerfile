@@ -15,50 +15,76 @@ ARG TARGETVARIANT=
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Add retry logic and multiple mirrors
-RUN echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries && \
-    echo 'Acquire::http::Timeout "120";' >> /etc/apt/apt.conf.d/80-retries && \
-    echo 'Acquire::https::Timeout "120";' >> /etc/apt/apt.conf.d/80-retries && \
-    echo 'Acquire::ftp::Timeout "120";' >> /etc/apt/apt.conf.d/80-retries && \
-    sed -i 's/archive.ubuntu.com/mirrors.ubuntu.com/g' /etc/apt/sources.list && \
-    sed -i 's/security.ubuntu.com/mirrors.ubuntu.com/g' /etc/apt/sources.list
+# Configure apt with multiple mirrors and better error handling
+RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::http::Timeout "180";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::https::Timeout "180";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::ftp::Timeout "180";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'APT::Get::Assume-Yes "true";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'APT::Get::Show-Upgraded "true";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'Dpkg::Options::="--force-confdef";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'Dpkg::Options::="--force-confold";' >> /etc/apt/apt.conf.d/80-retries
 
-# Install all required packages in a single RUN command
+# Configure multiple mirrors with fallback
+RUN sed -i 's/archive.ubuntu.com/mirrors.ubuntu.com/g' /etc/apt/sources.list && \
+    sed -i 's/security.ubuntu.com/mirrors.ubuntu.com/g' /etc/apt/sources.list && \
+    echo "deb http://mirrors.kernel.org/ubuntu/ jammy main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.kernel.org/ubuntu/ jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.kernel.org/ubuntu/ jammy-security main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.kernel.org/ubuntu/ jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list
+
+# Install packages in groups with error handling
 RUN apt-get clean && \
-    apt-get update --fix-missing && \
-    apt-get install -y --no-install-recommends \
-    # System dependencies
+    apt-get update --fix-missing || (echo "Failed to update package lists" && exit 1)
+
+# Install essential system packages first
+RUN apt-get install -y --no-install-recommends \
     ca-certificates \
     gnupg \
-    # Basic development tools
     curl \
     git \
+    && rm -rf /var/lib/apt/lists/* || (echo "Failed to install essential packages" && exit 1)
+
+# Install development tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     pkg-config \
     libssl-dev \
     make \
-    # Python and related tools
+    && rm -rf /var/lib/apt/lists/* || (echo "Failed to install development tools" && exit 1)
+
+# Install Python and related tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     python3-venv \
-    # Search and formatting tools
+    && rm -rf /var/lib/apt/lists/* || (echo "Failed to install Python tools" && exit 1)
+
+# Install search and formatting tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ripgrep \
     fd-find \
     fzf \
     shellcheck \
     shfmt \
-    # PostgreSQL and related tools
+    && rm -rf /var/lib/apt/lists/* || (echo "Failed to install search and formatting tools" && exit 1)
+
+# Install PostgreSQL and related tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql \
     postgresql-client \
     pgformatter \
-    # Lua and compiler tools
+    && rm -rf /var/lib/apt/lists/* || (echo "Failed to install PostgreSQL tools" && exit 1)
+
+# Install Lua and compiler tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
     luarocks \
     llvm \
     clang \
     gcc \
     zlib1g-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* || (echo "Failed to install Lua and compiler tools" && exit 1)
 
 # Install Node.js 20.x (Latest LTS)
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
