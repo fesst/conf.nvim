@@ -137,8 +137,13 @@ manage_packages() {
             uninstall_cmd="npm uninstall -g"
             ;;
         pip)
-            install_cmd="python3 -m pip install --quiet"
-            uninstall_cmd="python3 -m pip uninstall -y"
+            if [ "$CI" = "true" ]; then
+                install_cmd="$VIRTUAL_ENV/bin/pip install --quiet"
+                uninstall_cmd="$VIRTUAL_ENV/bin/pip uninstall -y"
+            else
+                install_cmd="python3 -m pip install --quiet"
+                uninstall_cmd="python3 -m pip uninstall -y"
+            fi
             ;;
         luarocks)
             install_cmd="luarocks install"

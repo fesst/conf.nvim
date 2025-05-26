@@ -79,6 +79,8 @@ jobs:
           if [ -f infra/install.sh ]; then
             chmod +x infra/install.sh
             source .venv/bin/activate
+            export PATH="$VIRTUAL_ENV/bin:$PATH"
+            export PYTHONPATH="$VIRTUAL_ENV/lib/python3.*/site-packages:$PYTHONPATH"
             CI=true ./infra/install.sh
           fi
         shell: bash
