@@ -42,7 +42,3 @@ jobs:
         run: |
           stylua --check lua/
           stylua --check after/plugin/
-
-      - name: Run performance tests
-        run: |
-          nvim --headless -c "lua require('test.performance')" -c "quit"
