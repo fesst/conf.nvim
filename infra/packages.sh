@@ -29,13 +29,21 @@ BREW_CASKS=(
 
 # npm packages
 NPM_PACKAGES=(
-    "typescript"     # Required for TypeScript language server
-    "typescript-language-server"
-    "prettier"      # Required for formatting
-    "eslint"        # Required for linting
-    "@angular/cli"  # Required for Angular development
-    "sql-language-server" # Required for SQL support
-    "eslint_d"      # Required for null-ls ESLint integration
+    "typescript@latest"     # Required for TypeScript language server
+    "typescript-language-server@latest"
+    "prettier@latest"      # Required for formatting
+    "eslint@latest"        # Required for linting
+    "@angular/cli@latest"  # Required for Angular development
+    "sql-language-server@latest" # Required for SQL support
+    "eslint_d@latest"      # Required for null-ls ESLint integration
+)
+
+# Add npm configuration to avoid deprecated packages
+NPM_CONFIG=(
+    "--no-fund"           # Disable funding messages
+    "--no-audit"          # Disable audit (we handle this separately)
+    "--no-package-lock"   # Don't create package-lock.json for global installs
+    "--no-save"           # Don't save to package.json
 )
 
 # Python packages
@@ -67,7 +75,8 @@ NVIM_DIRS=(
 export BREW_PACKAGES
 export BREW_CASKS
 export NPM_PACKAGES
+export NPM_CONFIG
 export PIP_PACKAGES
 export LUAROCKS_PACKAGES
 export CARGO_PACKAGES
-export NVIM_DIRS 
+export NVIM_DIRS

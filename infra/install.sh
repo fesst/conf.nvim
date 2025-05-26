@@ -85,7 +85,7 @@ fi
 print_status "Installing Node.js and npm packages..."
 if [ "$CI" = "true" ]; then
     brew install node
-    npm install -g "${NPM_PACKAGES[@]}"
+    npm install -g "${NPM_CONFIG[@]}" "${NPM_PACKAGES[@]}"
 else
     if ! check_command node; then
         print_status "Installing Node.js..."
@@ -95,7 +95,7 @@ else
     for package in "${NPM_PACKAGES[@]}"; do
         if ! check_npm_package "$package"; then
             print_status "Installing $package..."
-            npm install -g "$package"
+            npm install -g "${NPM_CONFIG[@]}" "$package"
         else
             print_warning "$package is already installed"
         fi
@@ -195,4 +195,4 @@ if [ "$CI" != "true" ]; then
     print_status "Installation completed successfully!"
     print_status "Please restart your terminal and run :checkhealth in Neovim to verify the installation."
     print_status "Note: Mason packages (codelldb, debugpy, etc.) will be installed automatically when you first open Neovim."
-fi 
+fi
