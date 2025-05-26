@@ -316,4 +316,6 @@ jobs:
       - name: Full environment setup (macOS)
         if: runner.os == 'macOS'
         shell: bash
-        run: infra/ci-setup-macos.sh
+        run: |
+          chmod +x infra/ci-setup-macos.sh
+          infra/ci-setup-macos.sh

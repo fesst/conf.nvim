@@ -5,47 +5,20 @@ on:
     branches: ["master"]
 
 jobs:
-  setup-python:
+  setup:
     uses: ./.github/workflows/setup-environment.yml
     with:
       setup_python: true
-      setup_rust: false
-      setup_node: false
-      setup_lua: false
-      runner: windows-latest
-
-  setup-rust:
-    uses: ./.github/workflows/setup-environment.yml
-    with:
-      setup_python: false
       setup_rust: true
-      setup_node: false
-      setup_lua: false
-      runner: windows-latest
-
-  setup-node:
-    uses: ./.github/workflows/setup-environment.yml
-    with:
-      setup_python: false
-      setup_rust: false
       setup_node: true
-      setup_lua: false
-      runner: windows-latest
-
-  setup-lua:
-    uses: ./.github/workflows/setup-environment.yml
-    with:
-      setup_python: false
-      setup_rust: false
-      setup_node: false
       setup_lua: true
       runner: windows-latest
 
   test:
-    needs: [setup-python, setup-rust, setup-node, setup-lua]
+    needs: setup
     uses: ./.github/workflows/test-steps.yml
     with:
       platform: windows
-      venv_path: ${{ needs.setup-python.outputs.virtual_env }}
+      venv_path: ${{ needs.setup.outputs.virtual_env }}
       use_cache: true
       install_deps: true
