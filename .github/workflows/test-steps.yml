@@ -111,9 +111,19 @@ jobs:
             choco install neovim -y
             choco install tree-sitter -y
 
-            # Add Chocolatey bin to PATH
+            # Add Chocolatey bin to PATH and refresh environment
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $env:Path = "$env:Path;C:\tools\neovim\Neovim\bin"
+
+            # Verify Neovim installation
+            Write-Output "Verifying Neovim installation..."
+            $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+            if (-not $nvimPath) {
+              Write-Error "Neovim not found in PATH after installation"
+              Write-Output "Current PATH: $env:Path"
+              exit 1
+            }
+            Write-Output "Neovim found at: $($nvimPath.Source)"
           }
 
           if ("${{ inputs.platform }}" -eq "windows") {
@@ -129,9 +139,18 @@ jobs:
         run: |
           if ("${{ inputs.platform }}" -eq "windows") {
             & "${{ inputs.venv_path }}/Scripts/activate.ps1"
-            # Ensure Neovim is in PATH
+            # Ensure Neovim is in PATH and verify it
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $env:Path = "$env:Path;C:\tools\neovim\Neovim\bin"
+
+            # Verify Neovim is available
+            $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+            if (-not $nvimPath) {
+              Write-Error "Neovim not found in PATH before running tests"
+              Write-Output "Current PATH: $env:Path"
+              exit 1
+            }
+            Write-Output "Using Neovim from: $($nvimPath.Source)"
           } else {
             source "${{ inputs.venv_path }}/bin/activate"
           }
