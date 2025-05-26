@@ -11,6 +11,11 @@ on:
   schedule:
     - cron: "33 12 * * 1"
 
+# Cancel in-progress runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   setup:
     uses: ./.github/workflows/setup-environment.yml
