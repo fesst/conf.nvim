@@ -109,15 +109,27 @@ jobs:
         shell: bash
         run: |
           set -e
-          VENV_PATH="$GITHUB_WORKSPACE/.venv"
-          python -m venv "$VENV_PATH"
-          echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
-          echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
-          echo "$VENV_PATH/bin" >> $GITHUB_PATH
-          echo "PYTHONPATH=$VENV_PATH/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
-          echo "PIP_TARGET=$VENV_PATH/lib/python3.12/site-packages" >> $GITHUB_ENV
-          echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
-          source "$VENV_PATH/bin/activate"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            VENV_PATH="$GITHUB_WORKSPACE/.venv"
+            python -m venv "$VENV_PATH"
+            echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
+            echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
+            echo "$VENV_PATH/Scripts" >> $GITHUB_PATH
+            echo "PYTHONPATH=$VENV_PATH/Lib/site-packages:$PYTHONPATH" >> $GITHUB_ENV
+            echo "PIP_TARGET=$VENV_PATH/Lib/site-packages" >> $GITHUB_ENV
+            echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
+            source "$VENV_PATH/Scripts/activate"
+          else
+            VENV_PATH="$GITHUB_WORKSPACE/.venv"
+            python -m venv "$VENV_PATH"
+            echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
+            echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
+            echo "$VENV_PATH/bin" >> $GITHUB_PATH
+            echo "PYTHONPATH=$VENV_PATH/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
+            echo "PIP_TARGET=$VENV_PATH/lib/python3.12/site-packages" >> $GITHUB_ENV
+            echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
+            source "$VENV_PATH/bin/activate"
+          fi
           python -m pip install --upgrade pip
 
       - name: Upload virtual environment
