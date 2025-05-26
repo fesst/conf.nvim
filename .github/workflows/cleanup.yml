@@ -39,67 +39,72 @@ jobs:
               
               // Track the two latest successive successful runs
               const latestSuccessiveRuns = new Map();
-              let page = 1;
-              let hasMoreRuns = true;
-              
-              // First pass: identify two latest successive successful runs
-              while (hasMoreRuns) {
-                try {
-                  const { data: runs } = await github.rest.actions.listWorkflowRuns({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    workflow_id: workflow.id,
-                    per_page: 100,
-                    page: page
-                  });
+              // Reusable function to fetch paginated workflow runs
+              async function fetchPaginatedWorkflowRuns(workflowId, processRunsCallback) {
+                let page = 1;
+                let hasMoreRuns = true;
 
-                  if (!runs.workflow_runs || runs.workflow_runs.length === 0) {
-                    hasMoreRuns = false;
-                    break;
-                  }
+                while (hasMoreRuns) {
+                  try {
+                    const { data: runs } = await github.rest.actions.listWorkflowRuns({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      workflow_id: workflowId,
+                      per_page: 100,
+                      page: page
+                    });
 
-                  console.log(`Processing page ${page} with ${runs.workflow_runs.length} runs`);
-                  
-                  // Sort runs by date (newest first)
-                  const sortedRuns = [...runs.workflow_runs].sort((a, b) => 
-                    new Date(b.created_at) - new Date(a.created_at)
-                  );
-
-                  for (const run of sortedRuns) {
-                    const branch = run.head_branch;
-                    let branchRuns = latestSuccessiveRuns.get(branch) || [];
-                    
-                    // If we already have two successive successful runs, skip
-                    if (branchRuns.length >= 2) {
-                      continue;
+                    if (!runs.workflow_runs || runs.workflow_runs.length === 0) {
+                      hasMoreRuns = false;
+                      break;
                     }
 
-                    if (run.conclusion === 'success') {
-                      // If this is the first successful run or it's consecutive with the last one
-                      if (branchRuns.length === 0 || 
-                          (branchRuns.length === 1 && 
-                           Math.abs(new Date(run.created_at) - new Date(branchRuns[0].created_at)) < 3600000)) { // 1 hour in milliseconds
-                        branchRuns.push(run);
-                        latestSuccessiveRuns.set(branch, branchRuns);
-                      }
+                    console.log(`Processing page ${page} with ${runs.workflow_runs.length} runs`);
+                    processRunsCallback(runs.workflow_runs);
+                    page++;
+                  } catch (error) {
+                    if (error.status === 404) {
+                      console.log(`No more runs found for workflow`);
+                      hasMoreRuns = false;
                     } else {
-                      // If we encounter a non-successful run, reset the count
-                      branchRuns = [];
-                      latestSuccessiveRuns.set(branch, branchRuns);
+                      console.error(`Error processing page ${page}: ${error.message}`);
+                      throw error;
                     }
-                  }
-                  
-                  page++;
-                } catch (error) {
-                  if (error.status === 404) {
-                    console.log(`No more runs found for workflow ${workflow.name}`);
-                    hasMoreRuns = false;
-                  } else {
-                    console.error(`Error processing page ${page}: ${error.message}`);
-                    throw error;
                   }
                 }
               }
+
+              // First pass: identify two latest successive successful runs
+              await fetchPaginatedWorkflowRuns(workflow.id, (workflowRuns) => {
+                // Sort runs by date (newest first)
+                const sortedRuns = [...workflowRuns].sort((a, b) => 
+                  new Date(b.created_at) - new Date(a.created_at)
+                );
+
+                for (const run of sortedRuns) {
+                  const branch = run.head_branch;
+                  let branchRuns = latestSuccessiveRuns.get(branch) || [];
+
+                  // If we already have two successive successful runs, skip
+                  if (branchRuns.length >= 2) {
+                    continue;
+                  }
+
+                  if (run.conclusion === 'success') {
+                    // If this is the first successful run or it's consecutive with the last one
+                    if (branchRuns.length === 0 || 
+                        (branchRuns.length === 1 && 
+                         Math.abs(new Date(run.created_at) - new Date(branchRuns[0].created_at)) < 3600000)) { // 1 hour in milliseconds
+                      branchRuns.push(run);
+                      latestSuccessiveRuns.set(branch, branchRuns);
+                    }
+                  } else {
+                    // If we encounter a non-successful run, reset the count
+                    branchRuns = [];
+                    latestSuccessiveRuns.set(branch, branchRuns);
+                  }
+                }
+              });
 
               // Log how many branches have successive successful runs
               let totalSuccessiveRuns = 0;
