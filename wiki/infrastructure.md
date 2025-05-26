@@ -6,8 +6,16 @@ This document describes the infrastructure scripts used in the Neovim configurat
 
 ### Installation and Setup
 
-- `install.sh`: Main installation script that sets up the Neovim environment
+- `install.sh`: Main installation script for macOS that sets up the Neovim environment
   - Installs system dependencies via Homebrew
+  - Sets up Python packages
+  - Installs Node.js and npm packages
+  - Installs Rust and related tools
+  - Configures tmux
+
+- `install.ps1`: Main installation script for Windows that sets up the Neovim environment
+  - Supports both winget (default) and Chocolatey package managers
+  - Installs system dependencies via selected package manager
   - Sets up Python packages
   - Installs Node.js and npm packages
   - Installs Rust and related tools
@@ -156,6 +164,7 @@ Currently supported platforms:
   - Uses Homebrew for package management
   - Native system integration
 - Windows
-  - Uses Chocolatey for package management
+  - Uses winget by default for package management
+  - Chocolatey available as an alternative package manager
   - PowerShell-based automation
 - Docker container for cross-platform development

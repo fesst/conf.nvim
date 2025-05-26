@@ -60,15 +60,27 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
 
 2. Run the installation script:
 
+   For macOS:
+
    ```zsh
    ./infra/install.sh
    ```
 
-   Note: The installation script supports both macOS and Windows environments. On macOS, it uses Homebrew for package management, while on Windows it uses Chocolatey.
+   For Windows:
+
+   ```powershell
+   # Using winget (default)
+   .\infra\install.ps1
+
+   # Using Chocolatey
+   .\infra\install.ps1 -UseChocolatey
+   ```
+
+   Note: The installation script supports both macOS and Windows environments. On macOS, it uses Homebrew for package management, while on Windows it uses winget by default with Chocolatey as an optional alternative.
 
 The installation script will:
 
-- Install required system dependencies via Homebrew (macOS) or Chocolatey (Windows)
+- Install required system dependencies via Homebrew (macOS) or winget/Chocolatey (Windows)
 - Set up Python packages
 - Install Node.js and npm packages
 - Install Rust and related tools
