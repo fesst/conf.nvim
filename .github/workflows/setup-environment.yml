@@ -152,16 +152,13 @@ jobs:
           if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
             Write-Output "Installing Windows Package Manager (winget)..."
 
-            # Install winget using the official method
+            # Download and install winget using the official installer
             $progressPreference = 'silentlyContinue'
-            Invoke-WebRequest -Uri https://aka.ms/getwinget -OutFile Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
-            Invoke-WebRequest -Uri https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx -OutFile Microsoft.VCLibs.x64.14.00.Desktop.appx
-            Invoke-WebRequest -Uri https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.7.3/Microsoft.UI.Xaml.2.7.x64.appx -OutFile Microsoft.UI.Xaml.2.7.x64.appx
+            $installerPath = "$env:TEMP\winget-installer.exe"
+            Invoke-WebRequest -Uri "https://github.com/microsoft/winget-cli/releases/latest/download/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle" -OutFile $installerPath
 
-            # Install dependencies
-            Add-AppxPackage Microsoft.VCLibs.x64.14.00.Desktop.appx
-            Add-AppxPackage Microsoft.UI.Xaml.2.7.x64.appx
-            Add-AppxPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+            # Install using the Windows Package Manager installer
+            Start-Process -FilePath $installerPath -ArgumentList "/install /quiet /norestart" -Wait
 
             # Refresh environment variables
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
