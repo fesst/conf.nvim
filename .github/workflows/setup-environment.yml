@@ -307,3 +307,13 @@ jobs:
             rm -rf ~/.local/share/nvim
             ./infra/packages/nvim.sh
           }
+
+      - name: Full environment setup (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: infra/ci-setup-windows.ps1
+
+      - name: Full environment setup (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: infra/ci-setup-macos.sh
