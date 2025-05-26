@@ -28,34 +28,49 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Cache Homebrew packages
+        uses: actions/cache@v4
         with:
-          python-version: "3.12"
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Homebrew
+          key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-
 
-      - name: Create and activate virtual environment
+      - name: Cache LuaRocks packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/luarocks
+            ~/.luarocks
+          key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-luarocks-
+
+      - name: Cache virtual environment
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
+
+      - name: Download virtual environment
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: venv
+          path: .venv
+
+      - name: Activate virtual environment
         run: |
-          python -m venv $GITHUB_WORKSPACE/.venv
           echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
           echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
           echo "PYTHONPATH=$GITHUB_WORKSPACE/.venv/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
-          echo "PIP_TARGET=$GITHUB_WORKSPACE/.venv/lib/python3.12/site-packages" >> $GITHUB_ENV
-          echo "PIP_PREFIX=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
           source $GITHUB_WORKSPACE/.venv/bin/activate
-          python -m pip install --upgrade pip
-
-      - name: Fetch commits
-        run: |
-          echo "Fetching base branch: ${{ github.base_ref }}"
-          git fetch origin ${{ github.base_ref }} --depth=1 || true
-          echo "Fetching commit: ${{ github.sha }}"
-          git fetch origin ${{ github.sha }} --depth=1 || true
-          echo "Current git refs:"
-          git show-ref
-          echo "Current git log:"
-          git log --oneline -n 5
 
       - name: Check if tests should run (test/, infra/, *.lua)
         id: test_check
@@ -81,11 +96,6 @@ jobs:
           echo "No test/infra/.lua changes. Skipping tests."
           exit 0
 
-      - name: Install Neovim
-        if: steps.test_check.outputs.run_tests == 'true'
-        run: |
-          brew install neovim
-
       - name: Cache Neovim plugins
         if: steps.test_check.outputs.run_tests == 'true'
         uses: actions/cache@v4
@@ -98,17 +108,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nvim-plugins-
 
-      - name: Install dependencies
+      - name: Install minimal dependencies
         if: steps.test_check.outputs.run_tests == 'true'
         run: |
-          chmod +x infra/install.sh
+          brew install neovim
           source $GITHUB_WORKSPACE/.venv/bin/activate
           CI=true ./infra/install.sh
-
-      - name: Update PATH
-        if: steps.test_check.outputs.run_tests == 'true'
-        run: |
-          eval "$(/usr/libexec/path_helper)"
 
       - name: Run luacheck
         if: steps.test_check.outputs.run_tests == 'true'
