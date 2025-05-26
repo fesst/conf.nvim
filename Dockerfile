@@ -15,8 +15,18 @@ ARG TARGETVARIANT=
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Add retry logic and multiple mirrors
+RUN echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::http::Timeout "120";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::https::Timeout "120";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::ftp::Timeout "120";' >> /etc/apt/apt.conf.d/80-retries && \
+    sed -i 's/archive.ubuntu.com/mirrors.ubuntu.com/g' /etc/apt/sources.list && \
+    sed -i 's/security.ubuntu.com/mirrors.ubuntu.com/g' /etc/apt/sources.list
+
 # Install all required packages in a single RUN command
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get clean && \
+    apt-get update --fix-missing && \
+    apt-get install -y --no-install-recommends \
     # System dependencies
     ca-certificates \
     gnupg \
@@ -31,14 +41,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python and related tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get clean && \
+    apt-get update --fix-missing && \
+    apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
 # Install search and formatting tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get clean && \
+    apt-get update --fix-missing && \
+    apt-get install -y --no-install-recommends \
     ripgrep \
     fd-find \
     fzf \
@@ -47,14 +61,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PostgreSQL and related tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get clean && \
+    apt-get update --fix-missing && \
+    apt-get install -y --no-install-recommends \
     postgresql \
     postgresql-client \
     pgformatter \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Lua and compiler tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get clean && \
+    apt-get update --fix-missing && \
+    apt-get install -y --no-install-recommends \
     luarocks \
     llvm \
     clang \
