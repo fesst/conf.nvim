@@ -23,5 +23,5 @@ jobs:
 
   neovim-tests:
     needs: setup
-    uses: ./.github/workflows/neovim-tests.yml
+    uses: ./.github/workflows/macos-neovim-tests.yml
     with: {}
