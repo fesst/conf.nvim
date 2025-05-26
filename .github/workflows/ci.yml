@@ -3,6 +3,8 @@ name: "Master CI"
 on:
   push:
     branches: ["master"]
+  pull_request:
+    branches: ["master"]
   schedule:
     - cron: "33 12 * * 1"
 
@@ -13,8 +15,17 @@ permissions:
   security-events: write
 
 jobs:
+  setup:
+    uses: ./.github/workflows/setup-environment.yml
+    with:
+      setup_python: true
+      setup_rust: true
+      setup_node: true
+      setup_lua: true
+
   test:
     name: Test
+    needs: setup
     runs-on: macos-latest
     permissions:
       contents: read
@@ -25,74 +36,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
-        env:
-          HOMEBREW_NO_AUTO_UPDATE: 1
-
-      - name: Set up cache directories
-        run: |
-          mkdir -p "$HOME/.cache/pip"
-          mkdir -p "$HOME/.npm"
-          mkdir -p "$HOME/Library/Caches/Homebrew"
-          # Configure npm for verbose output
-          npm config set loglevel verbose
-          npm config set progress true
-          npm config set timing true
-
-      - name: Cache Homebrew packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            $HOME/Library/Caches/Homebrew
-            /usr/local/Homebrew
-          key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh', 'infra/install.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-homebrew-
-
-      - name: Cache pip packages
-        uses: actions/cache@v4
-        with:
-          path: $HOME/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('infra/packages/pip.sh', 'infra/install.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Cache npm packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            $HOME/.npm
-            node_modules
-          key: ${{ runner.os }}-npm-${{ hashFiles('package.json', 'package-lock.json', 'infra/packages/npm.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
-
       - name: Install Neovim
         run: brew install neovim
         shell: bash
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
-
-      - name: Set up Python virtual environment
-        run: |
-          python -m venv .venv
-          echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
-          echo "$PWD/.venv/bin" >> $GITHUB_PATH
-          echo "PYTHONPATH=$PWD/.venv/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
-          echo "PIP_TARGET=$PWD/.venv/lib/python3.12/site-packages" >> $GITHUB_ENV
-          echo "PIP_PREFIX=$PWD/.venv" >> $GITHUB_ENV
-          source .venv/bin/activate
-          python -m pip install --upgrade pip
-
       - name: Install packages
         run: |
-          source .venv/bin/activate
-          export VIRTUAL_ENV="$PWD/.venv"
+          source ${{ needs.setup.outputs.virtual_env }}/bin/activate
+          export VIRTUAL_ENV="${{ needs.setup.outputs.virtual_env }}"
           export PATH="$VIRTUAL_ENV/bin:$PATH"
           export PYTHONPATH="$VIRTUAL_ENV/lib/python3.12/site-packages:$PYTHONPATH"
           export PIP_TARGET="$VIRTUAL_ENV/lib/python3.12/site-packages"
@@ -102,7 +53,7 @@ jobs:
       - name: Run sanity tests
         run: |
           chmod +x infra/nvim_sanity_test.sh
-          source .venv/bin/activate
+          source ${{ needs.setup.outputs.virtual_env }}/bin/activate
           ./infra/nvim_sanity_test.sh
         env:
           CI: true

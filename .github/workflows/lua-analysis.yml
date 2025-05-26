@@ -12,14 +12,23 @@ on:
     - cron: "33 12 * * 1"
 
 jobs:
+  setup:
+    uses: ./.github/workflows/setup-environment.yml
+    with:
+      setup_python: true
+      setup_rust: false
+      setup_node: false
+      setup_lua: true
+
   analyze:
     name: Analyze Lua
+    needs: setup
     runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history for all branches and tags
+          fetch-depth: 0
 
       - name: Fetch commits
         run: |
@@ -56,28 +65,6 @@ jobs:
           echo "No test/infra/.lua changes. Skipping tests."
           exit 0
 
-      - name: Cache Homebrew packages
-        if: steps.test_check.outputs.run_tests == 'true'
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Homebrew
-          key: ${{ runner.os }}-brew-${{ hashFiles('infra/packages/brew.sh', 'infra/install.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-brew-
-
-      - name: Cache Homebrew casks
-        if: steps.test_check.outputs.run_tests == 'true'
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew/Cask
-            /usr/local/Caskroom
-          key: ${{ runner.os }}-brew-cask-${{ hashFiles('infra/packages/brew.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-brew-cask-
-
       - name: Install Neovim
         if: steps.test_check.outputs.run_tests == 'true'
         run: |
@@ -95,67 +82,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nvim-plugins-
 
-      - name: Setup Python virtual environment
-        if: steps.test_check.outputs.run_tests == 'true'
-        run: |
-          python3 -m venv .venv
-          source .venv/bin/activate
-
-      - name: Cache Python packages
-        if: steps.test_check.outputs.run_tests == 'true'
-        uses: actions/cache@v4
-        with:
-          path: |
-            .venv
-            ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('infra/packages/pip.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
       - name: Install dependencies
         if: steps.test_check.outputs.run_tests == 'true'
         run: |
           chmod +x infra/install.sh
+          source ${{ needs.setup.outputs.virtual_env }}/bin/activate
           CI=true ./infra/install.sh
 
       - name: Update PATH
         if: steps.test_check.outputs.run_tests == 'true'
         run: |
           eval "$(/usr/libexec/path_helper)"
-
-      - name: Cache npm packages
-        if: steps.test_check.outputs.run_tests == 'true'
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.npm
-            node_modules
-          key: ${{ runner.os }}-npm-${{ hashFiles('infra/packages/npm.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
-
-      - name: Cache Cargo packages
-        if: steps.test_check.outputs.run_tests == 'true'
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('infra/packages/cargo.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
-      - name: Cache LuaRocks packages
-        if: steps.test_check.outputs.run_tests == 'true'
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.luarocks
-            ~/.cache/luarocks
-          key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-luarocks-
 
       - name: Run luacheck
         if: steps.test_check.outputs.run_tests == 'true'
