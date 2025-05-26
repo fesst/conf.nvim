@@ -1,0 +1,140 @@
+name: Test Steps
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        required: true
+        type: string
+        description: "Platform (macos/windows)"
+      venv_path:
+        required: true
+        type: string
+        description: "Path to virtual environment"
+      use_cache:
+        required: false
+        type: boolean
+        default: false
+        description: "Whether to use caching for packages"
+      install_deps:
+        required: false
+        type: boolean
+        default: false
+        description: "Whether to install minimal dependencies"
+
+jobs:
+  run-tests:
+    runs-on: ${{ inputs.platform }}-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download virtual environment
+        uses: actions/download-artifact@v4
+        with:
+          name: venv
+          path: .venv
+
+      - name: Cache Homebrew packages
+        if: inputs.platform == 'macos' && inputs.use_cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Homebrew
+            /opt/homebrew
+            ~/Library/Logs/Homebrew
+            /opt/homebrew/Library/Caches
+            /opt/homebrew/Library/Logs
+          key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}-${{ runner.arch }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-${{ runner.arch }}-
+            ${{ runner.os }}-homebrew-
+
+      - name: Cache LuaRocks packages
+        if: inputs.use_cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/luarocks
+            ~/.luarocks
+            ~/.cache/luarocks-server
+            ~/.local/share/luarocks
+          key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}-${{ runner.arch }}
+          restore-keys: |
+            ${{ runner.os }}-luarocks-${{ runner.arch }}-
+            ${{ runner.os }}-luarocks-
+
+      - name: Cache Neovim plugins
+        if: inputs.use_cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/nvim
+            ~/.config/nvim/plugin
+            ~/.config/nvim/lazy
+            ~/.local/state/nvim
+          key: ${{ runner.os }}-nvim-plugins-${{ hashFiles('lua/**/*.lua', 'after/plugin/**/*.lua', 'infra/packages/nvim.sh') }}-${{ runner.arch }}
+          restore-keys: |
+            ${{ runner.os }}-nvim-plugins-${{ runner.arch }}-
+            ${{ runner.os }}-nvim-plugins-
+
+      - name: Install minimal dependencies
+        if: inputs.install_deps
+        run: |
+          if [ "${{ inputs.platform }}" = "macos" ]; then
+            # Retry brew install with exponential backoff
+            for i in {1..3}; do
+              if brew install neovim tree-sitter; then
+                break
+              fi
+              if [ $i -eq 3 ]; then
+                echo "Failed to install dependencies after 3 attempts"
+                exit 1
+              fi
+              sleep $((2 ** $i))
+            done
+          fi
+
+          source "${{ inputs.venv_path }}/${{ inputs.platform == 'windows' && 'Scripts' || 'bin' }}/activate"
+          CI=true ./infra/install.sh
+
+      - name: Run basic Neovim tests
+        shell: bash
+        run: |
+          source "${{ inputs.venv_path }}/${{ inputs.platform == 'windows' && 'Scripts' || 'bin' }}/activate"
+          nvim --headless -c "lua require('test.core')" -c "quit"
+
+      - name: Run LSP tests
+        shell: bash
+        run: |
+          source "${{ inputs.venv_path }}/${{ inputs.platform == 'windows' && 'Scripts' || 'bin' }}/activate"
+          nvim --headless -c "lua require('test.lsp')" -c "quit"
+
+      - name: Run Treesitter tests
+        shell: bash
+        run: |
+          source "${{ inputs.venv_path }}/${{ inputs.platform == 'windows' && 'Scripts' || 'bin' }}/activate"
+          nvim --headless -c "lua require('test.treesitter')" -c "quit"
+
+      - name: Check formatting
+        shell: bash
+        run: |
+          source "${{ inputs.venv_path }}/${{ inputs.platform == 'windows' && 'Scripts' || 'bin' }}/activate"
+          stylua --check lua/
+          stylua --check after/plugin/
+
+      - name: Run sanity tests
+        if: inputs.install_deps
+        shell: bash
+        run: |
+          source "${{ inputs.venv_path }}/${{ inputs.platform == 'windows' && 'Scripts' || 'bin' }}/activate"
+          ./infra/nvim_sanity_test.sh > test-results.log 2>&1 || test_exit_code=$?
+
+          # Display test results
+          echo "Test results:"
+          cat test-results.log
+
+          # Exit with the test exit code
+          exit ${test_exit_code:-0}
