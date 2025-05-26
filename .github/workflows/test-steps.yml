@@ -82,137 +82,167 @@ jobs:
             ${{ runner.os }}-nvim-plugins-${{ runner.arch }}-
             ${{ runner.os }}-nvim-plugins-
 
-      - name: Install minimal dependencies
-        if: inputs.install_deps
+      - name: Install minimal dependencies (Windows)
+        if: inputs.install_deps && inputs.platform == 'windows'
         shell: pwsh
         run: |
-          if ("${{ inputs.platform }}" -eq "macos") {
-            # Retry brew install with exponential backoff
-            for ($i = 1; $i -le 3; $i++) {
-              if (brew install neovim tree-sitter) {
-                break
-              }
-              if ($i -eq 3) {
-                Write-Error "Failed to install dependencies after 3 attempts"
-                exit 1
-              }
-              Start-Sleep -Seconds ([math]::Pow(2, $i))
-            }
-          } elseif ("${{ inputs.platform }}" -eq "windows") {
-            # Install Chocolatey if not present
-            if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
-              Write-Output "Installing Chocolatey..."
-              Set-ExecutionPolicy Bypass -Scope Process -Force
-              [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-              Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-            }
-
-            # Install dependencies using Chocolatey
-            choco install neovim -y
-            choco install tree-sitter -y
-
-            # Add Chocolatey bin to PATH and refresh environment
-            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
-
-            # Verify Neovim installation
-            Write-Output "Verifying Neovim installation..."
-            $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
-            if (-not $nvimPath) {
-              Write-Error "Neovim not found in PATH after installation"
-              Write-Output "Current PATH: $env:Path"
-              exit 1
-            }
-            Write-Output "Neovim found at: $($nvimPath.Source)"
+          # Install Chocolatey if not present
+          if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+            Write-Output "Installing Chocolatey..."
+            Set-ExecutionPolicy Bypass -Scope Process -Force
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+            Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
           }
 
-          if ("${{ inputs.platform }}" -eq "windows") {
-            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
-          } else {
-            source "${{ inputs.venv_path }}/bin/activate"
+          # Install dependencies using Chocolatey
+          choco install neovim -y
+          choco install tree-sitter -y
+
+          # Add Chocolatey bin to PATH and refresh environment
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
+
+          # Verify Neovim installation
+          Write-Output "Verifying Neovim installation..."
+          $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+          if (-not $nvimPath) {
+            Write-Error "Neovim not found in PATH after installation"
+            Write-Output "Current PATH: $env:Path"
+            exit 1
           }
+          Write-Output "Neovim found at: $($nvimPath.Source)"
+
+          & "${{ inputs.venv_path }}/Scripts/activate.ps1"
           $env:CI = "true"
           ./infra/install.sh
 
-      - name: Run basic Neovim tests
+      - name: Install minimal dependencies (macOS)
+        if: inputs.install_deps && inputs.platform == 'macos'
+        shell: bash
+        run: |
+          # Retry brew install with exponential backoff
+          for i in {1..3}; do
+            if brew install neovim tree-sitter; then
+              break
+            fi
+            if [ $i -eq 3 ]; then
+              echo "Failed to install dependencies after 3 attempts"
+              exit 1
+            fi
+            sleep $((2 ** i))
+          done
+
+          source "${{ inputs.venv_path }}/bin/activate"
+          export CI=true
+          ./infra/install.sh
+
+      - name: Run basic Neovim tests (Windows)
+        if: inputs.platform == 'windows'
         shell: pwsh
         run: |
-          if ("${{ inputs.platform }}" -eq "windows") {
-            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
-            # Ensure Neovim is in PATH and verify it
-            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
+          & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+          # Ensure Neovim is in PATH and verify it
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
 
-            # Verify Neovim is available
-            $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
-            if (-not $nvimPath) {
-              Write-Error "Neovim not found in PATH before running tests"
-              Write-Output "Current PATH: $env:Path"
-              exit 1
-            }
-            Write-Output "Using Neovim from: $($nvimPath.Source)"
-          } else {
-            source "${{ inputs.venv_path }}/bin/activate"
+          # Verify Neovim is available
+          $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+          if (-not $nvimPath) {
+            Write-Error "Neovim not found in PATH before running tests"
+            Write-Output "Current PATH: $env:Path"
+            exit 1
           }
+          Write-Output "Using Neovim from: $($nvimPath.Source)"
           nvim --headless -c "lua require('test.core')" -c "quit"
 
-      - name: Run LSP tests
+      - name: Run basic Neovim tests (macOS)
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          source "${{ inputs.venv_path }}/bin/activate"
+          nvim --headless -c "lua require('test.core')" -c "quit"
+
+      - name: Run LSP tests (Windows)
+        if: inputs.platform == 'windows'
         shell: pwsh
         run: |
-          if ("${{ inputs.platform }}" -eq "windows") {
-            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
-            # Ensure Neovim is in PATH
-            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
-          } else {
-            source "${{ inputs.venv_path }}/bin/activate"
-          }
+          & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+          # Ensure Neovim is in PATH
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
           nvim --headless -c "lua require('test.lsp')" -c "quit"
 
-      - name: Run Treesitter tests
+      - name: Run LSP tests (macOS)
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          source "${{ inputs.venv_path }}/bin/activate"
+          nvim --headless -c "lua require('test.lsp')" -c "quit"
+
+      - name: Run Treesitter tests (Windows)
+        if: inputs.platform == 'windows'
         shell: pwsh
         run: |
-          if ("${{ inputs.platform }}" -eq "windows") {
-            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
-            # Ensure Neovim is in PATH
-            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
-          } else {
-            source "${{ inputs.venv_path }}/bin/activate"
-          }
+          & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+          # Ensure Neovim is in PATH
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
           nvim --headless -c "lua require('test.treesitter')" -c "quit"
 
-      - name: Check formatting
+      - name: Run Treesitter tests (macOS)
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          source "${{ inputs.venv_path }}/bin/activate"
+          nvim --headless -c "lua require('test.treesitter')" -c "quit"
+
+      - name: Check formatting (Windows)
+        if: inputs.platform == 'windows'
         shell: pwsh
         run: |
-          if ("${{ inputs.platform }}" -eq "windows") {
-            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
-            # Ensure stylua is in PATH
-            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
-          } else {
-            source "${{ inputs.venv_path }}/bin/activate"
-          }
+          & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+          # Ensure stylua is in PATH
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
           stylua --check lua/
           stylua --check after/plugin/
 
-      - name: Run sanity tests
-        if: inputs.install_deps
+      - name: Check formatting (macOS)
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          source "${{ inputs.venv_path }}/bin/activate"
+          stylua --check lua/
+          stylua --check after/plugin/
+
+      - name: Run sanity tests (Windows)
+        if: inputs.install_deps && inputs.platform == 'windows'
         shell: pwsh
         run: |
-          if ("${{ inputs.platform }}" -eq "windows") {
-            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
-            # Ensure all tools are in PATH
-            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin;$env:USERPROFILE\.cargo\bin"
-          } else {
-            source "${{ inputs.venv_path }}/bin/activate"
-          }
+          & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+          # Ensure all tools are in PATH
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin;$env:USERPROFILE\.cargo\bin"
           ./infra/nvim_sanity_test.sh > test-results.log 2>&1; $test_exit_code = $LASTEXITCODE
 
           # Display test results
           Write-Output "Test results:"
           Get-Content test-results.log
+
+          # Exit with the test exit code
+          exit $test_exit_code
+
+      - name: Run sanity tests (macOS)
+        if: inputs.install_deps && inputs.platform == 'macos'
+        shell: bash
+        run: |
+          source "${{ inputs.venv_path }}/bin/activate"
+          ./infra/nvim_sanity_test.sh > test-results.log 2>&1
+          test_exit_code=$?
+
+          # Display test results
+          echo "Test results:"
+          cat test-results.log
 
           # Exit with the test exit code
           exit $test_exit_code
