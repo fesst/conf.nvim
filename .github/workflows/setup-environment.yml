@@ -185,13 +185,14 @@ jobs:
             ./infra/packages/pip.sh
           }
 
-      - name: Upload virtual environment
+      - name: Cache Python venv
         if: inputs.setup_python
-        uses: actions/upload-artifact@v4
+        uses: actions/cache@v4
         with:
-          name: venv
           path: .venv
-          retention-days: 1
+          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
 
       - name: Install Lua packages
         if: inputs.setup_lua

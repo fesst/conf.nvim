@@ -30,11 +30,13 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Download virtual environment
-        uses: actions/download-artifact@v4
+      - name: Restore Python venv from cache
+        uses: actions/cache@v4
         with:
-          name: venv
           path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
 
       - name: Cache Homebrew packages
         if: inputs.platform == 'macos' && inputs.use_cache
