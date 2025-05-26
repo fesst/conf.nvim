@@ -33,5 +33,5 @@ for file in $CHANGED; do
   fi
 done
 
-echo "No test/infra/.lua changes. Skipping tests."
+echo "No test/ infra/ or .lua changes. Skipping tests."
 exit 1 
