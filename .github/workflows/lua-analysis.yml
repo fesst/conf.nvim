@@ -21,10 +21,10 @@ jobs:
       with:
         fetch-depth: 0  # Fetch all history for all branches and tags
 
-    - name: Fetch base branch and commits
+    - name: Fetch commits
       run: |
-        git fetch origin ${{ github.base_ref }} || true
-        git fetch origin ${{ github.sha }} || true
+        git fetch origin ${{ github.base_ref }}
+        git fetch origin ${{ github.sha }}
 
     - name: Check if tests should run (test/, infra/, *.lua)
       id: test_check
