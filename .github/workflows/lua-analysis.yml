@@ -23,9 +23,14 @@ jobs:
 
     - name: Fetch commits
       run: |
-        git fetch origin ${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
-        git fetch origin ${{ github.sha }}:refs/remotes/origin/${{ github.sha }}
-        git fetch origin ${{ github.sha }}
+        echo "Fetching base branch: ${{ github.base_ref }}"
+        git fetch origin ${{ github.base_ref }} --depth=1
+        echo "Fetching commit: ${{ github.sha }}"
+        git fetch origin ${{ github.sha }} --depth=1
+        echo "Current git refs:"
+        git show-ref
+        echo "Current git log:"
+        git log --oneline -n 5
 
     - name: Check if tests should run (test/, infra/, *.lua)
       id: test_check
