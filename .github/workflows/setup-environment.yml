@@ -19,6 +19,10 @@ on:
         required: true
         type: boolean
         default: true
+      runner:
+        required: true
+        type: string
+        default: "macos-latest"
     outputs:
       virtual_env:
         description: "Path to virtual environment"
@@ -27,7 +31,7 @@ on:
 jobs:
   setup:
     name: Setup Environment
-    runs-on: macos-latest
+    runs-on: ${{ inputs.runner }}
     outputs:
       virtual_env: ${{ steps.venv.outputs.virtual_env }}
     steps:
@@ -37,6 +41,7 @@ jobs:
           fetch-depth: 0
 
       - name: Cache Homebrew packages
+        if: runner.os == 'macOS'
         uses: actions/cache@v4
         with:
           path: |
@@ -123,6 +128,7 @@ jobs:
           retention-days: 1
 
       - name: Install system packages
+        if: runner.os == 'macOS'
         run: |
           set -e
           chmod +x infra/packages/brew.sh
