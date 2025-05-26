@@ -153,7 +153,22 @@ jobs:
             exit 1
           }
           Write-Output "Using Neovim from: $($nvimPath.Source)"
-          nvim --headless -c "lua require('test.lua.test_print_table')" -c "quit"
+
+          # Set up Lua environment
+          $env:LUA_PATH = "?.lua;?/init.lua;../lua/?.lua;../lua/?/init.lua"
+          $env:LUA_CPATH = "?.dll;?/init.dll;../lua/?.dll;../lua/?/init.dll"
+
+          # Run the test with error handling
+          try {
+            nvim --headless -c "lua require('test.lua.test_print_table')" -c "quit"
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Test failed with exit code $LASTEXITCODE"
+              exit $LASTEXITCODE
+            }
+          } catch {
+            Write-Error "Error running test: $_"
+            exit 1
+          }
 
       - name: Run Lua tests (macOS)
         if: inputs.platform == 'macos'
