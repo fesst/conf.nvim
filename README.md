@@ -126,7 +126,7 @@ To clean up the installation:
 
 ## Project Structure
 
-```
+``` .
 .
 ├── after/          # Plugin configurations
 ├── infra/          # Installation scripts
@@ -137,9 +137,14 @@ To clean up the installation:
 
 ## Requirements
 
+### System Requirements
+
 - macOS (tested on 24.5.0)
 - Homebrew
 - Git
+
+### Required Packages
+
 - LLVM 19
 - Rust
 - Python 3
@@ -147,3 +152,11 @@ To clean up the installation:
 - tmux
 
 For detailed information about dependencies and tools, see [Shared Tools](wiki/shared_tools.md).
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a new Pull Request

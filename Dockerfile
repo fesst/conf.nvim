@@ -1,5 +1,5 @@
 # Use Ubuntu as base image
-FROM ubuntu:22.04
+FROM ubuntu:22.04-jammy
 
 # Add metadata labels
 LABEL org.opencontainers.image.title="Neovim Development Environment"
@@ -9,8 +9,8 @@ LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.authors="fesst"
 
 # Add build arguments for architecture
-ARG TARGETARCH
-ARG TARGETVARIANT
+ARG TARGETARCH=amd64
+ARG TARGETVARIANT=
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
