@@ -2,7 +2,7 @@
 
 A modern Neovim configuration with a focus on development productivity and debugging capabilities with MacOS-specific installation script.
 
-## Configured features
+## Quick Start
 
 ### Plugins
 
@@ -32,22 +32,33 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
 - Autofolding for multiple languages (using LSP and treesitter, except indent for python).
 - Various custom settings and mappings (with focus on preservation compatibility with help).
 - Installation script for MacOS ([brew](https://brew.sh/)).
-- Github actions CI with sanity check test (but still requires manual check for all the features).
+- GitHub Actions CI with:
+  - Automated environment setup
+  - Sanity check tests
+  - Lua code analysis
+  - Security scanning
+  - Docker image building
+  - Automated cleanup of old workflow runs
+  - Manual check still required for all features
 
 ## Installation
 
 1. Clone this repository:
+
    ```bash
    git clone https://github.com/yourusername/conf.nvim.git ~/.config/nvim
    ```
 
 2. Run the installation script:
+
    ```zsh
    ./infra/install.sh
    ```
+
    Note, now it is mac-specific, consider to create issue or PR, see [how to contribute](#contributing).
 
 The installation script will:
+
 - Install required system dependencies via Homebrew.
 - Set up Python packages.
 - Install Node.js and npm packages.
@@ -58,15 +69,18 @@ The installation script will:
 ## Debugging Setup
 
 ### Rust/C++ Debugging
+
 - Uses CodeLLDB for debugging Rust and C++ code.
 - Automatically installed in `~/.local/share/nvim/mason/packages/codelldb`.
 - Requires LLVM 19 for proper functionality.
 
 ### Python Debugging
+
 - Uses debugpy for Python debugging.
 - Automatically installed through Mason.
 
 ### Go Debugging
+
 - Uses Delve for Go debugging.
 - Installed via Homebrew.
 
@@ -75,6 +89,7 @@ The installation script will:
 [Custom mappings within current configuration](wiki/mappings.md)
 
 ### Debugging
+
 - `<leader>dc` - Start/Continue debugging
 - `<leader>di` - Step into
 - `<leader>do` - Step over
@@ -86,60 +101,57 @@ The installation script will:
 - `<leader>dL` - Run last
 
 ### Language-specific
+
 - `<leader>yr` - Run current file
 - `<leader>yt` - Run tests
 
 ## Maintenance
 
 ### Cleanup
+
 To clean up the installation:
+
 ```bash
 ./infra/cleanup.sh
 ```
 
-This will:
-- Check and maintain required LLVM version.
-- Verify Rust installation.
-- Check CodeLLDB installation.
-- Clean up Homebrew packages.
+## Documentation
 
-### Complete Removal
-To completely remove development tools:
-```bash
-brew uninstall rust llvm@19
-rm -rf ~/.local/share/nvim/mason/packages/codelldb
-```
+- [Project rules](wiki/ai_context.md)
+  e.g. CI should use infra scripts as much as possible to have a single source of truth for CI and local pipeline.
+- [Infrastructure description](wiki/infrastructure.md)
+- [Key Mappings](wiki/mappings.md)
+- [Docker Setup](wiki/docker.md)
+- [Testing](wiki/tests.md)
 
-## Config starts with init.lua
+## Project Structure
 
-[Project rules](wiki/ai_context.md)
-e.g. CI should use infra scripts as much as possible to have a single source of truth for CI and local pipeline.
-
-## Directory Structure
-
-```
+``` .
 .
 ├── after/          # Plugin configurations
-├── infra/          # Installation and maintenance scripts
+├── infra/          # Installation scripts
 ├── lua/            # Lua configurations
-│   └── motleyfesst/ # Core configuration
-├── test/           # sanity check and occasional manual test
-└── wiki/           # Documentation and notes
+├── test/           # Test files
+└── wiki/           # Documentation
 ```
 
-## Dependencies
+## Requirements
 
 ### System Requirements
+
 - macOS (tested on 24.5.0)
 - Homebrew
 - Git
 
 ### Required Packages
+
 - LLVM 19
 - Rust
 - Python 3
 - Node.js
 - tmux
+
+For detailed information about dependencies and tools, see [Shared Tools](wiki/shared_tools.md).
 
 ## Contributing
 

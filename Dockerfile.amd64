@@ -1,0 +1,167 @@
+# Use Ubuntu as base image for amd64
+FROM --platform=linux/amd64 ubuntu:22.04
+
+# Add metadata labels
+LABEL org.opencontainers.image.title="Neovim Development Environment (AMD64)"
+LABEL org.opencontainers.image.description="A complete Neovim development environment with all necessary tools and language servers for AMD64"
+LABEL org.opencontainers.image.source="https://github.com/fesst/conf.nvim"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.authors="fesst"
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Configure apt with multiple mirrors and better error handling
+RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::http::Timeout "180";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::https::Timeout "180";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::ftp::Timeout "180";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'APT::Get::Assume-Yes "true";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'APT::Get::Show-Upgraded "true";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'Dpkg::Options::="--force-confdef";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'Dpkg::Options::="--force-confold";' >> /etc/apt/apt.conf.d/80-retries
+
+# Configure reliable mirrors for amd64
+RUN echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy main restricted universe multiverse" > /etc/apt/sources.list && \
+    echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy-security main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy-security main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list
+
+# Install all system packages in a single layer
+RUN apt-get clean && \
+    apt-get update --fix-missing && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    gnupg \
+    curl \
+    git \
+    build-essential \
+    cmake \
+    pkg-config \
+    libssl-dev \
+    make \
+    python3 \
+    python3-pip \
+    python3-venv \
+    ripgrep \
+    fd-find \
+    fzf \
+    shellcheck \
+    shfmt \
+    postgresql \
+    postgresql-client \
+    pgformatter \
+    luarocks \
+    llvm \
+    clang \
+    gcc \
+    zlib1g-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20.x (Latest LTS)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get update && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Rust with minimal components and cleanup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain stable --profile minimal && \
+    . "$HOME/.cargo/env" && \
+    cargo install sccache && \
+    mkdir -p $HOME/.cargo && \
+    echo '[build]' > $HOME/.cargo/config.toml && \
+    echo 'rustc-wrapper = "sccache"' >> $HOME/.cargo/config.toml && \
+    echo '[profile.dev]' >> $HOME/.cargo/config.toml && \
+    echo 'opt-level = 0' >> $HOME/.cargo/config.toml && \
+    echo '[profile.release]' >> $HOME/.cargo/config.toml && \
+    echo 'opt-level = 3' >> $HOME/.cargo/config.toml && \
+    rm -rf /root/.cargo/registry/cache && \
+    rm -rf /root/.cargo/registry/index && \
+    rm -rf /root/.cargo/git && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get clean && \
+    rm -rf /tmp/* /var/tmp/*
+
+ENV PATH="/root/.cargo/bin:${PATH}"
+ENV RUSTC_WRAPPER="sccache"
+
+# Install tree-sitter CLI with cleanup
+RUN cargo install tree-sitter-cli && \
+    rm -rf /root/.cargo/registry/cache && \
+    rm -rf /root/.cargo/registry/index && \
+    rm -rf /root/.cargo/git && \
+    rm -rf /tmp/* /var/tmp/*
+
+# Install Neovim based on architecture
+RUN curl -LO https://github.com/neovim/neovim/releases/download/v0.11.1/nvim-linux-x86_64.tar.gz && \
+    tar -C /opt -xzf nvim-linux-x86_64.tar.gz && \
+    ln -s /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim && \
+    rm nvim-linux-x86_64.tar.gz
+
+# Create neovim config directory and copy configuration files
+RUN mkdir -p /root/.config/nvim
+COPY . /root/.config/nvim/
+
+# Install Python packages
+RUN python3 -m pip install --no-cache-dir \
+    pynvim \
+    black \
+    flake8 \
+    isort
+
+# Install npm packages
+RUN npm install -g --no-fund --no-audit --no-package-lock --no-save \
+    typescript@latest \
+    typescript-language-server@latest \
+    prettier@latest \
+    eslint@latest \
+    @angular/cli@latest \
+    sql-language-server@latest \
+    eslint_d@latest
+
+# Install LuaRocks packages
+RUN luarocks install luacheck
+
+# Install Cargo packages with fallback
+RUN if ! cargo install stylua; then \
+        echo "Failed to install stylua via cargo, trying alternative method..." && \
+        curl -L https://github.com/JohnnyMorganz/StyLua/releases/latest/download/stylua-linux.zip -o stylua.zip && \
+        unzip stylua.zip && \
+        chmod +x stylua && \
+        mv stylua /usr/local/bin/ && \
+        rm stylua.zip; \
+    fi
+
+# Set working directory
+WORKDIR /workspace
+
+# Create a non-root user and set up permissions
+RUN useradd -m -s /bin/bash developer && \
+    chown -R developer:developer /workspace /root/.config/nvim && \
+    mkdir -p /home/developer/.config/nvim \
+    /home/developer/.local/share/nvim \
+    /home/developer/.cache/nvim && \
+    chown -R developer:developer /home/developer
+
+# Switch to non-root user
+USER developer
+
+# Set environment variables
+ENV PATH="/home/developer/.cargo/bin:${PATH}"
+ENV PATH="/home/developer/.local/bin:${PATH}"
+ENV RUSTC_WRAPPER="sccache"
+
+# Copy configuration files to user's home
+COPY --chown=developer:developer . /home/developer/.config/nvim/
+
+# Install Neovim plugins (skip in CI)
+RUN if [ "$CI" != "true" ]; then \
+        nvim --headless -c "Lazy sync" -c "qa"; \
+    fi
+
+# Set the default command
+CMD ["nvim"]

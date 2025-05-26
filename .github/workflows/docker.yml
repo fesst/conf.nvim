@@ -1,0 +1,214 @@
+name: Build and Publish Docker Images
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "Dockerfile*"
+      - ".github/workflows/docker.yml"
+      - "infra/**"
+      - "lua/**"
+      - "after/**"
+  pull_request:
+    branches: [master]
+    paths:
+      - "Dockerfile*"
+      - ".github/workflows/docker.yml"
+      - "infra/**"
+      - "lua/**"
+      - "after/**"
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  DOCKER_BUILDKIT: 1
+  BUILDKIT_INLINE_CACHE: 1
+  CACHE_TIMEOUT: 1800 # 30 minutes timeout for cache operations
+
+jobs:
+  build-and-push-amd64:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:v0.12.3
+            network=host
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta-amd64
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=auto
+            prefix=
+            suffix=-amd64
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+
+      - name: Build and push AMD64 Docker image
+        uses: docker/build-push-action@v5
+        continue-on-error: true
+        with:
+          context: .
+          file: ./Dockerfile.amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-amd64.outputs.tags }}
+          labels: ${{ steps.meta-amd64.outputs.labels }}
+          cache-from: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-amd64
+          cache-to: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-amd64,mode=max
+          platforms: linux/amd64
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            DOCKER_BUILDKIT=1
+            COMPILE_PARALLEL=1
+            RUSTC_WRAPPER=sccache
+          provenance: false
+          sbom: false
+          outputs: type=registry
+          no-cache-filters: |
+            !**/node_modules
+            !**/.git
+            !**/tmp
+            !**/temp
+
+      - name: Retry build without cache if failed
+        if: failure()
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-amd64.outputs.tags }}
+          labels: ${{ steps.meta-amd64.outputs.labels }}
+          platforms: linux/amd64
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            DOCKER_BUILDKIT=1
+            COMPILE_PARALLEL=1
+            RUSTC_WRAPPER=sccache
+          provenance: false
+          sbom: false
+          outputs: type=registry
+          no-cache-filters: |
+            !**/node_modules
+            !**/.git
+            !**/tmp
+            !**/temp
+
+  build-and-push-arm64:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:v0.12.3
+            network=host
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta-arm64
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=auto
+            prefix=
+            suffix=-arm64
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+
+      - name: Build and push ARM64 Docker image
+        uses: docker/build-push-action@v5
+        continue-on-error: true
+        with:
+          context: .
+          file: ./Dockerfile.arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-arm64.outputs.tags }}
+          labels: ${{ steps.meta-arm64.outputs.labels }}
+          cache-from: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-arm64
+          cache-to: |
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-arm64,mode=max
+          platforms: linux/arm64
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            DOCKER_BUILDKIT=1
+            COMPILE_PARALLEL=1
+            RUSTC_WRAPPER=sccache
+          provenance: false
+          sbom: false
+          outputs: type=registry
+          no-cache-filters: |
+            !**/node_modules
+            !**/.git
+            !**/tmp
+            !**/temp
+
+      - name: Retry build without cache if failed
+        if: failure()
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-arm64.outputs.tags }}
+          labels: ${{ steps.meta-arm64.outputs.labels }}
+          platforms: linux/arm64
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            DOCKER_BUILDKIT=1
+            COMPILE_PARALLEL=1
+            RUSTC_WRAPPER=sccache
+          provenance: false
+          sbom: false
+          outputs: type=registry
+          no-cache-filters: |
+            !**/node_modules
+            !**/.git
+            !**/tmp
+            !**/temp

@@ -2,131 +2,27 @@ name: "Master CI"
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
   schedule:
-    - cron: '33 12 * * 1'
+    - cron: "33 12 * * 1"
+
+# Set default permissions for all jobs
+permissions:
+  contents: read
+  packages: read
+  security-events: write
 
 jobs:
-  test:
-    name: Test
-    runs-on: macos-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  setup:
+    uses: ./.github/workflows/setup-environment.yml
+    with:
+      setup_python: true
+      setup_rust: true
+      setup_node: true
+      setup_lua: true
 
-      - name: Set up Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
-        env:
-          HOMEBREW_NO_AUTO_UPDATE: 1
-
-      - name: Set up cache directories
-        run: |
-          mkdir -p "$HOME/.cache/pip"
-          mkdir -p "$HOME/.npm"
-          mkdir -p "$HOME/Library/Caches/Homebrew"
-
-      - name: Cache Homebrew packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            $HOME/Library/Caches/Homebrew
-            /usr/local/Homebrew
-          key: ${{ runner.os }}-homebrew-${{ hashFiles('**/packages.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-homebrew-
-
-      - name: Cache pip packages
-        uses: actions/cache@v3
-        with:
-          path: $HOME/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/packages.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Cache npm packages
-        uses: actions/cache@v3
-        with:
-          path: $HOME/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/packages.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
-
-      - name: Install Neovim
-        run: brew install neovim
-
-      - name: Set up Python virtual environment
-        run: |
-          python3 -m venv .venv
-          source .venv/bin/activate
-          python3 -m pip install --upgrade pip
-
-      - name: Install dependencies
-        run: |
-          if [ -f infra/install.sh ]; then
-            chmod +x infra/install.sh
-            source .venv/bin/activate
-            CI=true ./infra/install.sh
-          fi
-
-      - name: Run sanity tests
-        run: |
-          chmod +x infra/sanity_nvim_start.sh
-          source .venv/bin/activate
-          ./infra/sanity_nvim_start.sh
-        env:
-          CI: true
-          NVIM_LOG_FILE: infra/nvim.log
-        continue-on-error: false
-
-      - name: Upload test logs
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-logs
-          path: |
-            infra/nvim.log
-            infra/test_files/checkhealth.log
-          if-no-files-found: warn
-
-  codeql:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      packages: read
-      actions: read
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: actions
-          config-file: ./.github/codeql/codeql-config.yml
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:actions"
-
-  lua-analysis:
-    name: Lua Analysis
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Lua and LuaRocks
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y lua5.4 luarocks
-
-      - name: Install luacheck
-        run: |
-          sudo luarocks install luacheck
-
-      - name: Run luacheck
-        run: |
-          luacheck lua/ after/plugin/ --codes --ranges --formatter plain 
+  neovim-tests:
+    needs: setup
+    uses: ./.github/workflows/neovim-tests.yml

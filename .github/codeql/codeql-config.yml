@@ -1,11 +1,42 @@
 name: "CodeQL Config"
+
 queries:
   - uses: security-extended
+  - uses: security-and-quality
+  - uses: security-extended
+    with:
+      config: security-extended
+  - uses: security-and-quality
+    with:
+      config: security-and-quality
+
+paths:
+  - lua/
+  - after/plugin/
+  - infra/
+  - .github/workflows/
+
+paths-ignore:
+  - "**/test/"
+  - "**/test_*/"
+  - "**/node_modules/"
+  - "**/dist/"
+  - "**/build/"
+
+query-filters:
+  - include:
+      tags contain: security
+  - include:
+      tags contain: external
+  - exclude:
+      tags contain: deprecated
+
 languages:
   - actions
-paths:
-  - '.github/workflows/'
-paths-ignore:
-  - '.github/workflows/**/*.md'
-  - '.github/workflows/**/*.txt'
-  - '.github/workflows/**/*.json' 
+  - lua
+  - after/plugin
+  - infra
+  - .github/workflows
+  - .github/workflows/**/*.md
+  - .github/workflows/**/*.txt
+  - .github/workflows/**/*.json
