@@ -53,7 +53,7 @@ The `test/setup/` directory contains:
 1. Run all tests:
 
    ```bash
-   ./test/sanity_nvim_start.sh
+   ./infra/nvim_sanity_test.sh
    ```
 
 2. Run specific language tests:

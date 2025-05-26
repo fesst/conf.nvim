@@ -56,23 +56,34 @@ jobs:
           echo "No test/infra/.lua changes. Skipping tests."
           exit 0
 
-      - name: Cache Homebrew
+      - name: Cache Homebrew packages
         if: steps.test_check.outputs.run_tests == 'true'
         uses: actions/cache@v4
         with:
           path: |
             ~/Library/Caches/Homebrew
             /usr/local/Homebrew
-          key: ${{ runner.os }}-homebrew-${{ hashFiles('**/install.sh') }}
+          key: ${{ runner.os }}-brew-${{ hashFiles('infra/packages/brew.sh', 'infra/install.sh') }}
           restore-keys: |
-            ${{ runner.os }}-homebrew-
+            ${{ runner.os }}-brew-
+
+      - name: Cache Homebrew casks
+        if: steps.test_check.outputs.run_tests == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew/Cask
+            /usr/local/Caskroom
+          key: ${{ runner.os }}-brew-cask-${{ hashFiles('infra/packages/brew.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-brew-cask-
 
       - name: Install Neovim
         if: steps.test_check.outputs.run_tests == 'true'
         run: |
           brew install neovim
 
-      - name: Cache dependencies
+      - name: Cache Neovim plugins
         if: steps.test_check.outputs.run_tests == 'true'
         uses: actions/cache@v4
         with:
@@ -80,15 +91,26 @@ jobs:
             ~/.local/share/nvim
             ~/.config/nvim/plugin
             ~/.config/nvim/lazy
-          key: ${{ runner.os }}-deps-${{ hashFiles('**/install.sh') }}
+          key: ${{ runner.os }}-nvim-plugins-${{ hashFiles('lua/**/*.lua', 'after/plugin/**/*.lua', 'infra/packages/nvim.sh') }}
           restore-keys: |
-            ${{ runner.os }}-deps-
+            ${{ runner.os }}-nvim-plugins-
 
       - name: Setup Python virtual environment
         if: steps.test_check.outputs.run_tests == 'true'
         run: |
           python3 -m venv .venv
           source .venv/bin/activate
+
+      - name: Cache Python packages
+        if: steps.test_check.outputs.run_tests == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            .venv
+            ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('infra/packages/pip.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         if: steps.test_check.outputs.run_tests == 'true'
@@ -101,14 +123,37 @@ jobs:
         run: |
           eval "$(/usr/libexec/path_helper)"
 
-      - name: Cache Lua packages
+      - name: Cache npm packages
+        if: steps.test_check.outputs.run_tests == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('infra/packages/npm.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Cache Cargo packages
+        if: steps.test_check.outputs.run_tests == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('infra/packages/cargo.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Cache LuaRocks packages
         if: steps.test_check.outputs.run_tests == 'true'
         uses: actions/cache@v4
         with:
           path: |
             ~/.luarocks
             ~/.cache/luarocks
-          key: ${{ runner.os }}-luarocks-${{ hashFiles('**/install.sh') }}
+          key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
           restore-keys: |
             ${{ runner.os }}-luarocks-
 
@@ -120,4 +165,4 @@ jobs:
       - name: Run Neovim sanity tests
         if: steps.test_check.outputs.run_tests == 'true'
         run: |
-          bash infra/sanity_nvim_start.sh
+          bash infra/nvim_sanity_test.sh

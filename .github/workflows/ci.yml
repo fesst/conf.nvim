@@ -2,9 +2,9 @@ name: "Master CI"
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   schedule:
-    - cron: '33 12 * * 1'
+    - cron: "33 12 * * 1"
 
 jobs:
   test:
@@ -70,9 +70,9 @@ jobs:
 
       - name: Run sanity tests
         run: |
-          chmod +x infra/sanity_nvim_start.sh
+          chmod +x infra/nvim_sanity_test.sh
           source .venv/bin/activate
-          ./infra/sanity_nvim_start.sh
+          ./infra/nvim_sanity_test.sh
         env:
           CI: true
           NVIM_LOG_FILE: infra/nvim.log
@@ -129,4 +129,4 @@ jobs:
 
       - name: Run luacheck
         run: |
-          luacheck lua/ after/plugin/ --codes --ranges --formatter plain 
+          luacheck lua/ after/plugin/ --codes --ranges --formatter plain

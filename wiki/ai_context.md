@@ -26,7 +26,7 @@ Lazy is package manager.
 #### Test apps
 
 - test/ folder contains some test lua scripts and test applications to check LSP and DAP functionality.
-- test/setup/sanity_nvim_start.sh contains automated tests organized into functions:
+- infra/nvim_sanity_test.sh contains automated tests organized into functions:
   - test_basic_functionality(): Basic Neovim operations (startup, file opening)
   - test_health_check(): Runs checkhealth and verifies output
   - test_core_plugins(): Verifies loading of core plugins (Lazy, Treesitter, LSP, Mason, Telescope)
@@ -82,7 +82,7 @@ Lazy is package manager.
 
 ##### CI
 
-- All CI (GitHub Actions) must only run scripts that are present in the repository (e.g., infra/install.sh, test/setup/sanity_nvim_start.sh).
+- All CI (GitHub Actions) must only run scripts that are present in the repository (e.g., infra/install.sh, infra/nvim_sanity_test.sh).
 - Do not use raw shell commands directly in the workflow YAML; always invoke scripts from the repo.
 - This ensures reproducibility, security, and easier local testing.
 
@@ -147,7 +147,7 @@ Lazy is package manager.
 
 - Always test install.sh on its change.
 - Always test nvim configuration on nvim plugin changes, do it with --headless and do not forget to quit after if needed.
-- Run sanity tests (test/setup/sanity_nvim_start.sh) after making changes to verify basic functionality.
+- Run sanity tests (infra/nvim_sanity_test.sh) after making changes to verify basic functionality.
 
 ## VCS
 
