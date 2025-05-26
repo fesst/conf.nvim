@@ -182,7 +182,11 @@ jobs:
         run: |
           set -e
           chmod +x infra/packages/pip.sh
-          source "$GITHUB_WORKSPACE/.venv/bin/activate"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            source "$GITHUB_WORKSPACE/.venv/Scripts/activate"
+          else
+            source "$GITHUB_WORKSPACE/.venv/bin/activate"
+          fi
           ./infra/packages/pip.sh || {
             echo "Failed to install Python packages. Retrying..."
             pip cache purge
