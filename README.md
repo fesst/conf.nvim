@@ -41,7 +41,7 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
    git clone https://github.com/yourusername/conf.nvim.git ~/.config/nvim
    ```
 
-2. Run the installation script:
+2. Run the installation script: (now it is mac-specific, create issue or PR, see [how to contribute](#contributing)
    ```bash
    ./infra/install.sh
    ```
