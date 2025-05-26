@@ -26,10 +26,10 @@ on:
     outputs:
       virtual_env:
         description: "Path to virtual environment"
-        value: ${{ jobs.setup.outputs.virtual_env }}
+        value: ${{ jobs.setup-environment.outputs.virtual_env }}
 
 jobs:
-  setup:
+  setup-environment:
     name: Setup Environment
     runs-on: ${{ inputs.runner }}
     outputs:
@@ -164,22 +164,13 @@ jobs:
           Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
           refreshenv
 
-          # Install required Windows packages using Chocolatey in parallel
-          $jobs = @()
-
           if ($env:CI -eq "true") {
             # Install Neovim and tree-sitter first as they're required for tests
             Write-Output "Installing Neovim and tree-sitter..."
             choco install neovim tree-sitter -y
-
-            # Refresh environment after installations
             refreshenv
-
-            # Add Neovim to PATH immediately
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
-
-            # Verify Neovim installation
             Write-Output "Verifying Neovim installation..."
             $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
             if (-not $nvimPath) {
@@ -188,8 +179,6 @@ jobs:
               exit 1
             }
             Write-Output "Neovim found at: $($nvimPath.Source)"
-
-            # Verify tree-sitter installation
             Write-Output "Verifying tree-sitter installation..."
             $treeSitterPath = Get-Command tree-sitter -ErrorAction SilentlyContinue
             if (-not $treeSitterPath) {
@@ -200,34 +189,19 @@ jobs:
             Write-Output "tree-sitter found at: $($treeSitterPath.Source)"
           }
 
-          # Install other packages in parallel
-          $packages = @(
-            @{Name = "python312"; Condition = ${{ inputs.setup_python }} },
-            @{Name = "nodejs"; Condition = ${{ inputs.setup_node }} },
-            @{Name = "rust"; Condition = ${{ inputs.setup_rust }} }
-          )
-
-          foreach ($package in $packages) {
-            if ($package.Condition) {
-              $jobs += Start-Job -ScriptBlock {
-                param($packageName)
-                choco install $packageName -y
-              } -ArgumentList $package.Name
-            }
+          if (${{ inputs.setup_python }}) {
+            choco install python312 -y
+            refreshenv
           }
-
-          # Wait for all jobs to complete
-          $jobs | Wait-Job | Receive-Job
-
-          # Refresh environment after all installations
-          refreshenv
-
-          # Install stylua if Rust is being set up
+          if (${{ inputs.setup_node }}) {
+            choco install nodejs -y
+            refreshenv
+          }
           if (${{ inputs.setup_rust }}) {
+            choco install rust -y
+            refreshenv
             Write-Output "Installing stylua..."
             cargo install stylua
-
-            # Verify stylua installation
             Write-Output "Verifying stylua installation..."
             $styluaPath = Get-Command stylua -ErrorAction SilentlyContinue
             if (-not $styluaPath) {
@@ -238,7 +212,6 @@ jobs:
             Write-Output "stylua found at: $($styluaPath.Source)"
           }
 
-          # Final environment refresh
           refreshenv
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           if (${{ inputs.setup_rust }}) {
