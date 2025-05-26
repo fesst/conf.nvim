@@ -31,36 +31,15 @@ check_homebrew
 
 # Uninstall Homebrew packages
 print_status "Uninstalling Homebrew packages..."
-for package in "${BREW_PACKAGES[@]}"; do
-    if check_brew_package "$package"; then
-        print_status "Uninstalling $package..."
-        brew uninstall "$package"
-    else
-        print_warning "$package is not installed"
-    fi
-done
+uninstall_brew_packages "${BREW_PACKAGES[@]}"
 
 # Uninstall Homebrew casks
 print_status "Uninstalling Homebrew casks..."
-for cask in "${BREW_CASKS[@]}"; do
-    if check_brew_cask "$cask"; then
-        print_status "Uninstalling $cask..."
-        brew uninstall --cask "$cask"
-    else
-        print_warning "$cask is not installed"
-    fi
-done
+uninstall_brew_casks "${BREW_CASKS[@]}"
 
 # Uninstall Node.js and npm packages
 print_status "Uninstalling Node.js and npm packages..."
-for package in "${NPM_PACKAGES[@]}"; do
-    if check_npm_package "$package"; then
-        print_status "Uninstalling $package..."
-        npm uninstall -g "$package"
-    else
-        print_warning "$package is not installed"
-    fi
-done
+uninstall_npm_packages "${NPM_PACKAGES[@]}"
 
 # Uninstall Node.js if no other npm packages are installed
 if ! npm list -g &>/dev/null; then
@@ -83,14 +62,7 @@ fi
 
 # Uninstall Python packages
 print_status "Uninstalling Python packages..."
-for package in "${PIP_PACKAGES[@]}"; do
-    if check_pip_package "$package"; then
-        print_status "Uninstalling $package..."
-        python3 -m pip uninstall -y "$package"
-    else
-        print_warning "$package is not installed"
-    fi
-done
+uninstall_pip_packages "${PIP_PACKAGES[@]}"
 
 # Uninstall Python if no other pip packages are installed
 if ! python3 -m pip list &>/dev/null; then
@@ -100,25 +72,11 @@ fi
 
 # Uninstall LuaRocks packages
 print_status "Uninstalling LuaRocks packages..."
-for package in "${LUAROCKS_PACKAGES[@]}"; do
-    if check_luarocks_package "$package"; then
-        print_status "Uninstalling $package..."
-        luarocks remove "$package"
-    else
-        print_warning "$package is not installed"
-    fi
-done
+uninstall_luarocks_packages "${LUAROCKS_PACKAGES[@]}"
 
 # Uninstall Cargo packages
 print_status "Uninstalling Cargo packages..."
-for package in "${CARGO_PACKAGES[@]}"; do
-    if check_cargo_package "$package"; then
-        print_status "Uninstalling $package..."
-        cargo uninstall "$package"
-    else
-        print_warning "$package is not installed"
-    fi
-done
+uninstall_cargo_packages "${CARGO_PACKAGES[@]}"
 
 # Uninstall CodeLLDB
 if [ -f "$(dirname "$0")/codelldb.sh" ]; then
@@ -144,4 +102,4 @@ print_status "Note: Some configuration files may still exist in your home direct
 print_status "You may want to manually remove:"
 for dir in "${NVIM_DIRS[@]}"; do
     print_status "  - $dir"
-done 
+done

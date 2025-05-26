@@ -37,17 +37,21 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
 ## Installation
 
 1. Clone this repository:
+
    ```bash
    git clone https://github.com/yourusername/conf.nvim.git ~/.config/nvim
    ```
 
 2. Run the installation script:
+
    ```zsh
    ./infra/install.sh
    ```
+
    Note, now it is mac-specific, consider to create issue or PR, see [how to contribute](#contributing).
 
 The installation script will:
+
 - Install required system dependencies via Homebrew.
 - Set up Python packages.
 - Install Node.js and npm packages.
@@ -58,15 +62,18 @@ The installation script will:
 ## Debugging Setup
 
 ### Rust/C++ Debugging
+
 - Uses CodeLLDB for debugging Rust and C++ code.
 - Automatically installed in `~/.local/share/nvim/mason/packages/codelldb`.
 - Requires LLVM 19 for proper functionality.
 
 ### Python Debugging
+
 - Uses debugpy for Python debugging.
 - Automatically installed through Mason.
 
 ### Go Debugging
+
 - Uses Delve for Go debugging.
 - Installed via Homebrew.
 
@@ -75,6 +82,7 @@ The installation script will:
 [Custom mappings within current configuration](wiki/mappings.md)
 
 ### Debugging
+
 - `<leader>dc` - Start/Continue debugging
 - `<leader>di` - Step into
 - `<leader>do` - Step over
@@ -86,12 +94,14 @@ The installation script will:
 - `<leader>dL` - Run last
 
 ### Language-specific
+
 - `<leader>yr` - Run current file
 - `<leader>yt` - Run tests
 
 ## Maintenance
 
 ### Cleanup
+
 To clean up the installation:
 
 ```bash
@@ -106,7 +116,6 @@ To clean up the installation:
 - [Key Mappings](wiki/mappings.md)
 - [Docker Setup](wiki/docker.md)
 - [Testing](wiki/tests.md)
-
 
 ## Project Structure
 

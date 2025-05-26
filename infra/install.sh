@@ -6,32 +6,6 @@ set -e
 source "$(dirname "$0")/lib.sh"
 source "$(dirname "$0")/packages.sh"
 
-# Colors for output (only if not in CI)
-if [ "$CI" != "true" ]; then
-    RED='\033[0;31m'
-    GREEN='\033[0;32m'
-    YELLOW='\033[1;33m'
-    NC='\033[0m' # No Color
-else
-    RED=''
-    GREEN=''
-    YELLOW=''
-    NC=''
-fi
-
-# Function to print status messages
-print_status() {
-    echo -e "${GREEN}[+]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[!]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[x]${NC} $1"
-}
-
 # Check system requirements (skip in CI)
 if [ "$CI" != "true" ]; then
     check_macos
@@ -40,20 +14,7 @@ fi
 
 # Install Homebrew packages
 print_status "Installing Homebrew packages..."
-if [ "$CI" = "true" ]; then
-    # In CI, install all packages at once
-    brew install "${BREW_PACKAGES[@]}"
-else
-    # In local environment, check and install individually
-    for package in "${BREW_PACKAGES[@]}"; do
-        if ! check_brew_package "$package"; then
-            print_status "Installing $package..."
-            brew install "$package"
-        else
-            print_warning "$package is already installed"
-        fi
-    done
-fi
+install_brew_packages "${BREW_PACKAGES[@]}"
 
 # Install MacTeX (skip in CI)
 if [ "$CI" != "true" ]; then
@@ -67,46 +28,24 @@ fi
 
 # Install other Homebrew casks
 print_status "Installing Homebrew casks..."
-if [ "$CI" = "true" ]; then
-    # In CI, install all casks at once
-    brew install --cask "${BREW_CASKS[@]}"
-else
-    for cask in "${BREW_CASKS[@]}"; do
-        if ! check_brew_cask "$cask"; then
-            print_status "Installing $cask..."
-            brew install --cask "$cask"
-        else
-            print_warning "$cask is already installed"
-        fi
-    done
-fi
+install_brew_casks "${BREW_CASKS[@]}"
 
 # Install Node.js and npm packages
 print_status "Installing Node.js and npm packages..."
 if [ "$CI" = "true" ]; then
     brew install node
-    npm install -g "${NPM_CONFIG[@]}" "${NPM_PACKAGES[@]}"
 else
     if ! check_command node; then
         print_status "Installing Node.js..."
         brew install node
     fi
-
-    for package in "${NPM_PACKAGES[@]}"; do
-        if ! check_npm_package "$package"; then
-            print_status "Installing $package..."
-            npm install -g "${NPM_CONFIG[@]}" "$package"
-        else
-            print_warning "$package is already installed"
-        fi
-    done
 fi
+install_npm_packages "${NPM_PACKAGES[@]}"
 
 # Install Rust and Cargo packages
 print_status "Installing Rust and Cargo packages..."
 if [ "$CI" = "true" ]; then
     brew install rust rust-analyzer
-    cargo install "${CARGO_PACKAGES[@]}"
 else
     if ! check_command rustc; then
         print_status "Installing Rust..."
@@ -121,92 +60,38 @@ else
     else
         print_warning "rust-analyzer is already installed"
     fi
-
-    for package in "${CARGO_PACKAGES[@]}"; do
-        if ! check_cargo_package "$package"; then
-            print_status "Installing $package..."
-            cargo install "$package"
-        else
-            print_warning "$package is already installed"
-        fi
-    done
 fi
+install_cargo_packages "${CARGO_PACKAGES[@]}"
 
 # Install Python packages
 print_status "Installing Python packages..."
 if [ "$CI" = "true" ]; then
-    # In CI, create and activate virtual environment
-    VENV_DIR=".venv"
-    print_status "Creating Python virtual environment..."
-    python3 -m venv "$VENV_DIR" || {
-        print_error "Failed to create virtual environment"
-        exit 1
-    }
-
-    print_status "Activating Python virtual environment..."
-    source "$VENV_DIR/bin/activate" || {
-        print_error "Failed to activate virtual environment"
-        exit 1
-    }
-
-    print_status "Upgrading pip..."
-    python3 -m pip install --upgrade pip || {
-        print_error "Failed to upgrade pip"
-        exit 1
-    }
-
-    print_status "Installing Python packages..."
-    python3 -m pip install --quiet "${PIP_PACKAGES[@]}" || {
-        print_error "Failed to install Python packages"
-        exit 1
-    }
+    # In CI, we assume the virtual environment is already activated
+    install_pip_packages "${PIP_PACKAGES[@]}"
 else
-    # In local mode, require VIRTUAL_ENV to be set
-    if [ -z "${VIRTUAL_ENV:-}" ]; then
-        print_error "VIRTUAL_ENV is not set. Please activate your virtual environment first."
-        exit 1
-    fi
-
     if ! check_command python3; then
         print_status "Installing Python..."
         brew install python
     fi
 
-    # Upgrade pip in the virtual environment
-    print_status "Upgrading pip..."
-    python3 -m pip install --upgrade pip || {
-        print_error "Failed to upgrade pip"
-        exit 1
-    }
-
-    # Install packages in the virtual environment
-    for package in "${PIP_PACKAGES[@]}"; do
-        if ! check_pip_package "$package"; then
-            print_status "Installing $package..."
-            python3 -m pip install --quiet "$package" || {
-                print_error "Failed to install $package"
-                exit 1
-            }
-        else
-            print_warning "$package is already installed"
+    # Check if we're in a virtual environment
+    if [ -z "$VIRTUAL_ENV" ]; then
+        print_warning "No virtual environment detected. Creating one..."
+        if [ ! -d ".venv" ]; then
+            print_status "Creating Python virtual environment..."
+            python3 -m venv .venv
         fi
-    done
+        source .venv/bin/activate
+    else
+        print_status "Using existing virtual environment: $VIRTUAL_ENV"
+    fi
+
+    install_pip_packages "${PIP_PACKAGES[@]}"
 fi
 
 # Install LuaRocks packages
 print_status "Installing LuaRocks packages..."
-if [ "$CI" = "true" ]; then
-    luarocks install "${LUAROCKS_PACKAGES[@]}"
-else
-    for package in "${LUAROCKS_PACKAGES[@]}"; do
-        if ! check_luarocks_package "$package"; then
-            print_status "Installing $package..."
-            luarocks install "$package"
-        else
-            print_warning "$package is already installed"
-        fi
-    done
-fi
+install_luarocks_packages "${LUAROCKS_PACKAGES[@]}"
 
 # Install CodeLLDB
 "$(dirname "$0")/codelldb.sh"

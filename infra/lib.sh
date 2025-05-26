@@ -1,10 +1,17 @@
-#:q!/bin/bash
+#!/bin/bash
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Colors for output (CI-aware)
+if [ "$CI" != "true" ]; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    NC='\033[0m' # No Color
+else
+    RED=''
+    GREEN=''
+    YELLOW=''
+    NC=''
+fi
 
 # Function to print status messages
 print_status() {
@@ -110,6 +117,176 @@ check_mactex() {
     return 1
 }
 
+# Generic package management functions
+install_brew_packages() {
+    local packages=("$@")
+    if [ "$CI" = "true" ]; then
+        brew install "${packages[@]}"
+    else
+        for package in "${packages[@]}"; do
+            if ! check_brew_package "$package"; then
+                print_status "Installing $package..."
+                brew install "$package"
+            else
+                print_warning "$package is already installed"
+            fi
+        done
+    fi
+}
+
+install_brew_casks() {
+    local casks=("$@")
+    if [ "$CI" = "true" ]; then
+        brew install --cask "${casks[@]}"
+    else
+        for cask in "${casks[@]}"; do
+            if ! check_brew_cask "$cask"; then
+                print_status "Installing $cask..."
+                brew install --cask "$cask"
+            else
+                print_warning "$cask is already installed"
+            fi
+        done
+    fi
+}
+
+install_npm_packages() {
+    local packages=("$@")
+    if [ "$CI" = "true" ]; then
+        npm install -g "${NPM_CONFIG[@]}" "${packages[@]}"
+    else
+        for package in "${packages[@]}"; do
+            if ! check_npm_package "$package"; then
+                print_status "Installing $package..."
+                npm install -g "${NPM_CONFIG[@]}" "$package"
+            else
+                print_warning "$package is already installed"
+            fi
+        done
+    fi
+}
+
+install_cargo_packages() {
+    local packages=("$@")
+    if [ "$CI" = "true" ]; then
+        cargo install "${packages[@]}"
+    else
+        for package in "${packages[@]}"; do
+            if ! check_cargo_package "$package"; then
+                print_status "Installing $package..."
+                cargo install "$package"
+            else
+                print_warning "$package is already installed"
+            fi
+        done
+    fi
+}
+
+install_pip_packages() {
+    local packages=("$@")
+    if [ "$CI" = "true" ]; then
+        python3 -m pip install --quiet "${packages[@]}"
+    else
+        for package in "${packages[@]}"; do
+            if ! check_pip_package "$package"; then
+                print_status "Installing $package..."
+                python3 -m pip install --quiet "$package"
+            else
+                print_warning "$package is already installed"
+            fi
+        done
+    fi
+}
+
+install_luarocks_packages() {
+    local packages=("$@")
+    if [ "$CI" = "true" ]; then
+        luarocks install "${packages[@]}"
+    else
+        for package in "${packages[@]}"; do
+            if ! check_luarocks_package "$package"; then
+                print_status "Installing $package..."
+                luarocks install "$package"
+            else
+                print_warning "$package is already installed"
+            fi
+        done
+    fi
+}
+
+# Generic package uninstall functions
+uninstall_brew_packages() {
+    local packages=("$@")
+    for package in "${packages[@]}"; do
+        if check_brew_package "$package"; then
+            print_status "Uninstalling $package..."
+            brew uninstall "$package"
+        else
+            print_warning "$package is not installed"
+        fi
+    done
+}
+
+uninstall_brew_casks() {
+    local casks=("$@")
+    for cask in "${casks[@]}"; do
+        if check_brew_cask "$cask"; then
+            print_status "Uninstalling $cask..."
+            brew uninstall --cask "$cask"
+        else
+            print_warning "$cask is not installed"
+        fi
+    done
+}
+
+uninstall_npm_packages() {
+    local packages=("$@")
+    for package in "${packages[@]}"; do
+        if check_npm_package "$package"; then
+            print_status "Uninstalling $package..."
+            npm uninstall -g "$package"
+        else
+            print_warning "$package is not installed"
+        fi
+    done
+}
+
+uninstall_cargo_packages() {
+    local packages=("$@")
+    for package in "${packages[@]}"; do
+        if check_cargo_package "$package"; then
+            print_status "Uninstalling $package..."
+            cargo uninstall "$package"
+        else
+            print_warning "$package is not installed"
+        fi
+    done
+}
+
+uninstall_pip_packages() {
+    local packages=("$@")
+    for package in "${packages[@]}"; do
+        if check_pip_package "$package"; then
+            print_status "Uninstalling $package..."
+            python3 -m pip uninstall -y "$package"
+        else
+            print_warning "$package is not installed"
+        fi
+    done
+}
+
+uninstall_luarocks_packages() {
+    local packages=("$@")
+    for package in "${packages[@]}"; do
+        if check_luarocks_package "$package"; then
+            print_status "Uninstalling $package..."
+            luarocks remove "$package"
+        else
+            print_warning "$package is not installed"
+        fi
+    done
+}
+
 # Export all functions
 export -f print_status
 export -f print_warning
@@ -125,4 +302,16 @@ export -f check_cargo_package
 export -f check_command
 export -f ensure_cargo_path
 export -f run_final_checks
-export -f check_mactex 
+export -f check_mactex
+export -f install_brew_packages
+export -f install_brew_casks
+export -f install_npm_packages
+export -f install_cargo_packages
+export -f install_pip_packages
+export -f install_luarocks_packages
+export -f uninstall_brew_packages
+export -f uninstall_brew_casks
+export -f uninstall_npm_packages
+export -f uninstall_cargo_packages
+export -f uninstall_pip_packages
+export -f uninstall_luarocks_packages
