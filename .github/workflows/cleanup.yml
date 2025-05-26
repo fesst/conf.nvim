@@ -1,6 +1,8 @@
 name: Cleanup Workflow Runs
 
 on:
+  pull_request:
+    types: [closed]  # Trigger on pull request closure
   schedule:
     - cron: '0 */12 * * *'  # Run every 12 hours
   workflow_dispatch:  # Allow manual triggering
