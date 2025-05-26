@@ -29,7 +29,7 @@ jobs:
     name: Setup Environment
     runs-on: macos-latest
     outputs:
-      virtual_env: ${{ steps.setup-python.outputs.virtual-env }}
+      virtual_env: ${{ steps.venv.outputs.virtual_env }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -48,7 +48,7 @@ jobs:
         id: venv
         run: |
           python -m venv .venv
-          echo "virtual-env=$PWD/.venv" >> $GITHUB_OUTPUT
+          echo "virtual_env=$PWD/.venv" >> $GITHUB_OUTPUT
           echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
           echo "$PWD/.venv/bin" >> $GITHUB_PATH
           echo "PYTHONPATH=$PWD/.venv/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
