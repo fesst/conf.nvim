@@ -26,3 +26,4 @@ jobs:
   neovim-tests:
     needs: setup
     uses: ./.github/workflows/neovim-tests.yml
+    with: {}

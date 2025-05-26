@@ -64,33 +64,28 @@ This document describes the infrastructure scripts used in the Neovim configurat
 
 ## Usage
 
-### Installation
-
 ```bash
+### Installation
 ./infra/install.sh
 ```
 
-### Docker Setup
-
 ```bash
+### Docker Setup
 ./infra/docker.sh [--local]
 ```
 
-### Cleanup
-
 ```bash
+### Cleanup
 ./infra/cleanup.sh
 ```
 
-### Formatting
-
 ```bash
+### Formatting
 ./infra/format_lua.sh
 ```
 
-### Testing
-
 ```bash
+### Testing
 ./infra/nvim_sanity_test.sh
 ```
 

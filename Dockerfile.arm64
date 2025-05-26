@@ -72,14 +72,18 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
 # Install Rust with minimal components and cleanup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y --no-modify-path --default-toolchain stable --profile minimal && \
     . "$HOME/.cargo/env" && \
-    cargo install sccache && \
-    mkdir -p $HOME/.cargo && \
-    echo '[build]' > $HOME/.cargo/config.toml && \
+    # Install sccache first
+    RUSTFLAGS="-C target-cpu=native" cargo install sccache --features="dist-server" --no-default-features && \
+    # Configure Rust for ARM64
+    echo '[target.aarch64-unknown-linux-gnu]' > $HOME/.cargo/config.toml && \
+    echo 'linker = "aarch64-linux-gnu-gcc"' >> $HOME/.cargo/config.toml && \
+    echo '[build]' >> $HOME/.cargo/config.toml && \
     echo 'rustc-wrapper = "sccache"' >> $HOME/.cargo/config.toml && \
     echo '[profile.dev]' >> $HOME/.cargo/config.toml && \
     echo 'opt-level = 0' >> $HOME/.cargo/config.toml && \
     echo '[profile.release]' >> $HOME/.cargo/config.toml && \
     echo 'opt-level = 3' >> $HOME/.cargo/config.toml && \
+    # Cleanup
     rm -rf /root/.cargo/registry/cache && \
     rm -rf /root/.cargo/registry/index && \
     rm -rf /root/.cargo/git && \
