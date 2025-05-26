@@ -98,6 +98,10 @@ jobs:
               }
               Start-Sleep -Seconds (2 ** $i)
             }
+          } elseif ("${{ inputs.platform }}" -eq "windows") {
+            # Install dependencies using winget
+            winget install --id Neovim.Neovim --silent --accept-source-agreements --accept-package-agreements
+            winget install --id TreeSitter.TreeSitter --silent --accept-source-agreements --accept-package-agreements
           }
 
           if ("${{ inputs.platform }}" -eq "windows") {

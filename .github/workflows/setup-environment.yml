@@ -144,6 +144,17 @@ jobs:
             ./infra/packages/brew.sh
           }
 
+      - name: Install Windows packages
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Install required Windows packages using winget
+          winget install --id Neovim.Neovim --silent --accept-source-agreements --accept-package-agreements
+          winget install --id TreeSitter.TreeSitter --silent --accept-source-agreements --accept-package-agreements
+          winget install --id Python.Python.3.12 --silent --accept-source-agreements --accept-package-agreements
+          winget install --id OpenJS.NodeJS --silent --accept-source-agreements --accept-package-agreements
+          winget install --id Rustlang.Rust --silent --accept-source-agreements --accept-package-agreements
+
       - name: Install Node.js packages
         if: inputs.setup_node
         shell: bash
