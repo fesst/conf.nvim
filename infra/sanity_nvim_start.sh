@@ -3,6 +3,7 @@ set -euo pipefail
 
 TEST_DIR="infra/test_files"
 LOG_FILE="${NVIM_LOG_FILE:-infra/nvim.log}"
+VENV_DIR=".venv"
 
 # Function to print status messages
 print_status() {
@@ -11,6 +12,22 @@ print_status() {
 
 print_error() {
     echo -e "\033[0;31m[x]\033[0m $1"
+}
+
+# Function to ensure virtual environment is activated
+ensure_venv() {
+    if [ ! -d "$VENV_DIR" ]; then
+        print_error "Virtual environment not found at $VENV_DIR"
+        exit 1
+    fi
+
+    if [ -z "${VIRTUAL_ENV:-}" ]; then
+        print_status "Activating virtual environment..."
+        source "$VENV_DIR/bin/activate" || {
+            print_error "Failed to activate virtual environment"
+            exit 1
+        }
+    fi
 }
 
 # Function to run nvim command with logging
@@ -157,6 +174,9 @@ print_status "Running Neovim sanity tests..."
 # Initialize log file
 mkdir -p "$(dirname "$LOG_FILE")"
 echo "=== Neovim Test Log $(date) ===" > "$LOG_FILE"
+
+# Ensure virtual environment is activated
+ensure_venv
 
 create_test_files
 test_basic_functionality
