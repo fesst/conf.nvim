@@ -105,7 +105,7 @@ test_basic_functionality() {
     if ! check_command nvim; then
         print_error "Neovim is not installed"
         exit 1
-    }
+    fi
 
     run_nvim 'quit' "Basic startup/exit" || exit 1
     run_nvim "e $TEST_DIR/test.lua" "Lua file test" || exit 1
