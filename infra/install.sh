@@ -135,30 +135,58 @@ fi
 # Install Python packages
 print_status "Installing Python packages..."
 if [ "$CI" = "true" ]; then
-    # In CI, we assume the virtual environment is already activated
-    python3 -m pip install --quiet "${PIP_PACKAGES[@]}"
+    # In CI, create and activate virtual environment
+    VENV_DIR=".venv"
+    print_status "Creating Python virtual environment..."
+    python3 -m venv "$VENV_DIR" || {
+        print_error "Failed to create virtual environment"
+        exit 1
+    }
+
+    print_status "Activating Python virtual environment..."
+    source "$VENV_DIR/bin/activate" || {
+        print_error "Failed to activate virtual environment"
+        exit 1
+    }
+
+    print_status "Upgrading pip..."
+    python3 -m pip install --upgrade pip || {
+        print_error "Failed to upgrade pip"
+        exit 1
+    }
+
+    print_status "Installing Python packages..."
+    python3 -m pip install --quiet "${PIP_PACKAGES[@]}" || {
+        print_error "Failed to install Python packages"
+        exit 1
+    }
 else
+    # In local mode, require VIRTUAL_ENV to be set
+    if [ -z "${VIRTUAL_ENV:-}" ]; then
+        print_error "VIRTUAL_ENV is not set. Please activate your virtual environment first."
+        exit 1
+    fi
+
     if ! check_command python3; then
         print_status "Installing Python..."
         brew install python
     fi
 
-    # Check if we're in a virtual environment
-    if [ -z "$VIRTUAL_ENV" ]; then
-        print_warning "No virtual environment detected. Creating one..."
-        if [ ! -d ".venv" ]; then
-            print_status "Creating Python virtual environment..."
-            python3 -m venv .venv
-        fi
-        source .venv/bin/activate
-    else
-        print_status "Using existing virtual environment: $VIRTUAL_ENV"
-    fi
+    # Upgrade pip in the virtual environment
+    print_status "Upgrading pip..."
+    python3 -m pip install --upgrade pip || {
+        print_error "Failed to upgrade pip"
+        exit 1
+    }
 
+    # Install packages in the virtual environment
     for package in "${PIP_PACKAGES[@]}"; do
         if ! check_pip_package "$package"; then
             print_status "Installing $package..."
-            python3 -m pip install --quiet "$package"
+            python3 -m pip install --quiet "$package" || {
+                print_error "Failed to install $package"
+                exit 1
+            }
         else
             print_warning "$package is already installed"
         fi

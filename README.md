@@ -1,6 +1,6 @@
 # Neovim Configuration
 
-A modern Neovim configuration with a focus on development productivity and debugging capabilities with MacOS-specific installation script
+A modern Neovim configuration with a focus on development productivity and debugging capabilities with MacOS-specific installation script.
 
 ## Configured features
 
@@ -8,18 +8,18 @@ A modern Neovim configuration with a focus on development productivity and debug
 
 Installed with [lazy.nvim](https://github.com/folke/lazy.nvim)
 
-- **Language Support**: Comprehensive support for multiple programming languages
-- **Debugging**: Integrated debugging support with DAP (Debug Adapter Protocol)
-- **LSP**: Language Server Protocol support for intelligent code completion
-- **Telescope**: Fuzzy finding and searching capabilities
-- **Treesitter**: Advanced syntax highlighting and code navigation
-- **Mason**: Automatic language server and debugger installation
-- **UndoTree**: inifinite undo/redo tree with support of keeping the tree on buffer close (potentially infinitely)
-- **Fugitive**: simple git integration
-- **Harpoon**: ThePrimeAgen plugin for quick file hooks
-- **NvimTree** as a less buggy project view wtih tree-view support (netrw is buggy in such mode at the moment of setting things up)
-- **Rose Pine alt** as a color theme
-- **Lualine**: status line, aligned with main color theme
+- **Language Support**: Comprehensive support for multiple programming languages.
+- **Debugging**: Integrated debugging support with DAP (Debug Adapter Protocol).
+- **LSP**: Language Server Protocol support for intelligent code completion.
+- **Telescope**: Fuzzy finding and searching capabilities.
+- **Treesitter**: Advanced syntax highlighting and code navigation.
+- **Mason**: Automatic language server and debugger installation.
+- **UndoTree**: infinite undo/redo tree with support of keeping the tree on buffer close (potentially infinitely).
+- **Fugitive**: simple git integration.
+- **Harpoon**: ThePrimeAgen plugin for quick file hooks.
+- **NvimTree** as a less buggy project view with tree-view support (netrw is buggy in such mode at the moment of setting things up).
+- **Rose Pine alt** as a color theme.
+- **Lualine**: status line, aligned with main color theme.
 
 To list the GitHub repositories of the installed plugins, run:
 
@@ -29,10 +29,10 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
 
 ### Setttings and CI
 
-- Autofolding for multiple languages (using LSP and treesitter, except indent for python)
-- Various custom settings and mappings (with focus on preservation compatibility with help)
-- Installation script for MacOS ([brew](https://brew.sh/))
-- Github actions CI with sanity check test (but still requires manual check for all the features)
+- Autofolding for multiple languages (using LSP and treesitter, except indent for python).
+- Various custom settings and mappings (with focus on preservation compatibility with help).
+- Installation script for MacOS ([brew](https://brew.sh/)).
+- Github actions CI with sanity check test (but still requires manual check for all the features).
 
 ## Installation
 
@@ -42,32 +42,33 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
    ```
 
 2. Run the installation script:
-   ```bash
+   ```zsh
    ./infra/install.sh
    ```
+   Note, now it is mac-specific, consider to create issue or PR, see [how to contribute](#contributing).
 
 The installation script will:
-- Install required system dependencies via Homebrew
-- Set up Python packages
-- Install Node.js and npm packages
-- Install Rust and related tools
-- Install CodeLLDB for Rust/C++ debugging
-- Configure tmux
+- Install required system dependencies via Homebrew.
+- Set up Python packages.
+- Install Node.js and npm packages.
+- Install Rust and related tools.
+- Install CodeLLDB for Rust/C++ debugging.
+- Configure tmux.
 
 ## Debugging Setup
 
 ### Rust/C++ Debugging
-- Uses CodeLLDB for debugging Rust and C++ code
-- Automatically installed in `~/.local/share/nvim/mason/packages/codelldb`
-- Requires LLVM 19 for proper functionality
+- Uses CodeLLDB for debugging Rust and C++ code.
+- Automatically installed in `~/.local/share/nvim/mason/packages/codelldb`.
+- Requires LLVM 19 for proper functionality.
 
 ### Python Debugging
-- Uses debugpy for Python debugging
-- Automatically installed through Mason
+- Uses debugpy for Python debugging.
+- Automatically installed through Mason.
 
 ### Go Debugging
-- Uses Delve for Go debugging
-- Installed via Homebrew
+- Uses Delve for Go debugging.
+- Installed via Homebrew.
 
 ## Key Mappings
 
@@ -97,10 +98,10 @@ To clean up the installation:
 ```
 
 This will:
-- Check and maintain required LLVM version
-- Verify Rust installation
-- Check CodeLLDB installation
-- Clean up Homebrew packages
+- Check and maintain required LLVM version.
+- Verify Rust installation.
+- Check CodeLLDB installation.
+- Clean up Homebrew packages.
 
 ### Complete Removal
 To completely remove development tools:
@@ -112,7 +113,7 @@ rm -rf ~/.local/share/nvim/mason/packages/codelldb
 ## Config starts with init.lua
 
 [Project rules](wiki/ai_context.md)
-e.g. CI should use infra scripts as much as possible to have a single source of truth for CI and local pipeline
+e.g. CI should use infra scripts as much as possible to have a single source of truth for CI and local pipeline.
 
 ## Directory Structure
 
