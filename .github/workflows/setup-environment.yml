@@ -47,7 +47,7 @@ jobs:
         if: inputs.setup_python
         id: venv
         run: |
-          VENV_PATH="$RUNNER_TEMP/venv"
+          VENV_PATH="$GITHUB_WORKSPACE/.venv"
           python -m venv "$VENV_PATH"
           echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
           echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV

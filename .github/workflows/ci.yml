@@ -42,8 +42,8 @@ jobs:
 
       - name: Install packages
         run: |
-          source "$RUNNER_TEMP/venv/bin/activate"
-          export VIRTUAL_ENV="$RUNNER_TEMP/venv"
+          source "$GITHUB_WORKSPACE/.venv/bin/activate"
+          export VIRTUAL_ENV="$GITHUB_WORKSPACE/.venv"
           export PATH="$VIRTUAL_ENV/bin:$PATH"
           export PYTHONPATH="$VIRTUAL_ENV/lib/python3.12/site-packages:$PYTHONPATH"
           export PIP_TARGET="$VIRTUAL_ENV/lib/python3.12/site-packages"
@@ -53,8 +53,8 @@ jobs:
       - name: Run sanity tests
         run: |
           chmod +x infra/nvim_sanity_test.sh
-          source "$RUNNER_TEMP/venv/bin/activate"
-          export VIRTUAL_ENV="$RUNNER_TEMP/venv"
+          source "$GITHUB_WORKSPACE/.venv/bin/activate"
+          export VIRTUAL_ENV="$GITHUB_WORKSPACE/.venv"
           ./infra/nvim_sanity_test.sh
         env:
           CI: true
