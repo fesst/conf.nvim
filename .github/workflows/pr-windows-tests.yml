@@ -27,18 +27,22 @@ jobs:
           path: .venv
 
       - name: Run basic Neovim tests
+        shell: bash
         run: |
           nvim --headless -c "lua require('test.core')" -c "quit"
 
       - name: Run LSP tests
+        shell: bash
         run: |
           nvim --headless -c "lua require('test.lsp')" -c "quit"
 
       - name: Run Treesitter tests
+        shell: bash
         run: |
           nvim --headless -c "lua require('test.treesitter')" -c "quit"
 
       - name: Check formatting
+        shell: bash
         run: |
           stylua --check lua/
           stylua --check after/plugin/
