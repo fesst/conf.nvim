@@ -117,10 +117,6 @@ jobs:
 
       - name: Install minimal dependencies
         run: |
-          # Configure Docker DNS
-          echo '{"dns": ["8.8.8.8", "8.8.4.4"]}' | sudo tee /etc/docker/daemon.json
-          sudo systemctl restart docker || true
-
           # Retry brew install with exponential backoff
           for i in {1..3}; do
             if brew install neovim tree-sitter; then

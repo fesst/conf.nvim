@@ -24,6 +24,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
   DOCKER_BUILDKIT: 1
   BUILDKIT_INLINE_CACHE: 1
+  CACHE_TIMEOUT: 600 # 10 minutes timeout for cache operations
 
 jobs:
   build-and-push-amd64:
@@ -31,6 +32,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -68,6 +70,7 @@ jobs:
 
       - name: Build and push AMD64 Docker image
         uses: docker/build-push-action@v5
+        continue-on-error: true
         with:
           context: .
           file: ./Dockerfile.amd64
@@ -75,20 +78,48 @@ jobs:
           tags: ${{ steps.meta-amd64.outputs.tags }}
           labels: ${{ steps.meta-amd64.outputs.labels }}
           cache-from: |
-            type=gha,scope=amd64
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-amd64
           cache-to: |
-            type=gha,scope=amd64,mode=max
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-amd64,mode=max
           platforms: linux/amd64
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+          provenance: false
+          sbom: false
+          outputs: type=registry
+          no-cache-filters: |
+            !**/node_modules
+            !**/.git
+            !**/tmp
+            !**/temp
+
+      - name: Retry build without cache if failed
+        if: failure()
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-amd64.outputs.tags }}
+          labels: ${{ steps.meta-amd64.outputs.labels }}
+          platforms: linux/amd64
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+          provenance: false
+          sbom: false
+          outputs: type=registry
+          no-cache-filters: |
+            !**/node_modules
+            !**/.git
+            !**/tmp
+            !**/temp
 
   build-and-push-arm64:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -126,6 +157,7 @@ jobs:
 
       - name: Build and push ARM64 Docker image
         uses: docker/build-push-action@v5
+        continue-on-error: true
         with:
           context: .
           file: ./Dockerfile.arm64
@@ -133,11 +165,38 @@ jobs:
           tags: ${{ steps.meta-arm64.outputs.tags }}
           labels: ${{ steps.meta-arm64.outputs.labels }}
           cache-from: |
-            type=gha,scope=arm64
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-arm64
           cache-to: |
-            type=gha,scope=arm64,mode=max
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-arm64,mode=max
           platforms: linux/arm64
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+          provenance: false
+          sbom: false
+          outputs: type=registry
+          no-cache-filters: |
+            !**/node_modules
+            !**/.git
+            !**/tmp
+            !**/temp
+
+      - name: Retry build without cache if failed
+        if: failure()
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-arm64.outputs.tags }}
+          labels: ${{ steps.meta-arm64.outputs.labels }}
+          platforms: linux/arm64
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+          provenance: false
+          sbom: false
+          outputs: type=registry
+          no-cache-filters: |
+            !**/node_modules
+            !**/.git
+            !**/tmp
+            !**/temp
