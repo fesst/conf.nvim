@@ -17,7 +17,7 @@ Installed with [lazy.nvim](https://github.com/folke/lazy.nvim)
 - **UndoTree**: infinite undo/redo tree with support of keeping the tree on buffer close (potentially infinitely).
 - **Fugitive**: simple git integration.
 - **Harpoon**: ThePrimeAgen plugin for quick file hooks.
-- **NvimTree** as a less buggy project view wtih tree-view support (netrw is buggy in such mode at the moment of setting things up).
+- **NvimTree** as a less buggy project view with tree-view support (netrw is buggy in such mode at the moment of setting things up).
 - **Rose Pine alt** as a color theme.
 - **Lualine**: status line, aligned with main color theme.
 
