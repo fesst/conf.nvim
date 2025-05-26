@@ -148,19 +148,18 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          # Ensure winget is available
-          $wingetPath = "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe"
-          if (-not (Test-Path $wingetPath)) {
-            Write-Error "winget not found at expected path: $wingetPath"
+          # Check if winget is available in PATH
+          if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+            Write-Error "winget is not available in PATH. Please ensure Windows Package Manager is installed."
             exit 1
           }
 
           # Install required Windows packages using winget
-          & $wingetPath install --id Neovim.Neovim --silent --accept-source-agreements --accept-package-agreements
-          & $wingetPath install --id TreeSitter.TreeSitter --silent --accept-source-agreements --accept-package-agreements
-          & $wingetPath install --id Python.Python.3.12 --silent --accept-source-agreements --accept-package-agreements
-          & $wingetPath install --id OpenJS.NodeJS --silent --accept-source-agreements --accept-package-agreements
-          & $wingetPath install --id Rustlang.Rust --silent --accept-source-agreements --accept-package-agreements
+          winget install --id Neovim.Neovim --silent --accept-source-agreements --accept-package-agreements
+          winget install --id TreeSitter.TreeSitter --silent --accept-source-agreements --accept-package-agreements
+          winget install --id Python.Python.3.12 --silent --accept-source-agreements --accept-package-agreements
+          winget install --id OpenJS.NodeJS --silent --accept-source-agreements --accept-package-agreements
+          winget install --id Rustlang.Rust --silent --accept-source-agreements --accept-package-agreements
 
       - name: Install Node.js packages
         if: inputs.setup_node
