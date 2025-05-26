@@ -47,100 +47,25 @@ jobs:
               ;;
           esac
 
-  test:
-    name: Run Tests
+  setup:
+    name: Setup Environment
     needs: check-changes
     if: needs.check-changes.outputs.run_tests == 'true'
-    runs-on: macos-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+    uses: ./.github/workflows/setup-environment.yml
+    with:
+      setup_python: true
+      setup_rust: true
+      setup_node: true
+      setup_lua: true
+      runner: macos-latest
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Set up Python virtual environment
-        run: |
-          VENV_PATH="$GITHUB_WORKSPACE/.venv"
-          python -m venv "$VENV_PATH"
-          echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
-          echo "$VENV_PATH/bin" >> $GITHUB_PATH
-          echo "PYTHONPATH=$VENV_PATH/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
-          source "$VENV_PATH/bin/activate"
-          python -m pip install --upgrade pip
-
-      - name: Cache Homebrew packages
-        uses: actions/cache@v4
-        continue-on-error: true
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Homebrew
-            /opt/homebrew
-            ~/Library/Logs/Homebrew
-          key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-homebrew-
-        env:
-          ACTIONS_CACHE_URL: ${{ secrets.ACTIONS_CACHE_URL || 'https://cache.actions.githubusercontent.com' }}
-
-      - name: Cache LuaRocks packages
-        uses: actions/cache@v4
-        continue-on-error: true
-        with:
-          path: |
-            ~/.cache/luarocks
-            ~/.luarocks
-            ~/.cache/luarocks-server
-          key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-luarocks-
-        env:
-          ACTIONS_CACHE_URL: ${{ secrets.ACTIONS_CACHE_URL || 'https://cache.actions.githubusercontent.com' }}
-
-      - name: Cache Neovim plugins
-        uses: actions/cache@v4
-        continue-on-error: true
-        with:
-          path: |
-            ~/.local/share/nvim
-            ~/.config/nvim/plugin
-            ~/.config/nvim/lazy
-          key: ${{ runner.os }}-nvim-plugins-${{ hashFiles('lua/**/*.lua', 'after/plugin/**/*.lua', 'infra/packages/nvim.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-nvim-plugins-
-        env:
-          ACTIONS_CACHE_URL: ${{ secrets.ACTIONS_CACHE_URL || 'https://cache.actions.githubusercontent.com' }}
-
-      - name: Install minimal dependencies
-        run: |
-          # Retry brew install with exponential backoff
-          for i in {1..3}; do
-            if brew install neovim tree-sitter; then
-              break
-            fi
-            if [ $i -eq 3 ]; then
-              echo "Failed to install dependencies after 3 attempts"
-              exit 1
-            fi
-            sleep $((2 ** $i))
-          done
-
-          source $GITHUB_WORKSPACE/.venv/bin/activate
-          CI=true ./infra/install.sh
-
-      - name: Run tests
-        run: |
-          source $GITHUB_WORKSPACE/.venv/bin/activate
-          ./infra/nvim_sanity_test.sh > test-results.log 2>&1 || test_exit_code=$?
-
-          # Display test results
-          echo "Test results:"
-          cat test-results.log
-
-          # Exit with the test exit code
-          exit ${test_exit_code:-0}
+  test:
+    name: Run Tests
+    needs: [check-changes, setup]
+    if: needs.check-changes.outputs.run_tests == 'true'
+    uses: ./.github/workflows/test-steps.yml
+    with:
+      platform: macos
+      venv_path: ${{ needs.setup.outputs.virtual_env }}
+      use_cache: true
+      install_deps: true

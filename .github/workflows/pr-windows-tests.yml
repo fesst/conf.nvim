@@ -14,39 +14,11 @@ jobs:
       setup_lua: true
       runner: windows-latest
 
-  windows-test:
+  test:
     needs: setup
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download virtual environment
-        uses: actions/download-artifact@v4
-        with:
-          name: venv
-          path: .venv
-
-      - name: Run basic Neovim tests
-        shell: bash
-        run: |
-          source "$GITHUB_WORKSPACE/.venv/Scripts/activate"
-          nvim --headless -c "lua require('test.core')" -c "quit"
-
-      - name: Run LSP tests
-        shell: bash
-        run: |
-          source "$GITHUB_WORKSPACE/.venv/Scripts/activate"
-          nvim --headless -c "lua require('test.lsp')" -c "quit"
-
-      - name: Run Treesitter tests
-        shell: bash
-        run: |
-          source "$GITHUB_WORKSPACE/.venv/Scripts/activate"
-          nvim --headless -c "lua require('test.treesitter')" -c "quit"
-
-      - name: Check formatting
-        shell: bash
-        run: |
-          source "$GITHUB_WORKSPACE/.venv/Scripts/activate"
-          stylua --check lua/
-          stylua --check after/plugin/
+    uses: ./.github/workflows/test-steps.yml
+    with:
+      platform: windows
+      venv_path: ${{ needs.setup.outputs.virtual_env }}
+      use_cache: true
+      install_deps: true
