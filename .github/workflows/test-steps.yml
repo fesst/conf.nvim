@@ -99,9 +99,16 @@ jobs:
               Start-Sleep -Seconds (2 ** $i)
             }
           } elseif ("${{ inputs.platform }}" -eq "windows") {
+            # Ensure winget is available
+            $wingetPath = "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe"
+            if (-not (Test-Path $wingetPath)) {
+              Write-Error "winget not found at expected path: $wingetPath"
+              exit 1
+            }
+
             # Install dependencies using winget
-            winget install --id Neovim.Neovim --silent --accept-source-agreements --accept-package-agreements
-            winget install --id TreeSitter.TreeSitter --silent --accept-source-agreements --accept-package-agreements
+            & $wingetPath install --id Neovim.Neovim --silent --accept-source-agreements --accept-package-agreements
+            & $wingetPath install --id TreeSitter.TreeSitter --silent --accept-source-agreements --accept-package-agreements
           }
 
           if ("${{ inputs.platform }}" -eq "windows") {
