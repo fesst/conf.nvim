@@ -20,6 +20,7 @@ jobs:
       setup_rust: true
       setup_node: true
       setup_lua: true
+      runner: macos-latest
 
   neovim-tests:
     needs: setup
