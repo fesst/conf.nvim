@@ -36,6 +36,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Download virtual environment
+        uses: actions/download-artifact@v4
+        with:
+          name: venv
+          path: .venv
+
       - name: Install Neovim
         run: brew install neovim
         shell: bash
