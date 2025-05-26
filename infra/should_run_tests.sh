@@ -14,9 +14,15 @@ elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then
   # If HEAD^ exists, compare with it
   CHANGED=$(git diff --name-only HEAD^ HEAD)
 else
-  # If neither exists, compare with the default branch
-  DEFAULT_BRANCH=$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f5)
-  CHANGED=$(git diff --name-only "origin/$DEFAULT_BRANCH" HEAD)
+  # If neither exists, try to get the base branch from GitHub context
+  if [ -n "$GITHUB_BASE_REF" ]; then
+    # Use the base branch from the pull request
+    CHANGED=$(git diff --name-only "origin/$GITHUB_BASE_REF" HEAD)
+  else
+    # If all else fails, run the tests to be safe
+    echo "Could not determine base branch. Running tests to be safe."
+    exit 0
+  fi
 fi
 
 # If no changes found, exit with 1 (skip tests)
@@ -33,5 +39,5 @@ for file in $CHANGED; do
   fi
 done
 
-echo "No test/ infra/ or .lua changes. Skipping tests."
+echo "No test/infra/.lua changes. Skipping tests."
 exit 1 
