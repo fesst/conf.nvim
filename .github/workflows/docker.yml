@@ -24,7 +24,12 @@ env:
   IMAGE_NAME: ${{ github.repository }}
   DOCKER_BUILDKIT: 1
   BUILDKIT_INLINE_CACHE: 1
-  CACHE_TIMEOUT: 600 # 10 minutes timeout for cache operations
+  CACHE_TIMEOUT: 1800 # 30 minutes timeout for cache operations
+  DOCKER_BUILD_ARGS: |
+    --build-arg BUILDKIT_INLINE_CACHE=1
+    --build-arg DOCKER_BUILDKIT=1
+    --build-arg COMPILE_PARALLEL=1
+    --build-arg RUSTC_WRAPPER=sccache
 
 jobs:
   build-and-push-amd64:
@@ -32,7 +37,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -44,6 +49,7 @@ jobs:
           driver-opts: |
             image=moby/buildkit:v0.12.3
             network=host
+            max-parallelism=4
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -82,8 +88,7 @@ jobs:
           cache-to: |
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-amd64,mode=max
           platforms: linux/amd64
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
+          build-args: ${{ env.DOCKER_BUILD_ARGS }}
           provenance: false
           sbom: false
           outputs: type=registry
@@ -103,8 +108,7 @@ jobs:
           tags: ${{ steps.meta-amd64.outputs.tags }}
           labels: ${{ steps.meta-amd64.outputs.labels }}
           platforms: linux/amd64
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
+          build-args: ${{ env.DOCKER_BUILD_ARGS }}
           provenance: false
           sbom: false
           outputs: type=registry
@@ -119,7 +123,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -131,6 +135,7 @@ jobs:
           driver-opts: |
             image=moby/buildkit:v0.12.3
             network=host
+            max-parallelism=4
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -169,8 +174,7 @@ jobs:
           cache-to: |
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-arm64,mode=max
           platforms: linux/arm64
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
+          build-args: ${{ env.DOCKER_BUILD_ARGS }}
           provenance: false
           sbom: false
           outputs: type=registry
@@ -190,8 +194,7 @@ jobs:
           tags: ${{ steps.meta-arm64.outputs.tags }}
           labels: ${{ steps.meta-arm64.outputs.labels }}
           platforms: linux/arm64
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
+          build-args: ${{ env.DOCKER_BUILD_ARGS }}
           provenance: false
           sbom: false
           outputs: type=registry
