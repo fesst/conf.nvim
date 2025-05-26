@@ -156,12 +156,47 @@ jobs:
             Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
           }
 
-          # Install required Windows packages using Chocolatey
-          choco install neovim -y
-          choco install tree-sitter -y
-          choco install python312 -y
-          choco install nodejs -y
-          choco install rust -y
+          # Install required Windows packages using Chocolatey in parallel
+          $jobs = @()
+
+          if ($env:CI -eq "true") {
+            # Install Neovim and Tree-sitter first as they're required for tests
+            choco install neovim -y
+            choco install tree-sitter -y
+
+            # Add Neovim to PATH immediately
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            $env:Path = "$env:Path;C:\tools\neovim\Neovim\bin"
+
+            # Verify Neovim installation
+            Write-Output "Verifying Neovim installation..."
+            $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+            if (-not $nvimPath) {
+              Write-Error "Neovim not found in PATH after installation"
+              Write-Output "Current PATH: $env:Path"
+              exit 1
+            }
+            Write-Output "Neovim found at: $($nvimPath.Source)"
+          }
+
+          # Install other packages in parallel
+          $packages = @(
+            @{Name = "python312"; Condition = ${{ inputs.setup_python }} },
+            @{Name = "nodejs"; Condition = ${{ inputs.setup_node }} },
+            @{Name = "rust"; Condition = ${{ inputs.setup_rust }} }
+          )
+
+          foreach ($package in $packages) {
+            if ($package.Condition) {
+              $jobs += Start-Job -ScriptBlock {
+                param($packageName)
+                choco install $packageName -y
+              } -ArgumentList $package.Name
+            }
+          }
+
+          # Wait for all jobs to complete
+          $jobs | Wait-Job | Receive-Job
 
           # Refresh environment variables
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
