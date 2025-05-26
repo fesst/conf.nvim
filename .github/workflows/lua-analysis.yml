@@ -30,14 +30,20 @@ jobs:
       id: test_check
       run: |
         chmod +x infra/should_run_tests.sh
-        if bash infra/should_run_tests.sh ${{ github.base_ref }} ${{ github.sha }}; then
-          echo "run_tests=true" >> $GITHUB_OUTPUT
-        elif [ $? -eq 1 ]; then
-          echo "run_tests=false" >> $GITHUB_OUTPUT
-        else
-          echo "Error occurred while checking for changes. Running tests to be safe."
-          echo "run_tests=true" >> $GITHUB_OUTPUT
-        fi
+        bash infra/should_run_tests.sh ${{ github.base_ref }} ${{ github.sha }}
+        exit_code=$?
+        case $exit_code in
+          0)
+            echo "run_tests=true" >> $GITHUB_OUTPUT
+            ;;
+          1)
+            echo "run_tests=false" >> $GITHUB_OUTPUT
+            ;;
+          *)
+            echo "Unexpected error occurred (exit code: $exit_code). Running tests to be safe."
+            echo "run_tests=true" >> $GITHUB_OUTPUT
+            ;;
+        esac
 
     - name: Skip if no test/infra/.lua changes
       if: steps.test_check.outputs.run_tests == 'false'
