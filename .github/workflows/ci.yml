@@ -36,11 +36,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download virtual environment
-        uses: actions/download-artifact@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          name: venv
-          path: .venv
+          python-version: "3.12"
+
+      - name: Create and activate virtual environment
+        run: |
+          python -m venv $GITHUB_WORKSPACE/.venv
+          echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+          echo "PYTHONPATH=$GITHUB_WORKSPACE/.venv/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
+          echo "PIP_TARGET=$GITHUB_WORKSPACE/.venv/lib/python3.12/site-packages" >> $GITHUB_ENV
+          echo "PIP_PREFIX=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
+          source $GITHUB_WORKSPACE/.venv/bin/activate
+          python -m pip install --upgrade pip
 
       - name: Install Neovim
         run: brew install neovim
@@ -48,19 +58,13 @@ jobs:
 
       - name: Install packages
         run: |
-          source ".venv/bin/activate"
-          export VIRTUAL_ENV=".venv"
-          export PATH="$VIRTUAL_ENV/bin:$PATH"
-          export PYTHONPATH="$VIRTUAL_ENV/lib/python3.12/site-packages:$PYTHONPATH"
-          export PIP_TARGET="$VIRTUAL_ENV/lib/python3.12/site-packages"
-          export PIP_PREFIX="$VIRTUAL_ENV"
+          source $GITHUB_WORKSPACE/.venv/bin/activate
           ./infra/install.sh
 
       - name: Run sanity tests
         run: |
           chmod +x infra/nvim_sanity_test.sh
-          source ".venv/bin/activate"
-          export VIRTUAL_ENV=".venv"
+          source $GITHUB_WORKSPACE/.venv/bin/activate
           ./infra/nvim_sanity_test.sh
         env:
           CI: true
@@ -116,6 +120,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Create and activate virtual environment
+        run: |
+          python -m venv $GITHUB_WORKSPACE/.venv
+          echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+          echo "PYTHONPATH=$GITHUB_WORKSPACE/.venv/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
+          echo "PIP_TARGET=$GITHUB_WORKSPACE/.venv/lib/python3.12/site-packages" >> $GITHUB_ENV
+          echo "PIP_PREFIX=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
+          source $GITHUB_WORKSPACE/.venv/bin/activate
+          python -m pip install --upgrade pip
+
       - name: Install Lua and LuaRocks
         run: |
           brew install lua luarocks
@@ -123,22 +143,12 @@ jobs:
 
       - name: Install luacheck
         run: |
-          source ${{ needs.setup.outputs.virtual_env }}/bin/activate
-          export VIRTUAL_ENV="${{ needs.setup.outputs.virtual_env }}"
-          export PATH="$VIRTUAL_ENV/bin:$PATH"
-          export PYTHONPATH="$VIRTUAL_ENV/lib/python3.12/site-packages:$PYTHONPATH"
-          export PIP_TARGET="$VIRTUAL_ENV/lib/python3.12/site-packages"
-          export PIP_PREFIX="$VIRTUAL_ENV"
+          source $GITHUB_WORKSPACE/.venv/bin/activate
           luarocks install luacheck
         shell: bash
 
       - name: Run luacheck
         run: |
-          source ${{ needs.setup.outputs.virtual_env }}/bin/activate
-          export VIRTUAL_ENV="${{ needs.setup.outputs.virtual_env }}"
-          export PATH="$VIRTUAL_ENV/bin:$PATH"
-          export PYTHONPATH="$VIRTUAL_ENV/lib/python3.12/site-packages:$PYTHONPATH"
-          export PIP_TARGET="$VIRTUAL_ENV/lib/python3.12/site-packages"
-          export PIP_PREFIX="$VIRTUAL_ENV"
+          source $GITHUB_WORKSPACE/.venv/bin/activate
           luacheck lua/ after/plugin/ --codes --ranges --formatter plain
         shell: bash
