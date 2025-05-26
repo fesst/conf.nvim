@@ -21,10 +21,6 @@ RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries && \
     echo 'Dpkg::Options::="--force-confdef";' >> /etc/apt/apt.conf.d/80-retries && \
     echo 'Dpkg::Options::="--force-confold";' >> /etc/apt/apt.conf.d/80-retries
 
-# Configure DNS and network settings
-RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
-    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
-
 # Configure reliable mirrors for arm64
 RUN echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted universe multiverse" > /etc/apt/sources.list && \
     echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
