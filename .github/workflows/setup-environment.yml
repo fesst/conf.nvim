@@ -148,28 +148,23 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          # Check if winget is available in PATH
-          if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-            Write-Output "Installing Windows Package Manager (winget)..."
-
-            # Download and install winget using the official installer
-            $progressPreference = 'silentlyContinue'
-            $installerPath = "$env:TEMP\winget-installer.exe"
-            Invoke-WebRequest -Uri "https://aka.ms/getwinget" -OutFile $installerPath
-
-            # Install using the Windows App Installer
-            Start-Process -FilePath $installerPath -ArgumentList "/install /quiet /norestart" -Wait
-
-            # Refresh environment variables
-            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          # Install Chocolatey if not present
+          if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+            Write-Output "Installing Chocolatey..."
+            Set-ExecutionPolicy Bypass -Scope Process -Force
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+            Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
           }
 
-          # Install required Windows packages using winget
-          winget install --id Neovim.Neovim --silent --accept-source-agreements --accept-package-agreements
-          winget install --id TreeSitter.TreeSitter --silent --accept-source-agreements --accept-package-agreements
-          winget install --id Python.Python.3.12 --silent --accept-source-agreements --accept-package-agreements
-          winget install --id OpenJS.NodeJS --silent --accept-source-agreements --accept-package-agreements
-          winget install --id Rustlang.Rust --silent --accept-source-agreements --accept-package-agreements
+          # Install required Windows packages using Chocolatey
+          choco install neovim -y
+          choco install tree-sitter -y
+          choco install python312 -y
+          choco install nodejs -y
+          choco install rust -y
+
+          # Refresh environment variables
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 
       - name: Install Node.js packages
         if: inputs.setup_node
