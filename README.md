@@ -27,13 +27,14 @@ To list the GitHub repositories of the installed plugins, run:
 grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g' | sort | uniq
 ```
 
-### Setttings and CI
+### Settings and CI
 
 - Autofolding for multiple languages (using LSP and treesitter, except indent for python).
 - Various custom settings and mappings (with focus on preservation compatibility with help).
 - Installation script for MacOS ([brew](https://brew.sh/)).
 - GitHub Actions CI with:
-  - Automated environment setup
+  - Automated environment setup with cross-platform support (macOS and Windows)
+  - Virtual environment management for Python dependencies
   - Sanity check tests
   - Lua code analysis
   - Security scanning
@@ -46,7 +47,7 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
 1. Clone this repository:
 
    ```bash
-   git clone https://github.com/yourusername/conf.nvim.git ~/.config/nvim
+   git clone https://github.com/fesst/conf.nvim.git ~/.config/nvim
    ```
 
 2. Run the installation script:
@@ -55,7 +56,7 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
    ./infra/install.sh
    ```
 
-   Note, now it is mac-specific, consider to create issue or PR, see [how to contribute](#contributing).
+   Note: Currently optimized for macOS, but includes Windows compatibility in CI. Consider creating an issue or PR for full Windows support, see [how to contribute](#contributing).
 
 The installation script will:
 
@@ -160,3 +161,5 @@ For detailed information about dependencies and tools, see [Shared Tools](wiki/s
 3. Commit your changes
 4. Push to the branch
 5. Create a new Pull Request
+
+Note: When contributing, please ensure your changes work on both macOS and Windows environments. The CI pipeline includes automated tests for both platforms.
