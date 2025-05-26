@@ -14,7 +14,7 @@ Installed with [lazy.nvim](https://github.com/folke/lazy.nvim)
 - **Telescope**: Fuzzy finding and searching capabilities.
 - **Treesitter**: Advanced syntax highlighting and code navigation.
 - **Mason**: Automatic language server and debugger installation.
-- **UndoTree**: inifinite undo/redo tree with support of keeping the tree on buffer close (potentially infinitely).
+- **UndoTree**: infinite undo/redo tree with support of keeping the tree on buffer close (potentially infinitely).
 - **Fugitive**: simple git integration.
 - **Harpoon**: ThePrimeAgen plugin for quick file hooks.
 - **NvimTree** as a less buggy project view wtih tree-view support (netrw is buggy in such mode at the moment of setting things up).
