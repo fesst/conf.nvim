@@ -1,5 +1,5 @@
 # Use Ubuntu as base image
-FROM ubuntu:22.04
+FROM --platform=linux/amd64 ubuntu:22.04
 
 # Add metadata labels
 LABEL org.opencontainers.image.title="Neovim Development Environment"
@@ -7,10 +7,6 @@ LABEL org.opencontainers.image.description="A complete Neovim development enviro
 LABEL org.opencontainers.image.source="https://github.com/fesst/conf.nvim"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.authors="fesst"
-
-# Add build arguments for architecture
-ARG TARGETARCH=amd64
-ARG TARGETVARIANT=
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -25,22 +21,15 @@ RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries && \
     echo 'Dpkg::Options::="--force-confdef";' >> /etc/apt/apt.conf.d/80-retries && \
     echo 'Dpkg::Options::="--force-confold";' >> /etc/apt/apt.conf.d/80-retries
 
-# Configure architecture-specific mirrors
-RUN if [ "$TARGETARCH" = "amd64" ]; then \
-        echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy main restricted universe multiverse" > /etc/apt/sources.list && \
-        echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
-        echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy-security main restricted universe multiverse" >> /etc/apt/sources.list && \
-        echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list && \
-        echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy main restricted universe multiverse" >> /etc/apt/sources.list && \
-        echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
-        echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy-security main restricted universe multiverse" >> /etc/apt/sources.list && \
-        echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list; \
-    else \
-        echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted universe multiverse" > /etc/apt/sources.list && \
-        echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
-        echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy-security main restricted universe multiverse" >> /etc/apt/sources.list && \
-        echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list; \
-    fi
+# Configure reliable mirrors for amd64
+RUN echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy main restricted universe multiverse" > /etc/apt/sources.list && \
+    echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy-security main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy-security main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list
 
 # Install packages in groups with error handling
 RUN apt-get clean && \
