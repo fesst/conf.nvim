@@ -88,6 +88,25 @@ Lazy is package manager.
 
 ###### Workflows
 
+- Master CI (`.github/workflows/ci.yml`):
+  - Main CI workflow that runs on:
+    - Push to master
+    - Pull requests to master
+    - Weekly (Mondays at 12:33 UTC)
+  - Uses reusable workflow for environment setup
+  - Runs tests and sanity checks
+  - Uploads test logs as artifacts
+
+- Setup Environment (`.github/workflows/setup-environment.yml`):
+  - Reusable workflow for environment setup
+  - Configurable setup for:
+    - Python (virtual environment)
+    - Rust
+    - Node.js
+    - Lua
+  - Creates and configures virtual environment with consistent paths
+  - Sets up environment variables for Python packages
+
 - CodeQL Analysis (`.github/workflows/codeql.yml`):
   - Analyzes GitHub Actions workflows for security
   - Runs on:
@@ -118,6 +137,18 @@ Lazy is package manager.
     - --codes: Shows warning codes
     - --ranges: Shows line and column ranges
     - --formatter plain: Uses plain text output
+
+###### Environment Setup
+
+- Virtual Environment:
+  - Created in `$GITHUB_WORKSPACE/.venv`
+  - Environment variables set consistently:
+    - VIRTUAL_ENV
+    - PYTHONPATH
+    - PIP_TARGET
+    - PIP_PREFIX
+  - Activated in all Python-dependent jobs
+  - Used for package installation and testing
 
 ###### Branch Protection
 

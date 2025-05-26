@@ -61,6 +61,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     llvm \
     clang \
     gcc \
+    libssl-dev \
+    pkg-config \
+    zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 20.x (Latest LTS)
@@ -111,8 +114,15 @@ RUN npm install -g --no-fund --no-audit --no-package-lock --no-save \
 # Install LuaRocks packages
 RUN luarocks install luacheck
 
-# Install Cargo packages
-RUN cargo install stylua
+# Install Cargo packages with fallback
+RUN if ! cargo install stylua; then \
+        echo "Failed to install stylua via cargo, trying alternative method..." && \
+        curl -L https://github.com/JohnnyMorganz/StyLua/releases/latest/download/stylua-linux.zip -o stylua.zip && \
+        unzip stylua.zip && \
+        chmod +x stylua && \
+        mv stylua /usr/local/bin/ && \
+        rm stylua.zip; \
+    fi
 
 # Set working directory
 WORKDIR /workspace

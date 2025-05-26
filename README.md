@@ -32,7 +32,14 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
 - Autofolding for multiple languages (using LSP and treesitter, except indent for python).
 - Various custom settings and mappings (with focus on preservation compatibility with help).
 - Installation script for MacOS ([brew](https://brew.sh/)).
-- Github actions CI with sanity check test (but still requires manual check for all the features).
+- GitHub Actions CI with:
+  - Automated environment setup
+  - Sanity check tests
+  - Lua code analysis
+  - Security scanning
+  - Docker image building
+  - Automated cleanup of old workflow runs
+  - Manual check still required for all features
 
 ## Installation
 
