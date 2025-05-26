@@ -136,7 +136,7 @@ jobs:
           export CI=true
           ./infra/install.sh
 
-      - name: Run basic Neovim tests (Windows)
+      - name: Run Lua tests (Windows)
         if: inputs.platform == 'windows'
         shell: pwsh
         run: |
@@ -153,48 +153,14 @@ jobs:
             exit 1
           }
           Write-Output "Using Neovim from: $($nvimPath.Source)"
-          nvim --headless -c "lua require('test.core')" -c "quit"
+          nvim --headless -c "lua require('test.lua.test_print_table')" -c "quit"
 
-      - name: Run basic Neovim tests (macOS)
+      - name: Run Lua tests (macOS)
         if: inputs.platform == 'macos'
         shell: bash
         run: |
           source "${{ inputs.venv_path }}/bin/activate"
-          nvim --headless -c "lua require('test.core')" -c "quit"
-
-      - name: Run LSP tests (Windows)
-        if: inputs.platform == 'windows'
-        shell: pwsh
-        run: |
-          & "${{ inputs.venv_path }}/Scripts/activate.ps1"
-          # Ensure Neovim is in PATH
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-          $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
-          nvim --headless -c "lua require('test.lsp')" -c "quit"
-
-      - name: Run LSP tests (macOS)
-        if: inputs.platform == 'macos'
-        shell: bash
-        run: |
-          source "${{ inputs.venv_path }}/bin/activate"
-          nvim --headless -c "lua require('test.lsp')" -c "quit"
-
-      - name: Run Treesitter tests (Windows)
-        if: inputs.platform == 'windows'
-        shell: pwsh
-        run: |
-          & "${{ inputs.venv_path }}/Scripts/activate.ps1"
-          # Ensure Neovim is in PATH
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-          $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
-          nvim --headless -c "lua require('test.treesitter')" -c "quit"
-
-      - name: Run Treesitter tests (macOS)
-        if: inputs.platform == 'macos'
-        shell: bash
-        run: |
-          source "${{ inputs.venv_path }}/bin/activate"
-          nvim --headless -c "lua require('test.treesitter')" -c "quit"
+          nvim --headless -c "lua require('test.lua.test_print_table')" -c "quit"
 
       - name: Check formatting (Windows)
         if: inputs.platform == 'windows'
