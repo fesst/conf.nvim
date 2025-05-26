@@ -33,7 +33,7 @@ jobs:
     name: Setup Environment
     runs-on: ${{ inputs.runner }}
     outputs:
-      virtual_env: ${{ steps.venv.outputs.virtual_env }}
+      virtual_env: ${{ runner.os == 'Windows' && steps.venv-win.outputs.virtual_env || steps.venv-mac.outputs.virtual_env }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -103,33 +103,37 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Set up Python virtual environment
-        if: inputs.setup_python
-        id: venv
+      - name: Set up Python virtual environment (Windows)
+        if: inputs.setup_python && runner.os == 'Windows'
+        id: venv-win
+        shell: pwsh
+        run: |
+          $VENV_PATH = "$env:GITHUB_WORKSPACE/.venv"
+          python -m venv "$VENV_PATH"
+          Write-Output "virtual_env=$VENV_PATH" >> $env:GITHUB_OUTPUT
+          Write-Output "VIRTUAL_ENV=$VENV_PATH" >> $env:GITHUB_ENV
+          Write-Output "$VENV_PATH/Scripts" >> $env:GITHUB_PATH
+          Write-Output "PYTHONPATH=$VENV_PATH/Lib/site-packages;$env:PYTHONPATH" >> $env:GITHUB_ENV
+          Write-Output "PIP_TARGET=$VENV_PATH/Lib/site-packages" >> $env:GITHUB_ENV
+          Write-Output "PIP_PREFIX=$VENV_PATH" >> $env:GITHUB_ENV
+          & "$VENV_PATH/Scripts/activate.ps1"
+          python -m pip install --upgrade pip
+
+      - name: Set up Python virtual environment (macOS)
+        if: inputs.setup_python && runner.os == 'macOS'
+        id: venv-mac
         shell: bash
         run: |
           set -e
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            VENV_PATH="$GITHUB_WORKSPACE/.venv"
-            python -m venv "$VENV_PATH"
-            echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
-            echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
-            echo "$VENV_PATH/Scripts" >> $GITHUB_PATH
-            echo "PYTHONPATH=$VENV_PATH/Lib/site-packages:$PYTHONPATH" >> $GITHUB_ENV
-            echo "PIP_TARGET=$VENV_PATH/Lib/site-packages" >> $GITHUB_ENV
-            echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
-            source "$VENV_PATH/Scripts/activate"
-          else
-            VENV_PATH="$GITHUB_WORKSPACE/.venv"
-            python -m venv "$VENV_PATH"
-            echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
-            echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
-            echo "$VENV_PATH/bin" >> $GITHUB_PATH
-            echo "PYTHONPATH=$VENV_PATH/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
-            echo "PIP_TARGET=$VENV_PATH/lib/python3.12/site-packages" >> $GITHUB_ENV
-            echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
-            source "$VENV_PATH/bin/activate"
-          fi
+          VENV_PATH="$GITHUB_WORKSPACE/.venv"
+          python -m venv "$VENV_PATH"
+          echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
+          echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
+          echo "$VENV_PATH/bin" >> $GITHUB_PATH
+          echo "PYTHONPATH=$VENV_PATH/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
+          echo "PIP_TARGET=$VENV_PATH/lib/python3.12/site-packages" >> $GITHUB_ENV
+          echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
+          source "$VENV_PATH/bin/activate"
           python -m pip install --upgrade pip
 
       - name: Install system packages
