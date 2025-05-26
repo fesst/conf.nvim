@@ -70,9 +70,23 @@ jobs:
 
       - name: Run sanity tests
         run: |
-          chmod +x test/setup/sanity_nvim_start.sh
+          chmod +x infra/sanity_nvim_start.sh
           source .venv/bin/activate
-          ./test/setup/sanity_nvim_start.sh 
+          ./infra/sanity_nvim_start.sh
+        env:
+          CI: true
+          NVIM_LOG_FILE: infra/nvim.log
+        continue-on-error: false
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-logs
+          path: |
+            infra/nvim.log
+            infra/test_files/checkhealth.log
+          if-no-files-found: warn
 
   codeql:
     name: CodeQL Analysis

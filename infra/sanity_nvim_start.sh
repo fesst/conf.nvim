@@ -1,7 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-TEST_DIR="test/setup/test_files"
+TEST_DIR="infra/test_files"
+LOG_FILE="${NVIM_LOG_FILE:-infra/nvim.log}"
+VENV_DIR=".venv"
 
 # Function to print status messages
 print_status() {
@@ -12,28 +14,97 @@ print_error() {
     echo -e "\033[0;31m[x]\033[0m $1"
 }
 
+# Function to ensure virtual environment is activated
+ensure_venv() {
+    if [ ! -d "$VENV_DIR" ]; then
+        print_error "Virtual environment not found at $VENV_DIR"
+        exit 1
+    fi
+
+    if [ -z "${VIRTUAL_ENV:-}" ]; then
+        print_status "Activating virtual environment..."
+        source "$VENV_DIR/bin/activate" || {
+            print_error "Failed to activate virtual environment"
+            exit 1
+        }
+    fi
+}
+
+# Function to run nvim command with logging
+run_nvim() {
+    local cmd="$1"
+    local test_name="$2"
+    
+    print_status "Running: $test_name"
+    if nvim --headless -c "$cmd" -c 'quit' 2>> "$LOG_FILE"; then
+        print_status "Success: $test_name"
+        return 0
+    else
+        print_error "Failed: $test_name"
+        echo "Command: $cmd" >> "$LOG_FILE"
+        return 1
+    fi
+}
+
+# Function to run lua command with logging
+run_lua() {
+    local cmd="$1"
+    local test_name="$2"
+    
+    print_status "Running: $test_name"
+    if nvim --headless -c "lua $cmd" -c 'quit' 2>> "$LOG_FILE"; then
+        print_status "Success: $test_name"
+        return 0
+    else
+        print_error "Failed: $test_name"
+        echo "Lua Command: $cmd" >> "$LOG_FILE"
+        return 1
+    fi
+}
+
+# Create test files
+create_test_files() {
+    print_status "Creating test files..."
+    mkdir -p "$TEST_DIR"
+    
+    # Create test.lua
+    cat > "$TEST_DIR/test.lua" << 'EOF'
+local function test()
+    print("Test function")
+end
+test()
+EOF
+
+    # Create test.md
+    cat > "$TEST_DIR/test.md" << 'EOF'
+# Test Markdown
+This is a test markdown file.
+EOF
+
+    # Create test.py
+    cat > "$TEST_DIR/test.py" << 'EOF'
+def test():
+    print("Test function")
+
+if __name__ == "__main__":
+    test()
+EOF
+}
+
 # Test functions
 test_basic_functionality() {
     print_status "Testing basic functionality..."
-    print_status "Testing basic startup/exit..."
-    nvim --headless -c 'quit' || { print_error "Basic startup failed"; exit 1; }
     
-    print_status "Testing Lua file..."
-    nvim --headless -c "e $TEST_DIR/test.lua" -c 'quit' || { print_error "Lua file test failed"; exit 1; }
-    
-    print_status "Testing Markdown file..."
-    nvim --headless -c "e $TEST_DIR/test.md" -c 'quit' || { print_error "Markdown file test failed"; exit 1; }
-    
-    print_status "Testing Python file..."
-    nvim --headless -c "e $TEST_DIR/test.py" -c 'quit' || { print_error "Python file test failed"; exit 1; }
+    run_nvim 'quit' "Basic startup/exit" || exit 1
+    run_nvim "e $TEST_DIR/test.lua" "Lua file test" || exit 1
+    run_nvim "e $TEST_DIR/test.md" "Markdown file test" || exit 1
+    run_nvim "e $TEST_DIR/test.py" "Python file test" || exit 1
 }
 
 test_health_check() {
     print_status "Running health check..."
-    # Ensure test directory exists
     mkdir -p "$TEST_DIR"
     
-    # Run checkhealth and only check the exit code
     if nvim --headless -c 'checkhealth' -c 'quit' 2>&1 | tee "$TEST_DIR/checkhealth.log"; then
         print_status "checkhealth completed successfully"
     else
@@ -44,20 +115,13 @@ test_health_check() {
 
 test_core_plugins() {
     print_status "Testing core plugin loading..."
-    print_status "Testing Lazy..."
-    nvim --headless -c 'lua if not package.loaded["lazy"] then error("Lazy not loaded") end' -c 'quit' || { print_error "Lazy plugin test failed"; exit 1; }
     
-    print_status "Testing Treesitter..."
-    nvim --headless -c 'lua if not package.loaded["nvim-treesitter"] then error("Treesitter not loaded") end' -c 'quit' || { print_error "Treesitter plugin test failed"; exit 1; }
-    
-    print_status "Testing LSP config..."
-    nvim -c "e $TEST_DIR/test.py" -c 'lua if not package.loaded["nvim-lspconfig"] then error("LSP config not loaded") end' -c 'quit' || { print_error "LSP config plugin test failed"; exit 1; }
-    
-    print_status "Testing Mason..."
-    nvim --headless -c 'lua if not package.loaded["mason"] then error("Mason not loaded") end' -c 'quit' || { print_error "Mason plugin test failed"; exit 1; }
-    
-    print_status "Testing Telescope..."
-    nvim --headless -c 'lua if not package.loaded["telescope"] then error("Telescope not loaded") end' -c 'quit' || { print_error "Telescope plugin test failed"; exit 1; }
+    run_lua 'if not package.loaded["lazy"] then error("Lazy not loaded") end' "Lazy plugin test" || exit 1
+    run_lua 'if not package.loaded["nvim-treesitter"] then error("Treesitter not loaded") end' "Treesitter plugin test" || exit 1
+    run_nvim "e $TEST_DIR/test.py" "LSP config test" || exit 1
+    run_lua 'if not package.loaded["nvim-lspconfig"] then error("LSP config not loaded") end' "LSP config plugin test" || exit 1
+    run_lua 'if not package.loaded["mason"] then error("Mason not loaded") end' "Mason plugin test" || exit 1
+    run_lua 'if not package.loaded["telescope"] then error("Telescope not loaded") end' "Telescope plugin test" || exit 1
 }
 
 test_treesitter() {
@@ -101,12 +165,21 @@ test_text_file_handling() {
 
 cleanup() {
     print_status "Cleaning up test files..."
-    rm -f "$TEST_DIR/test.lua" "$TEST_DIR/test.md" "$TEST_DIR/test.py" "$TEST_DIR/test.txt" "$TEST_DIR/checkhealth.log"
+    rm -rf "$TEST_DIR"
+    rm -f "$LOG_FILE"
 }
 
 # Main test execution
 print_status "Running Neovim sanity tests..."
 
+# Initialize log file
+mkdir -p "$(dirname "$LOG_FILE")"
+echo "=== Neovim Test Log $(date) ===" > "$LOG_FILE"
+
+# Ensure virtual environment is activated
+ensure_venv
+
+create_test_files
 test_basic_functionality
 test_health_check
 test_core_plugins
