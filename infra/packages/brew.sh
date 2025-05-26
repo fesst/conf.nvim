@@ -20,6 +20,7 @@ BREW_PACKAGES=(
     "pgformatter"   # Required for PostgreSQL formatting
     "shellcheck"    # Required for shell script linting
     "shfmt"         # Required for shell script formatting
+    "tree-sitter"   # Required for Treesitter CLI
 )
 
 # Homebrew casks

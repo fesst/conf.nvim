@@ -2,40 +2,65 @@
 
 # Source shared library for utility functions
 source infra/lib.sh
+
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
     print_error "Docker is not installed. Please install Docker first."
     exit 1
 fi
 
+# Default to ARM64
+ARCH="arm64"
+DOCKERFILE="Dockerfile.arm64"
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --local)
+            LOCAL=true
+            shift
+            ;;
+        --amd64)
+            ARCH="amd64"
+            DOCKERFILE="Dockerfile.amd64"
+            shift
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            print_status "Usage: $0 [--local] [--amd64]"
+            exit 1
+            ;;
+    esac
+done
+
 # Set image name
-IMAGE_NAME="ghcr.io/fesst/conf.nvim:latest"
+IMAGE_NAME="ghcr.io/fesst/conf.nvim:${ARCH}"
 
 # Check if we should build locally
-if [ "$1" == "--local" ]; then
-    print_status "Building Docker image locally..."
-    docker build -t neovim-dev .
-    IMAGE_NAME="neovim-dev"
+if [ "$LOCAL" = true ]; then
+    print_status "Building Docker image locally for ${ARCH}..."
+    docker build -t neovim-dev-${ARCH} -f ${DOCKERFILE} .
+    IMAGE_NAME="neovim-dev-${ARCH}"
 else
     print_status "Pulling Docker image from GitHub Container Registry..."
     docker pull $IMAGE_NAME || {
         print_warning "Failed to pull image. Building locally..."
-        docker build -t neovim-dev .
-        IMAGE_NAME="neovim-dev"
+        docker build -t neovim-dev-${ARCH} -f ${DOCKERFILE} .
+        IMAGE_NAME="neovim-dev-${ARCH}"
     }
 fi
 
 # Create a volume for persistent data
 print_status "Creating Docker volume for persistent data..."
-docker volume create neovim-data
+docker volume create neovim-data-${ARCH}
 
 # Run the container
-print_status "Starting Neovim container..."
+print_status "Starting Neovim container for ${ARCH}..."
 docker run -it --rm \
-    -v neovim-data:/home/developer/.local/share/nvim \
+    -v neovim-data-${ARCH}:/home/developer/.local/share/nvim \
     -v "$(pwd):/workspace" \
     -w /workspace \
-    --name neovim-dev \
+    --name neovim-dev-${ARCH} \
     $IMAGE_NAME
 
 # Check if container was started successfully

@@ -1,9 +1,9 @@
-# Use Ubuntu as base image
-FROM --platform=linux/amd64 ubuntu:22.04
+# Use Ubuntu as base image for arm64
+FROM --platform=linux/arm64 ubuntu:22.04
 
 # Add metadata labels
-LABEL org.opencontainers.image.title="Neovim Development Environment"
-LABEL org.opencontainers.image.description="A complete Neovim development environment with all necessary tools and language servers"
+LABEL org.opencontainers.image.title="Neovim Development Environment (ARM64)"
+LABEL org.opencontainers.image.description="A complete Neovim development environment with all necessary tools and language servers for ARM64"
 LABEL org.opencontainers.image.source="https://github.com/fesst/conf.nvim"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.authors="fesst"
@@ -21,15 +21,11 @@ RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries && \
     echo 'Dpkg::Options::="--force-confdef";' >> /etc/apt/apt.conf.d/80-retries && \
     echo 'Dpkg::Options::="--force-confold";' >> /etc/apt/apt.conf.d/80-retries
 
-# Configure reliable mirrors for amd64
-RUN echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy main restricted universe multiverse" > /etc/apt/sources.list && \
-    echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy-security main restricted universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb http://mirrors.edge.kernel.org/ubuntu/ jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy main restricted universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy-security main restricted universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb http://mirrors.ocf.berkeley.edu/ubuntu/ jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list
+# Configure reliable mirrors for arm64
+RUN echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted universe multiverse" > /etc/apt/sources.list && \
+    echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy-security main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list
 
 # Install packages in groups with error handling
 RUN apt-get clean && \
@@ -90,15 +86,29 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# Install Rust with minimal components and cleanup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain stable --profile minimal && \
+    rm -rf /root/.cargo/registry/cache && \
+    rm -rf /root/.cargo/registry/index && \
+    rm -rf /root/.cargo/git && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get clean && \
+    rm -rf /tmp/* /var/tmp/*
+
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+# Install tree-sitter CLI with cleanup
+RUN cargo install tree-sitter-cli && \
+    rm -rf /root/.cargo/registry/cache && \
+    rm -rf /root/.cargo/registry/index && \
+    rm -rf /root/.cargo/git && \
+    rm -rf /tmp/* /var/tmp/*
+
 # Install Neovim based on architecture
-RUN curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz && \
-    tar -C /opt -xzf nvim-linux-x86_64.tar.gz && \
-    ln -s /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim && \
-    rm nvim-linux-x86_64.tar.gz
+RUN curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-aarch64.tar.gz && \
+    tar -C /opt -xzf nvim-linux-aarch64.tar.gz && \
+    ln -s /opt/nvim-linux-aarch64/bin/nvim /usr/local/bin/nvim && \
+    rm nvim-linux-aarch64.tar.gz
 
 # Create neovim config directory
 RUN mkdir -p /root/.config/nvim
@@ -129,7 +139,7 @@ RUN luarocks install luacheck
 # Install Cargo packages with fallback
 RUN if ! cargo install stylua; then \
         echo "Failed to install stylua via cargo, trying alternative method..." && \
-        curl -L https://github.com/JohnnyMorganz/StyLua/releases/latest/download/stylua-linux.zip -o stylua.zip && \
+        curl -L https://github.com/JohnnyMorganz/StyLua/releases/latest/download/stylua-linux-aarch64.zip -o stylua.zip && \
         unzip stylua.zip && \
         chmod +x stylua && \
         mv stylua /usr/local/bin/ && \

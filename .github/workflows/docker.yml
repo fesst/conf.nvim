@@ -1,10 +1,10 @@
-name: Build and Publish Docker Image
+name: Build and Publish Docker Images
 
 on:
   push:
     branches: [master]
     paths:
-      - "Dockerfile"
+      - "Dockerfile*"
       - ".github/workflows/docker.yml"
       - "infra/**"
       - "lua/**"
@@ -12,7 +12,7 @@ on:
   pull_request:
     branches: [master]
     paths:
-      - "Dockerfile"
+      - "Dockerfile*"
       - ".github/workflows/docker.yml"
       - "infra/**"
       - "lua/**"
@@ -22,9 +22,11 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  DOCKER_BUILDKIT: 1
+  BUILDKIT_INLINE_CACHE: 1
 
 jobs:
-  build-and-push:
+  build-and-push-amd64:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -49,14 +51,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata (tags, labels) for Docker
-        id: meta
+        id: meta-amd64
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           flavor: |
             latest=auto
             prefix=
-            suffix=
+            suffix=-amd64
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -64,13 +66,78 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,format=short
 
-      - name: Build and push Docker image
+      - name: Build and push AMD64 Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile.amd64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta-amd64.outputs.tags }}
+          labels: ${{ steps.meta-amd64.outputs.labels }}
+          cache-from: |
+            type=gha,scope=amd64
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-amd64
+          cache-to: |
+            type=gha,scope=amd64,mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-amd64,mode=max
+          platforms: linux/amd64
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+
+  build-and-push-arm64:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:v0.12.3
+            network=host
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta-arm64
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=auto
+            prefix=
+            suffix=-arm64
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+
+      - name: Build and push ARM64 Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-arm64.outputs.tags }}
+          labels: ${{ steps.meta-arm64.outputs.labels }}
+          cache-from: |
+            type=gha,scope=arm64
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-arm64
+          cache-to: |
+            type=gha,scope=arm64,mode=max
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-arm64,mode=max
+          platforms: linux/arm64
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1

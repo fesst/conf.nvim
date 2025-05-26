@@ -74,6 +74,7 @@ jobs:
 
       - name: Cache Homebrew packages
         uses: actions/cache@v4
+        continue-on-error: true
         with:
           path: |
             ~/Library/Caches/Homebrew
@@ -86,6 +87,7 @@ jobs:
 
       - name: Cache LuaRocks packages
         uses: actions/cache@v4
+        continue-on-error: true
         with:
           path: |
             ~/.cache/luarocks
@@ -97,6 +99,7 @@ jobs:
 
       - name: Cache Neovim plugins
         uses: actions/cache@v4
+        continue-on-error: true
         with:
           path: |
             ~/.local/share/nvim
@@ -108,7 +111,7 @@ jobs:
 
       - name: Install minimal dependencies
         run: |
-          brew install neovim
+          brew install neovim tree-sitter
           source $GITHUB_WORKSPACE/.venv/bin/activate
           CI=true ./infra/install.sh
 
