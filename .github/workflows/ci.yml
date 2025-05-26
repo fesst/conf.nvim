@@ -122,5 +122,10 @@ jobs:
       - name: Run luacheck
         run: |
           source ${{ needs.setup.outputs.virtual_env }}/bin/activate
+          export VIRTUAL_ENV="${{ needs.setup.outputs.virtual_env }}"
+          export PATH="$VIRTUAL_ENV/bin:$PATH"
+          export PYTHONPATH="$VIRTUAL_ENV/lib/python3.12/site-packages:$PYTHONPATH"
+          export PIP_TARGET="$VIRTUAL_ENV/lib/python3.12/site-packages"
+          export PIP_PREFIX="$VIRTUAL_ENV"
           luacheck lua/ after/plugin/ --codes --ranges --formatter plain
         shell: bash
