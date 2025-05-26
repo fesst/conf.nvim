@@ -20,9 +20,40 @@ jobs:
       setup_node: false
       setup_lua: true
 
+  check-changes:
+    name: Check for Changes
+    needs: setup
+    runs-on: macos-latest
+    outputs:
+      run_tests: ${{ steps.test_check.outputs.run_tests }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check if tests should run (test/, infra/, *.lua)
+        id: test_check
+        run: |
+          chmod +x infra/should_run_tests.sh || true
+          bash infra/should_run_tests.sh ${{ github.base_ref }} ${{ github.sha }} || exit_code=$?
+          case ${exit_code:-0} in
+            0)
+              echo "run_tests=true" >> $GITHUB_OUTPUT
+              ;;
+            1)
+              echo "run_tests=false" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "Unexpected error occurred (exit code: ${exit_code:-0}). Running tests to be safe."
+              echo "run_tests=true" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
   analyze:
     name: Analyze Lua
-    needs: setup
+    needs: [setup, check-changes]
+    if: needs.check-changes.outputs.run_tests == 'true'
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -36,6 +67,8 @@ jobs:
           path: |
             ~/Library/Caches/Homebrew
             /usr/local/Homebrew
+            /opt/homebrew
+            ~/Library/Logs/Homebrew
           key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}
           restore-keys: |
             ${{ runner.os }}-homebrew-
@@ -47,6 +80,7 @@ jobs:
           path: |
             ~/.cache/luarocks
             ~/.luarocks
+            ~/.cache/luarocks-server
           key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh', 'infra/packages/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-luarocks-
@@ -83,32 +117,7 @@ jobs:
           echo "PYTHONPATH=$GITHUB_WORKSPACE/.venv/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
           source $GITHUB_WORKSPACE/.venv/bin/activate
 
-      - name: Check if tests should run (test/, infra/, *.lua)
-        id: test_check
-        run: |
-          chmod +x infra/should_run_tests.sh || true
-          bash infra/should_run_tests.sh ${{ github.base_ref }} ${{ github.sha }} || exit_code=$?
-          case ${exit_code:-0} in
-            0)
-              echo "run_tests=true" >> $GITHUB_OUTPUT
-              ;;
-            1)
-              echo "run_tests=false" >> $GITHUB_OUTPUT
-              ;;
-            *)
-              echo "Unexpected error occurred (exit code: ${exit_code:-0}). Running tests to be safe."
-              echo "run_tests=true" >> $GITHUB_OUTPUT
-              ;;
-          esac
-
-      - name: Skip if no test/infra/.lua changes
-        if: steps.test_check.outputs.run_tests == 'false'
-        run: |
-          echo "No test/infra/.lua changes. Skipping tests."
-          exit 0
-
       - name: Cache Neovim plugins
-        if: steps.test_check.outputs.run_tests == 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -120,21 +129,90 @@ jobs:
             ${{ runner.os }}-nvim-plugins-
 
       - name: Install minimal dependencies
-        if: steps.test_check.outputs.run_tests == 'true'
         run: |
           brew install neovim
           source $GITHUB_WORKSPACE/.venv/bin/activate
           CI=true ./infra/install.sh
 
       - name: Run luacheck
-        if: steps.test_check.outputs.run_tests == 'true'
         run: |
           source $GITHUB_WORKSPACE/.venv/bin/activate
-          luarocks install luacheck
+          luarocks install luacheck --no-doc
           luacheck lua/ after/plugin/ --codes --ranges --formatter plain
 
+  test-nvim:
+    name: Test Neovim
+    needs: [setup, check-changes]
+    if: needs.check-changes.outputs.run_tests == 'true'
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Cache Homebrew packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Homebrew
+            /opt/homebrew
+            ~/Library/Logs/Homebrew
+          key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-
+
+      - name: Cache virtual environment
+        id: cache-venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
+
+      - name: Download virtual environment
+        id: download-venv
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: venv
+          path: .venv
+
+      - name: Set up Python virtual environment
+        if: steps.cache-venv.outputs.cache-hit != 'true' && steps.download-venv.outcome == 'failure'
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r infra/packages/requirements.txt
+
+      - name: Activate virtual environment
+        run: |
+          echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.venv" >> $GITHUB_ENV
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+          echo "PYTHONPATH=$GITHUB_WORKSPACE/.venv/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
+          source $GITHUB_WORKSPACE/.venv/bin/activate
+
+      - name: Cache Neovim plugins
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/nvim
+            ~/.config/nvim/plugin
+            ~/.config/nvim/lazy
+          key: ${{ runner.os }}-nvim-plugins-${{ hashFiles('lua/**/*.lua', 'after/plugin/**/*.lua', 'infra/packages/nvim.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-nvim-plugins-
+
+      - name: Install minimal dependencies
+        run: |
+          brew install neovim
+          source $GITHUB_WORKSPACE/.venv/bin/activate
+          CI=true ./infra/install.sh
+
       - name: Run Neovim sanity tests
-        if: steps.test_check.outputs.run_tests == 'true'
         run: |
           source $GITHUB_WORKSPACE/.venv/bin/activate
           bash infra/nvim_sanity_test.sh
