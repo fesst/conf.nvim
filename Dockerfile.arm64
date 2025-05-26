@@ -21,6 +21,10 @@ RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries && \
     echo 'Dpkg::Options::="--force-confdef";' >> /etc/apt/apt.conf.d/80-retries && \
     echo 'Dpkg::Options::="--force-confold";' >> /etc/apt/apt.conf.d/80-retries
 
+# Configure DNS and network settings
+RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
+    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+
 # Configure reliable mirrors for arm64
 RUN echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted universe multiverse" > /etc/apt/sources.list && \
     echo "deb http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
@@ -103,6 +107,8 @@ RUN cargo install tree-sitter-cli && \
         echo "tree-sitter CLI not found after installation" && exit 1; \
     fi && \
     tree-sitter --version || (echo "tree-sitter installation verification failed" && exit 1) && \
+    # Test tree-sitter network access
+    tree-sitter init || (echo "tree-sitter network access test failed" && exit 1) && \
     rm -rf /root/.cargo/registry/cache && \
     rm -rf /root/.cargo/registry/index && \
     rm -rf /root/.cargo/git && \
@@ -184,7 +190,8 @@ COPY --chown=developer:developer . /home/developer/.config/nvim/
 
 # Install Neovim plugins (skip in CI)
 RUN if [ "$CI" != "true" ]; then \
-        nvim --headless -c "Lazy sync" -c "qa"; \
+        nvim --headless -c "Lazy sync" -c "qa" && \
+        nvim --headless -c "TSInstallSync all" -c "qa"; \
     fi
 
 # Set the default command
