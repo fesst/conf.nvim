@@ -44,8 +44,11 @@ jobs:
             /usr/local/Homebrew
             /opt/homebrew
             ~/Library/Logs/Homebrew
-          key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}
+            /opt/homebrew/Library/Caches
+            /opt/homebrew/Library/Logs
+          key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}-${{ runner.arch }}
           restore-keys: |
+            ${{ runner.os }}-homebrew-${{ runner.arch }}-
             ${{ runner.os }}-homebrew-
 
       - name: Cache npm packages
