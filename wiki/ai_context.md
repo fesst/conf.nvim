@@ -106,6 +106,13 @@ Lazy is package manager.
     - Lua
   - Creates and configures virtual environment with consistent paths
   - Sets up environment variables for Python packages
+  - Implements caching strategy for:
+    - Python virtual environments
+    - Homebrew packages
+    - Node.js packages
+    - Rust packages
+    - LuaRocks packages
+    - Neovim plugins
 
 - Neovim Tests (`.github/workflows/neovim-tests.yml`):
   - Optimized workflow that combines Lua analysis and Neovim testing
@@ -134,6 +141,10 @@ Lazy is package manager.
     - --ranges: Shows line and column ranges
     - --formatter plain: Uses plain text output
     - --no-doc: Faster LuaRocks installation
+  - Cross-platform support:
+    - Uses PowerShell Core (pwsh) for Windows compatibility
+    - Handles virtual environment activation for both Windows and macOS
+    - Uses platform-specific paths and commands
 
 ###### Environment Setup
 

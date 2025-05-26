@@ -41,6 +41,13 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
   - Docker image building
   - Automated cleanup of old workflow runs
   - Manual check still required for all features
+  - Efficient caching strategy for:
+    - Python virtual environments
+    - Homebrew packages
+    - Node.js packages
+    - Rust packages
+    - LuaRocks packages
+    - Neovim plugins
 
 ## Installation
 
