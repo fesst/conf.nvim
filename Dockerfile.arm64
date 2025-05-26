@@ -97,18 +97,32 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Install tree-sitter CLI with cleanup
+# Install tree-sitter CLI with cleanup and verification
 RUN cargo install tree-sitter-cli && \
+    if ! command -v tree-sitter >/dev/null 2>&1; then \
+        echo "tree-sitter CLI not found after installation" && exit 1; \
+    fi && \
+    tree-sitter --version || (echo "tree-sitter installation verification failed" && exit 1) && \
     rm -rf /root/.cargo/registry/cache && \
     rm -rf /root/.cargo/registry/index && \
     rm -rf /root/.cargo/git && \
     rm -rf /tmp/* /var/tmp/*
 
+# Ensure tree-sitter is in PATH for all users
+ENV PATH="/root/.cargo/bin:${PATH}"
+
 # Install Neovim based on architecture
-RUN curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-aarch64.tar.gz && \
+RUN curl -L -o nvim-linux-aarch64.tar.gz https://github.com/neovim/neovim/releases/latest/download/nvim-linux-aarch64.tar.gz && \
+    if [ ! -s nvim-linux-aarch64.tar.gz ]; then \
+        echo "Failed to download Neovim archive" && exit 1; \
+    fi && \
     tar -C /opt -xzf nvim-linux-aarch64.tar.gz && \
-    ln -s /opt/nvim-linux-aarch64/bin/nvim /usr/local/bin/nvim && \
-    rm nvim-linux-aarch64.tar.gz
+    if [ ! -f /opt/nvim-linux-aarch64/bin/nvim ]; then \
+        echo "Neovim binary not found after extraction" && exit 1; \
+    fi && \
+    ln -sf /opt/nvim-linux-aarch64/bin/nvim /usr/local/bin/nvim && \
+    rm nvim-linux-aarch64.tar.gz && \
+    nvim --version || (echo "Neovim installation verification failed" && exit 1)
 
 # Create neovim config directory
 RUN mkdir -p /root/.config/nvim
