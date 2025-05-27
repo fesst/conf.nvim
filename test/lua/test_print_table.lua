@@ -1,5 +1,7 @@
 -- Add the lua directory to the package path
-package.path = package.path .. ";../lua/?.lua;../lua/?/init.lua"
+local path_sep = package.config:sub(1,1) -- Get the path separator for the current OS
+package.path = package.path .. ";" .. path_sep .. ".." .. path_sep .. ".." .. path_sep .. "lua" .. path_sep .. "?.lua;" ..
+    path_sep .. ".." .. path_sep .. ".." .. path_sep .. "lua" .. path_sep .. "?" .. path_sep .. "init.lua"
 
 -- Try to require the module with error handling
 local status, print_table = pcall(require, "motleyfesst.print_table")
