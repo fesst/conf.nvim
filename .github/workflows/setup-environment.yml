@@ -67,7 +67,7 @@ jobs:
             ~/.local/share/npm
             ~/.cache/npm
             ~/.npmrc
-          key: ${{ runner.os }}-${{ runner.arch }}-npm-${{ hashFiles('infra/packages/npm.sh', 'infra/packages/npm.ps1', '**/package.json', '**/package-lock.json') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-npm-${{ hashFiles('infra/packages/npm.sh', 'infra/packages/npm.ps1') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-npm-
 
