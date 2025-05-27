@@ -114,7 +114,6 @@ jobs:
           Write-Output "VIRTUAL_ENV=$VENV_PATH" >> $env:GITHUB_ENV
           Write-Output "$VENV_PATH/Scripts" >> $env:GITHUB_PATH
           Write-Output "PYTHONPATH=$VENV_PATH/Lib/site-packages;$env:PYTHONPATH" >> $env:GITHUB_ENV
-          Write-Output "PIP_TARGET=$VENV_PATH/Lib/site-packages" >> $env:GITHUB_ENV
           Write-Output "PIP_PREFIX=$VENV_PATH" >> $env:GITHUB_ENV
           & "$VENV_PATH/Scripts/activate.ps1"
           python -m pip install --upgrade pip
@@ -131,7 +130,6 @@ jobs:
           echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
           echo "$VENV_PATH/bin" >> $GITHUB_PATH
           echo "PYTHONPATH=$VENV_PATH/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
-          echo "PIP_TARGET=$VENV_PATH/lib/python3.12/site-packages" >> $GITHUB_ENV
           echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
           source "$VENV_PATH/bin/activate"
           python -m pip install --upgrade pip
