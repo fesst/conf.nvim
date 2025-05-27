@@ -157,6 +157,24 @@ jobs:
         if: inputs.install_deps && inputs.platform == 'macos'
         shell: bash
         run: |
+          set -e
+          # Verify virtual environment path
+          if [ ! -d "${{ inputs.venv_path }}" ]; then
+            echo "Error: Virtual environment not found at: ${{ inputs.venv_path }}"
+            echo "Current directory: $(pwd)"
+            echo "Directory contents:"
+            ls -la
+            exit 1
+          fi
+
+          # Verify activation script exists
+          if [ ! -f "${{ inputs.venv_path }}/bin/activate" ]; then
+            echo "Error: Activation script not found at: ${{ inputs.venv_path }}/bin/activate"
+            echo "Virtual environment contents:"
+            ls -la "${{ inputs.venv_path }}/bin"
+            exit 1
+          fi
+
           # Retry brew install with exponential backoff
           for i in {1..3}; do
             if brew install neovim tree-sitter; then
@@ -169,7 +187,22 @@ jobs:
             sleep $((2 ** i))
           done
 
-          source "${{ inputs.venv_path }}/bin/activate"
+          # Activate virtual environment with error handling
+          echo "Activating virtual environment at: ${{ inputs.venv_path }}"
+          source "${{ inputs.venv_path }}/bin/activate" || {
+            echo "Error: Failed to activate virtual environment"
+            echo "Python version: $(python --version)"
+            echo "PATH: $PATH"
+            exit 1
+          }
+
+          # Verify Python is available after activation
+          if ! command -v python &> /dev/null; then
+            echo "Error: Python not found in PATH after activation"
+            echo "PATH: $PATH"
+            exit 1
+          fi
+
           export CI=true
           ./infra/install.sh
 
