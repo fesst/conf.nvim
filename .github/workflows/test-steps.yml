@@ -34,9 +34,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1', '**/requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-venv-
+            ${{ runner.os }}-${{ runner.arch }}-venv-
 
       - name: Cache Homebrew packages
         if: inputs.platform == 'macos' && inputs.use_cache
@@ -49,38 +49,35 @@ jobs:
             ~/Library/Logs/Homebrew
             /opt/homebrew/Library/Caches
             /opt/homebrew/Library/Logs
-          key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}-${{ runner.arch }}
+          key: ${{ runner.os }}-${{ runner.arch }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}
           restore-keys: |
-            ${{ runner.os }}-homebrew-${{ runner.arch }}-
-            ${{ runner.os }}-homebrew-
+            ${{ runner.os }}-${{ runner.arch }}-homebrew-
 
       - name: Cache LuaRocks packages
         if: inputs.use_cache
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/luarocks
-            ~/.luarocks
-            ~/.local/share/luarocks
-          key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}-${{ runner.arch }}
+            ${{ runner.os == 'Windows' && format('{0}\\.cache\\luarocks', env.USERPROFILE) || '~/.cache/luarocks' }}
+            ${{ runner.os == 'Windows' && format('{0}\\.luarocks', env.USERPROFILE) || '~/.luarocks' }}
+            ${{ runner.os == 'Windows' && format('{0}\\.local\\share\\luarocks', env.USERPROFILE) || '~/.local/share/luarocks' }}
+          key: ${{ runner.os }}-${{ runner.arch }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
           restore-keys: |
-            ${{ runner.os }}-luarocks-${{ runner.arch }}-
-            ${{ runner.os }}-luarocks-
+            ${{ runner.os }}-${{ runner.arch }}-luarocks-
 
       - name: Cache Neovim plugins
         if: inputs.use_cache
         uses: actions/cache@v4
         with:
           path: |
-            ~/.local/share/nvim
-            ~/.config/nvim/plugin
-            ~/.config/nvim/lazy
-            ~/.local/state/nvim
-            ~/.cache/nvim
-          key: ${{ runner.os }}-nvim-plugins-${{ hashFiles('lua/**/*.lua', 'after/plugin/**/*.lua', 'infra/packages/nvim.sh') }}-${{ runner.arch }}
+            ${{ runner.os == 'Windows' && format('{0}\\.local\\share\\nvim', env.USERPROFILE) || '~/.local/share/nvim' }}
+            ${{ runner.os == 'Windows' && format('{0}\\.config\\nvim\\plugin', env.USERPROFILE) || '~/.config/nvim/plugin' }}
+            ${{ runner.os == 'Windows' && format('{0}\\.config\\nvim\\lazy', env.USERPROFILE) || '~/.config/nvim/lazy' }}
+            ${{ runner.os == 'Windows' && format('{0}\\.local\\state\\nvim', env.USERPROFILE) || '~/.local/state/nvim' }}
+            ${{ runner.os == 'Windows' && format('{0}\\.cache\\nvim', env.USERPROFILE) || '~/.cache/nvim' }}
+          key: ${{ runner.os }}-${{ runner.arch }}-nvim-plugins-${{ hashFiles('lua/**/*.lua', 'after/plugin/**/*.lua', 'infra/packages/nvim.sh') }}
           restore-keys: |
-            ${{ runner.os }}-nvim-plugins-${{ runner.arch }}-
-            ${{ runner.os }}-nvim-plugins-
+            ${{ runner.os }}-${{ runner.arch }}-nvim-plugins-
 
       - name: Install minimal dependencies (Windows)
         if: inputs.install_deps && inputs.platform == 'windows'
@@ -140,33 +137,30 @@ jobs:
         if: inputs.platform == 'windows'
         shell: pwsh
         run: |
-          & "${{ inputs.venv_path }}/Scripts/activate.ps1"
-          # Ensure Neovim is in PATH and verify it
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-          $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
-
-          # Verify Neovim is available
-          $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
-          if (-not $nvimPath) {
-            Write-Error "Neovim not found in PATH before running tests"
-            Write-Output "Current PATH: $env:Path"
-            exit 1
-          }
-          Write-Output "Using Neovim from: $($nvimPath.Source)"
-
-          # Set up Lua environment
-          $env:LUA_PATH = "?.lua;?/init.lua;../lua/?.lua;../lua/?/init.lua"
-          $env:LUA_CPATH = "?.dll;?/init.dll;../lua/?.dll;../lua/?/init.dll"
-
-          # Run the test with error handling
           try {
+            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+            # Ensure Neovim is in PATH and verify it
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
+
+            # Verify Neovim is available
+            $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+            if (-not $nvimPath) {
+              throw "Neovim not found in PATH before running tests. Current PATH: $env:Path"
+            }
+            Write-Output "Using Neovim from: $($nvimPath.Source)"
+
+            # Set up Lua environment
+            $env:LUA_PATH = "?.lua;?/init.lua;../lua/?.lua;../lua/?/init.lua"
+            $env:LUA_CPATH = "?.dll;?/init.dll;../lua/?.dll;../lua/?/init.dll"
+
+            # Run the test
             nvim --headless -c "lua require('test.lua.test_print_table')" -c "quit"
             if ($LASTEXITCODE -ne 0) {
-              Write-Error "Test failed with exit code $LASTEXITCODE"
-              exit $LASTEXITCODE
+              throw "Test failed with exit code $LASTEXITCODE"
             }
           } catch {
-            Write-Error "Error running test: $_"
+            Write-Error $_.Exception.Message
             exit 1
           }
 
@@ -174,27 +168,85 @@ jobs:
         if: inputs.platform == 'macos'
         shell: bash
         run: |
+          set -e
           source "${{ inputs.venv_path }}/bin/activate"
+
+          # Verify Neovim is available
+          if ! command -v nvim &> /dev/null; then
+            echo "Error: Neovim not found in PATH before running tests"
+            echo "Current PATH: $PATH"
+            exit 1
+          fi
+          echo "Using Neovim from: $(which nvim)"
+
+          # Set up Lua environment
+          export LUA_PATH="?.lua;?/init.lua;../lua/?.lua;../lua/?/init.lua"
+          export LUA_CPATH="?.so;?/init.so;../lua/?.so;../lua/?/init.so"
+
+          # Run the test
           nvim --headless -c "lua require('test.lua.test_print_table')" -c "quit"
+          if [ $? -ne 0 ]; then
+            echo "Error: Test failed with exit code $?"
+            exit 1
+          fi
 
       - name: Check formatting (Windows)
         if: inputs.platform == 'windows'
         shell: pwsh
         run: |
-          & "${{ inputs.venv_path }}/Scripts/activate.ps1"
-          # Ensure stylua is in PATH
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-          $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
-          stylua --check lua/
-          stylua --check after/plugin/
+          try {
+            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+            # Ensure stylua is in PATH
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
+
+            # Verify stylua is available
+            $styluaPath = Get-Command stylua -ErrorAction SilentlyContinue
+            if (-not $styluaPath) {
+              throw "stylua not found in PATH. Current PATH: $env:Path"
+            }
+            Write-Output "Using stylua from: $($styluaPath.Source)"
+
+            # Check formatting
+            stylua --check lua/
+            if ($LASTEXITCODE -ne 0) {
+              throw "Format check failed for lua/ directory"
+            }
+            stylua --check after/plugin/
+            if ($LASTEXITCODE -ne 0) {
+              throw "Format check failed for after/plugin/ directory"
+            }
+          } catch {
+            Write-Error $_.Exception.Message
+            exit 1
+          }
 
       - name: Check formatting (macOS)
         if: inputs.platform == 'macos'
         shell: bash
         run: |
+          set -e
           source "${{ inputs.venv_path }}/bin/activate"
+
+          # Verify stylua is available
+          if ! command -v stylua &> /dev/null; then
+            echo "Error: stylua not found in PATH"
+            echo "Current PATH: $PATH"
+            exit 1
+          fi
+          echo "Using stylua from: $(which stylua)"
+
+          # Check formatting
           stylua --check lua/
+          if [ $? -ne 0 ]; then
+            echo "Error: Format check failed for lua/ directory"
+            exit 1
+          fi
           stylua --check after/plugin/
+          if [ $? -ne 0 ]; then
+            echo "Error: Format check failed for after/plugin/ directory"
+            exit 1
+          fi
 
       - name: Run sanity tests (Windows)
         if: inputs.install_deps && inputs.platform == 'windows'
@@ -204,11 +256,14 @@ jobs:
           # Ensure all tools are in PATH
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin;$env:USERPROFILE\.cargo\bin"
-          ./infra/nvim_sanity_test.sh > test-results.log 2>&1; $test_exit_code = $LASTEXITCODE
+
+          # Run tests and capture output
+          $testOutput = & ./infra/nvim_sanity_test.sh 2>&1
+          $test_exit_code = $LASTEXITCODE
 
           # Display test results
           Write-Output "Test results:"
-          Get-Content test-results.log
+          $testOutput
 
           # Exit with the test exit code
           exit $test_exit_code
@@ -218,12 +273,14 @@ jobs:
         shell: bash
         run: |
           source "${{ inputs.venv_path }}/bin/activate"
-          ./infra/nvim_sanity_test.sh > test-results.log 2>&1
+
+          # Run tests and capture output
+          test_output=$(./infra/nvim_sanity_test.sh 2>&1)
           test_exit_code=$?
 
           # Display test results
           echo "Test results:"
-          cat test-results.log
+          echo "$test_output"
 
           # Exit with the test exit code
           exit $test_exit_code

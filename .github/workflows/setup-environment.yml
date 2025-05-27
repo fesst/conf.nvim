@@ -56,54 +56,74 @@ jobs:
             ${{ runner.os }}-homebrew-${{ runner.arch }}-
             ${{ runner.os }}-homebrew-
 
+      - name: Ensure npm cache directory exists (Windows)
+        if: runner.os == 'Windows' && inputs.setup_node
+        shell: pwsh
+        run: |
+          $dir = "$env:USERPROFILE\.npm"
+          if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir }
+
       - name: Cache npm packages
         if: inputs.setup_node
         uses: actions/cache@v4
         with:
           path: |
-            ~/.npm
-            ~/.npm-global
-            ~/.config/npm
-            ~/.local/share/npm
-            ~/.cache/npm
-            ~/.npmrc
+            ${{ runner.os == 'Windows' && format('{0}\\.npm', env.USERPROFILE) || '~/.npm' }}
           key: ${{ runner.os }}-${{ runner.arch }}-npm-${{ hashFiles('infra/packages/npm.sh', 'infra/packages/npm.ps1') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-npm-
 
-      - name: Cache Cargo packages
-        if: inputs.setup_rust
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.cargo/bin
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('infra/packages/cargo.sh', '**/Cargo.lock', '**/rust-toolchain.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cargo-
+      - name: Ensure pip cache directory exists (Windows)
+        if: runner.os == 'Windows' && inputs.setup_python
+        shell: pwsh
+        run: |
+          $dir = "$env:LOCALAPPDATA\pip\Cache"
+          if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force }
 
       - name: Cache pip packages
         if: inputs.setup_python
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/pip
-            ~/.local/lib/python3.12/site-packages
-            ${{ runner.os == 'Windows' && format('{0}/.venv', github.workspace) || format('{0}/.venv', github.workspace) }}
-          key: ${{ runner.os }}-${{ runner.arch }}-pip-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1', '**/requirements.txt') }}
+            ${{ runner.os == 'Windows' && format('{0}\\pip\\Cache', env.LOCALAPPDATA) || '~/.cache/pip' }}
+          key: ${{ runner.os }}-${{ runner.arch }}-pip-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-pip-
+
+      - name: Ensure cargo cache directories exist (Windows)
+        if: runner.os == 'Windows' && inputs.setup_rust
+        shell: pwsh
+        run: |
+          $reg = "$env:USERPROFILE\.cargo\registry"
+          $git = "$env:USERPROFILE\.cargo\git"
+          if (-not (Test-Path $reg)) { New-Item -ItemType Directory -Path $reg }
+          if (-not (Test-Path $git)) { New-Item -ItemType Directory -Path $git }
+
+      - name: Cache Cargo packages
+        if: inputs.setup_rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ runner.os == 'Windows' && format('{0}\\.cargo\\registry', env.USERPROFILE) || '~/.cargo/registry' }}
+            ${{ runner.os == 'Windows' && format('{0}\\.cargo\\git', env.USERPROFILE) || '~/.cargo/git' }}
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('infra/packages/cargo.sh', 'test/test_rust/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-
+
+      - name: Ensure luarocks cache directory exists (Windows)
+        if: runner.os == 'Windows' && inputs.setup_lua
+        shell: pwsh
+        run: |
+          $dir = "$env:USERPROFILE\.cache\luarocks"
+          if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir }
 
       - name: Cache LuaRocks packages
         if: inputs.setup_lua
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/luarocks
-            ~/.luarocks
-            ~/.local/share/luarocks
-          key: ${{ runner.os }}-${{ runner.arch }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh', '**/luarocks.lock') }}-lua5.4
+            ${{ runner.os == 'Windows' && format('{0}\\.cache\\luarocks', env.USERPROFILE) || '~/.cache/luarocks' }}
+          key: ${{ runner.os }}-${{ runner.arch }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-luarocks-
 
