@@ -257,11 +257,13 @@ jobs:
         if: inputs.setup_python && runner.os == 'Windows'
         shell: pwsh
         run: |
-          & "$GITHUB_WORKSPACE/.venv/Scripts/activate.ps1"
-          & "$GITHUB_WORKSPACE/infra/packages/pip.ps1" || {
+          $venvPath = Join-Path $env:GITHUB_WORKSPACE ".venv"
+          & (Join-Path $venvPath "Scripts/activate.ps1")
+          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "infra/packages/pip.ps1"
+          & $scriptPath || {
             Write-Error "Failed to install Python packages. Retrying..."
             pip cache purge
-            & "$GITHUB_WORKSPACE/infra/packages/pip.ps1"
+            & $scriptPath
           }
 
       - name: Install Python packages (macOS)
