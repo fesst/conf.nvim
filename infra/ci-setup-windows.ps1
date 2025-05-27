@@ -32,7 +32,7 @@ choco install rust -y
 refreshenv
 
 # Install stylua
-cargo install stylua
+cargo install stylua --force
 refreshenv
 
 # Add Cargo to PATH
