@@ -274,6 +274,21 @@ Currently supported platforms:
   - Cached between workflow runs
   - Fallback mechanism for environment creation
 
+###### Lua Module Loading
+
+- Module Structure:
+  - Modules are located in `lua/` directory
+  - Each module should be in its own subdirectory (e.g., `lua/motleyfesst/`)
+  - Module files can be either direct Lua files or init.lua files
+  - Package path must be set correctly in tests:
+
+    ```lua
+    package.path = package.path .. ";../lua/?.lua;../lua/?/init.lua"
+    ```
+
+  - Error handling should use pcall for module loading
+  - Tests should provide clear error messages for debugging
+
 ###### Branch Protection
 
 - Master branch is protected

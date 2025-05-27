@@ -37,6 +37,37 @@ Located in `test/lua/`:
 - Configuration validation
 - Plugin loading tests
 - Key mapping verification
+- Module loading tests
+
+#### Module Loading
+
+Lua tests that require modules from the `lua/` directory need to set up the package path correctly. For example:
+
+```lua
+-- Add the lua directory to the package path
+package.path = package.path .. ";../lua/?.lua;../lua/?/init.lua"
+```
+
+This ensures that both direct Lua files and init.lua files can be found. The path is relative to the test file location.
+
+#### Test Structure
+
+Each test file should:
+
+1. Set up the correct package path
+2. Use pcall for error handling when requiring modules
+3. Include proper error messages for debugging
+4. Exit with appropriate status codes
+
+Example:
+
+```lua
+local status, module = pcall(require, "module.name")
+if not status then
+    print("Error loading module:", module)
+    os.exit(1)
+end
+```
 
 ## Test general nvim config
 
