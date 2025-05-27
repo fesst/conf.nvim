@@ -17,7 +17,6 @@ $NPM_CONFIG = @(
     "--no-audit"          # Disable audit (we handle this separately)
     "--no-package-lock"   # Don't create package-lock.json for global installs
     "--no-save"           # Don't save to package.json
-    "--cache-min=3600"    # Cache packages for 1 hour
     "--prefer-offline"    # Use cached packages when possible
     "--progress=false"    # Disable progress bar for cleaner logs
 )
