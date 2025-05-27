@@ -1,5 +1,5 @@
 -- Add the lua directory to the package path
-package.path = package.path .. ";../lua/?.lua"
+package.path = package.path .. ";../lua/?.lua;../lua/?/init.lua"
 
 -- Try to require the module with error handling
 local status, print_table = pcall(require, "motleyfesst.print_table")
