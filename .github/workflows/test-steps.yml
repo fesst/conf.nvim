@@ -61,7 +61,6 @@ jobs:
           path: |
             ~/.cache/luarocks
             ~/.luarocks
-            ~/.cache/luarocks-server
             ~/.local/share/luarocks
           key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}-${{ runner.arch }}
           restore-keys: |
@@ -77,6 +76,7 @@ jobs:
             ~/.config/nvim/plugin
             ~/.config/nvim/lazy
             ~/.local/state/nvim
+            ~/.cache/nvim
           key: ${{ runner.os }}-nvim-plugins-${{ hashFiles('lua/**/*.lua', 'after/plugin/**/*.lua', 'infra/packages/nvim.sh') }}-${{ runner.arch }}
           restore-keys: |
             ${{ runner.os }}-nvim-plugins-${{ runner.arch }}-

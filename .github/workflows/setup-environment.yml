@@ -60,7 +60,10 @@ jobs:
         if: inputs.setup_node
         uses: actions/cache@v4
         with:
-          path: ~/.npm
+          path: |
+            ~/.npm
+            ~/.npm-global
+            ~/.config/npm
           key: ${{ runner.os }}-npm-${{ runner.os == 'Windows' && hashFiles('infra/packages/npm.ps1') || hashFiles('infra/packages/npm.sh') }}
           restore-keys: |
             ${{ runner.os }}-npm-
@@ -72,6 +75,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            ~/.cargo/bin
           key: ${{ runner.os }}-cargo-${{ hashFiles('infra/packages/cargo.sh') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
@@ -80,7 +84,9 @@ jobs:
         if: inputs.setup_python
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pip
+          path: |
+            ~/.cache/pip
+            ~/.local/lib/python3.12/site-packages
           key: ${{ runner.os }}-pip-${{ hashFiles('infra/packages/pip.sh') }}
           restore-keys: |
             ${{ runner.os }}-pip-
@@ -92,6 +98,7 @@ jobs:
           path: |
             ~/.cache/luarocks
             ~/.luarocks
+            ~/.local/share/luarocks
           key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
           restore-keys: |
             ${{ runner.os }}-luarocks-
