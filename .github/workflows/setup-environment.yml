@@ -64,9 +64,12 @@ jobs:
             ~/.npm
             ~/.npm-global
             ~/.config/npm
-          key: ${{ runner.os }}-npm-${{ runner.os == 'Windows' && hashFiles('infra/packages/npm.ps1') || hashFiles('infra/packages/npm.sh') }}
+            ~/.local/share/npm
+            ~/.cache/npm
+            ~/.npmrc
+          key: ${{ runner.os }}-${{ runner.arch }}-npm-${{ hashFiles('infra/packages/npm.sh', 'infra/packages/npm.ps1', '**/package.json', '**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-npm-
+            ${{ runner.os }}-${{ runner.arch }}-npm-
 
       - name: Cache Cargo packages
         if: inputs.setup_rust
@@ -76,9 +79,9 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             ~/.cargo/bin
-          key: ${{ runner.os }}-cargo-${{ hashFiles('infra/packages/cargo.sh') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('infra/packages/cargo.sh', '**/Cargo.lock', '**/rust-toolchain.toml') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
+            ${{ runner.os }}-${{ runner.arch }}-cargo-
 
       - name: Cache pip packages
         if: inputs.setup_python
@@ -87,9 +90,10 @@ jobs:
           path: |
             ~/.cache/pip
             ~/.local/lib/python3.12/site-packages
-          key: ${{ runner.os }}-pip-${{ hashFiles('infra/packages/pip.sh') }}
+            ${{ runner.os == 'Windows' && format('{0}/.venv', github.workspace) || format('{0}/.venv', github.workspace) }}
+          key: ${{ runner.os }}-${{ runner.arch }}-pip-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1', '**/requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ runner.os }}-${{ runner.arch }}-pip-
 
       - name: Cache LuaRocks packages
         if: inputs.setup_lua
@@ -99,9 +103,9 @@ jobs:
             ~/.cache/luarocks
             ~/.luarocks
             ~/.local/share/luarocks
-          key: ${{ runner.os }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh', '**/luarocks.lock') }}-lua5.4
           restore-keys: |
-            ${{ runner.os }}-luarocks-
+            ${{ runner.os }}-${{ runner.arch }}-luarocks-
 
       - name: Set up Python
         if: inputs.setup_python
@@ -288,10 +292,10 @@ jobs:
         if: inputs.setup_python
         uses: actions/cache@v4
         with:
-          path: .venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          path: ${{ runner.os == 'Windows' && format('{0}/.venv', github.workspace) || format('{0}/.venv', github.workspace) }}
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1', '**/requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-venv-
+            ${{ runner.os }}-${{ runner.arch }}-venv-
 
       - name: Install Lua packages
         if: inputs.setup_lua
