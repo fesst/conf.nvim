@@ -31,9 +31,19 @@ refreshenv
 choco install rust -y
 refreshenv
 
-# Install stylua
+# Add Cargo to PATH before installing stylua
+$env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
+refreshenv
+
+# Install stylua and verify installation
+Write-Output "Installing stylua..."
 cargo install stylua --force
 refreshenv
 
-# Add Cargo to PATH
-$env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
+# Verify stylua installation
+if (-not (Get-Command stylua -ErrorAction SilentlyContinue)) {
+    Write-Error "stylua installation failed or not found in PATH"
+    exit 1
+}
+
+Write-Output "stylua installed successfully at $(Get-Command stylua).Source"
