@@ -109,9 +109,49 @@ jobs:
           }
           Write-Output "Neovim found at: $($nvimPath.Source)"
 
-          & "${{ inputs.venv_path }}/Scripts/activate.ps1"
-          $env:CI = "true"
-          ./infra/install.sh
+          # Activate virtual environment and run install script
+          try {
+            # Normalize the virtual environment path
+            $venvPath = [System.IO.Path]::GetFullPath("${{ inputs.venv_path }}")
+            Write-Output "Using virtual environment at: $venvPath"
+
+            # Verify virtual environment exists
+            if (-not (Test-Path $venvPath)) {
+              throw "Virtual environment not found at: $venvPath"
+            }
+
+            # Verify activation script exists
+            $activateScript = Join-Path $venvPath "Scripts\activate.ps1"
+            if (-not (Test-Path $activateScript)) {
+              throw "Activation script not found at: $activateScript"
+            }
+
+            # Activate virtual environment
+            Write-Output "Activating virtual environment..."
+            & $activateScript
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to activate virtual environment"
+            }
+
+            # Verify Python is available
+            $pythonPath = Get-Command python -ErrorAction SilentlyContinue
+            if (-not $pythonPath) {
+              throw "Python not found in PATH after activation"
+            }
+            Write-Output "Using Python from: $($pythonPath.Source)"
+
+            # Run install script
+            $env:CI = "true"
+            Write-Output "Running install script..."
+            ./infra/install.sh
+          } catch {
+            Write-Error $_.Exception.Message
+            Write-Output "Current directory: $(Get-Location)"
+            Write-Output "Directory contents: $(Get-ChildItem)"
+            Write-Output "Environment variables:"
+            Get-ChildItem env: | Format-Table -AutoSize
+            exit 1
+          }
 
       - name: Install minimal dependencies (macOS)
         if: inputs.install_deps && inputs.platform == 'macos'

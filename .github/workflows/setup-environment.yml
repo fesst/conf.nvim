@@ -139,14 +139,30 @@ jobs:
         id: venv-win
         shell: pwsh
         run: |
-          $VENV_PATH = "$env:GITHUB_WORKSPACE/.venv"
+          $VENV_PATH = Join-Path $env:GITHUB_WORKSPACE ".venv"
           python -m venv "$VENV_PATH"
           Write-Output "virtual_env=$VENV_PATH" >> $env:GITHUB_OUTPUT
           Write-Output "VIRTUAL_ENV=$VENV_PATH" >> $env:GITHUB_ENV
           Write-Output "$VENV_PATH/Scripts" >> $env:GITHUB_PATH
           Write-Output "PYTHONPATH=$VENV_PATH/Lib/site-packages;$env:PYTHONPATH" >> $env:GITHUB_ENV
           Write-Output "PIP_PREFIX=$VENV_PATH" >> $env:GITHUB_ENV
-          & "$VENV_PATH/Scripts/activate.ps1"
+
+          # Verify virtual environment creation
+          if (-not (Test-Path $VENV_PATH)) {
+            throw "Failed to create virtual environment at: $VENV_PATH"
+          }
+
+          # Verify activation script exists
+          $activateScript = Join-Path $VENV_PATH "Scripts\activate.ps1"
+          if (-not (Test-Path $activateScript)) {
+            throw "Activation script not found at: $activateScript"
+          }
+
+          # Activate and upgrade pip
+          & $activateScript
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to activate virtual environment"
+          }
           python -m pip install --upgrade pip
 
       - name: Set up Python virtual environment (macOS)
