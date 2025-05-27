@@ -234,6 +234,20 @@ jobs:
             exit 1
           fi
 
+          # Verify the virtual environment is properly set up
+          echo "Verifying virtual environment setup..."
+          if [ ! -d "$VENV_PATH/lib/python3.12/site-packages" ]; then
+            echo "Error: site-packages directory not found"
+            echo "Virtual environment contents:"
+            ls -la "$VENV_PATH/lib"
+            exit 1
+          fi
+
+          # Output the virtual environment path for debugging
+          echo "Virtual environment path: $VENV_PATH"
+          echo "Virtual environment contents:"
+          ls -la "$VENV_PATH"
+
       - name: Install system packages
         if: runner.os == 'macOS'
         shell: bash
