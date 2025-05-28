@@ -127,12 +127,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-luarocks-
 
-      - name: Set up Python
-        if: inputs.setup_python
-        id: setup-python
+      - name: Set up Python (Windows)
+        if: inputs.setup_python && runner.os == 'Windows'
+        id: setup-python-win
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Set up Python (macOS)
+        if: inputs.setup_python && runner.os == 'macOS'
+        id: setup-python-mac
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
 
       - name: Set up Python virtual environment (Windows)
         if: inputs.setup_python && runner.os == 'Windows'
@@ -209,7 +216,7 @@ jobs:
           echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
           echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
           echo "$VENV_PATH/bin" >> $GITHUB_PATH
-          echo "PYTHONPATH=$VENV_PATH/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
+          echo "PYTHONPATH=$VENV_PATH/lib/python3.13/site-packages:$PYTHONPATH" >> $GITHUB_ENV
           echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
 
           # Activate and upgrade pip
