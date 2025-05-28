@@ -129,19 +129,41 @@ jobs:
               Write-Output "Running VS Build Tools installer with required components..."
               $installStart = Get-Date
 
-              $process = Start-Process -FilePath $vsInstallerPath -ArgumentList "--quiet", "--wait", "--norestart", "--nocache", `
-                  "--installPath", "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools", `
-                  "--add", "Microsoft.VisualStudio.Workload.VCTools", `
-                  "--includeRecommended", `
-                  "--log", $logFile -NoNewWindow -Wait -PassThru
+              # Create a temporary directory for the installer
+              $installerTempDir = Join-Path $env:TEMP "vs_buildtools_installer"
+              if (-not (Test-Path $installerTempDir)) {
+                  New-Item -ItemType Directory -Path $installerTempDir -Force | Out-Null
+              }
+
+              # Run the installer with explicit paths
+              $process = Start-Process -FilePath $vsInstallerPath -ArgumentList @(
+                  "--quiet",
+                  "--wait",
+                  "--norestart",
+                  "--nocache",
+                  "--installPath", "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools",
+                  "--add", "Microsoft.VisualStudio.Workload.VCTools",
+                  "--includeRecommended",
+                  "--log", $logFile,
+                  "--tempDir", $installerTempDir
+              ) -NoNewWindow -Wait -PassThru
 
               $installTime = (Get-Date) - $installStart
               Write-Output "Installation completed in $($installTime.TotalSeconds) seconds"
 
               if ($process.ExitCode -ne 0) {
                   Write-Output "Installation failed with exit code: $($process.ExitCode)"
-                  Write-Output "Installation log contents:"
-                  Get-Content $logFile
+                  if (Test-Path $logFile) {
+                      Write-Output "Installation log contents:"
+                      Get-Content $logFile
+                  } else {
+                      Write-Output "Installation log file not found at: $logFile"
+                      Write-Output "Checking for alternative log locations..."
+                      Get-ChildItem -Path $env:TEMP -Filter "dd_*_*.log" -Recurse | ForEach-Object {
+                          Write-Output "Found log file: $($_.FullName)"
+                          Get-Content $_.FullName
+                      }
+                  }
                   throw "Failed to install Visual Studio Build Tools"
               }
 
@@ -166,11 +188,19 @@ jobs:
                   Write-Output "Installation log contents:"
                   Get-Content $logFile
               }
+              # Check for any log files in the temp directory
+              Get-ChildItem -Path $env:TEMP -Filter "dd_*_*.log" -Recurse | ForEach-Object {
+                  Write-Output "Found log file: $($_.FullName)"
+                  Get-Content $_.FullName
+              }
               throw
           } finally {
               # Clean up
               if (Test-Path $vsInstallerPath) {
                   Remove-Item $vsInstallerPath -Force
+              }
+              if (Test-Path $installerTempDir) {
+                  Remove-Item $installerTempDir -Recurse -Force
               }
           }
 
