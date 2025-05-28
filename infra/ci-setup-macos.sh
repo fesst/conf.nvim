@@ -27,7 +27,7 @@ chmod +x infra/packages/cargo.sh
 
 # Install Python packages
 chmod +x infra/packages/pip.sh
-source "$GITHUB_WORKSPACE/.venv/bin/activate"
+source "$RUNNER_TOOL_CACHE/venv/bin/activate"
 ./infra/packages/pip.sh || {
   echo "Failed to install Python packages. Retrying..."
   pip cache purge
