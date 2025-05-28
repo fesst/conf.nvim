@@ -61,7 +61,18 @@ jobs:
           $ErrorActionPreference = 'Stop'
           Write-Output "Installing core dependencies..."
           choco install neovim tree-sitter -y
+
+          # Add Neovim to PATH
+          $nvimPath = "C:\Program Files\Neovim\bin"
+          if (-not $env:Path.Contains($nvimPath)) {
+              $env:Path = "$nvimPath;$env:Path"
+          }
+
+          # Refresh environment variables
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+
           Write-Output "Verifying installations..."
+          Write-Output "Current PATH: $env:Path"
           nvim --version
           tree-sitter --version
 
