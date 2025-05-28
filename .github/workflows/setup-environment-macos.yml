@@ -106,9 +106,20 @@ jobs:
 
       - name: Set up Rust
         if: inputs.setup_rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
+        shell: bash
+        run: |
+          echo "Installing Rust..."
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          source "$HOME/.cargo/env"
+
+          echo "Installing Rust components..."
+          rustup component add rustfmt clippy
+
+          echo "Verifying installation..."
+          rustc --version
+          cargo --version
+          rustfmt --version
+          clippy-driver --version
 
       - name: Cache Rust dependencies
         if: inputs.setup_rust

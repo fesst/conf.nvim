@@ -91,9 +91,21 @@ jobs:
 
       - name: Set up Rust
         if: inputs.setup_rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
+        shell: pwsh
+        run: |
+          Write-Host "Installing Rust..."
+          Invoke-WebRequest -Uri https://win.rustup.rs -OutFile rustup-init.exe
+          .\rustup-init.exe -y --default-toolchain stable
+          $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
+
+          Write-Host "Installing Rust components..."
+          rustup component add rustfmt clippy
+
+          Write-Host "Verifying installation..."
+          rustc --version
+          cargo --version
+          rustfmt --version
+          clippy-driver --version
 
       - name: Cache Rust dependencies
         if: inputs.setup_rust
