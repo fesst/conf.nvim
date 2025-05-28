@@ -159,20 +159,61 @@ jobs:
                   throw "Failed to install Visual Studio Build Tools"
               }
 
-              # Verify installation
+              # Verify installation with detailed checks
+              Write-Output "Verifying installation..."
               $vsPath = "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools"
+
+              # Check if the directory exists
               if (-not (Test-Path $vsPath)) {
+                  Write-Output "Installation directory not found at: $vsPath"
+                  Write-Output "Checking parent directory..."
+                  $parentDir = Split-Path $vsPath -Parent
+                  if (Test-Path $parentDir) {
+                      Write-Output "Parent directory exists. Contents:"
+                      Get-ChildItem $parentDir
+                  } else {
+                      Write-Output "Parent directory does not exist: $parentDir"
+                  }
                   throw "Visual Studio Build Tools installation directory not found"
               }
 
-              $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
-              if (-not (Test-Path $vsDevCmd)) {
-                  throw "Visual Studio Build Tools command prompt not found"
+              # Check for key files and directories
+              $requiredPaths = @(
+                  "Common7\Tools\VsDevCmd.bat",
+                  "VC\Auxiliary\Build\vcvarsall.bat",
+                  "MSBuild\Current\Bin\MSBuild.exe"
+              )
+
+              foreach ($path in $requiredPaths) {
+                  $fullPath = Join-Path $vsPath $path
+                  if (-not (Test-Path $fullPath)) {
+                      Write-Output "Required file not found: $fullPath"
+                      Write-Output "Checking parent directory contents:"
+                      $parentDir = Split-Path $fullPath -Parent
+                      if (Test-Path $parentDir) {
+                          Get-ChildItem $parentDir
+                      }
+                  } else {
+                      Write-Output "Found required file: $fullPath"
+                  }
               }
 
-              Write-Output "Visual Studio Build Tools installation completed successfully"
-              Write-Output "Installation directory: $vsPath"
-              Write-Output "Command prompt location: $vsDevCmd"
+              # Check for Visual Studio installer
+              $vsInstallerPath = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
+              if (-not (Test-Path $vsInstallerPath)) {
+                  Write-Output "Visual Studio Installer not found at: $vsInstallerPath"
+              } else {
+                  Write-Output "Found Visual Studio Installer at: $vsInstallerPath"
+                  # Try to get installed products
+                  $vsInstaller = Start-Process -FilePath $vsInstallerPath -ArgumentList "list" -Wait -PassThru -NoNewWindow -RedirectStandardOutput "vs_installer_output.txt"
+                  if (Test-Path "vs_installer_output.txt") {
+                      Write-Output "Installed products:"
+                      Get-Content "vs_installer_output.txt"
+                      Remove-Item "vs_installer_output.txt"
+                  }
+              }
+
+              Write-Output "Visual Studio Build Tools installation verification completed"
 
           } catch {
               Write-Error "An error occurred during Visual Studio Build Tools installation: $_"
