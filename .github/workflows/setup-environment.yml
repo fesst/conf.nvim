@@ -57,7 +57,7 @@ jobs:
         if: inputs.setup_python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Install core dependencies
         if: runner.os == 'macOS'
