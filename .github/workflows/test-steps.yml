@@ -35,7 +35,13 @@ jobs:
         if: inputs.platform != 'windows'
         run: |
           echo "Checking virtual environment at: ${{ inputs.venv_path }}"
-          [ ! -d "${{ inputs.venv_path }}" ] && { echo "Error: Virtual environment not found at: ${{ inputs.venv_path }}"; exit 1; }
+          if [ ! -d "${{ inputs.venv_path }}" ]; then
+            echo "Error: Virtual environment not found at: ${{ inputs.venv_path }}"
+            echo "Current directory: $(pwd)"
+            echo "Directory contents:"
+            ls -la
+            exit 1
+          fi
           echo "Virtual environment found at: ${{ inputs.venv_path }}"
 
       - name: Verify virtual environment path (Windows)

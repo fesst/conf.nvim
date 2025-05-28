@@ -198,13 +198,13 @@ jobs:
 
           # Verify activation script exists
           if [ ! -f "$VENV_PATH/bin/activate" ]; then
-            echo "Error: Activation script not found"
+            echo "Error: Activation script not found at: $VENV_PATH/bin/activate"
             echo "Virtual environment contents:"
             ls -la "$VENV_PATH/bin"
             exit 1
           fi
 
-          # Set up environment variables
+          # Set outputs
           echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
           echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
           echo "$VENV_PATH/bin" >> $GITHUB_PATH
@@ -212,45 +212,8 @@ jobs:
           echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
 
           # Activate and upgrade pip
-          echo "Activating virtual environment..."
-          if ! . "$VENV_PATH/bin/activate"; then
-            echo "Error: Failed to activate virtual environment"
-            echo "Python version: $(python3 --version)"
-            echo "PATH: $PATH"
-            exit 1
-          fi
-
-          # Verify Python is available after activation
-          if ! command -v python3 &> /dev/null; then
-            echo "Error: Python not found in PATH after activation"
-            echo "PATH: $PATH"
-            exit 1
-          fi
-
-          echo "Upgrading pip..."
-          if ! python3 -m pip install --upgrade pip; then
-            echo "Error: Failed to upgrade pip"
-            echo "pip version: $(pip3 --version)"
-            exit 1
-          fi
-
-          # Verify the virtual environment is properly set up
-          echo "Verifying virtual environment setup..."
-          if [ ! -d "$VENV_PATH/lib/python3.12/site-packages" ]; then
-            echo "Error: site-packages directory not found"
-            echo "Virtual environment contents:"
-            ls -la "$VENV_PATH/lib"
-            exit 1
-          fi
-
-          # Output the virtual environment path for debugging
-          echo "Virtual environment path: $VENV_PATH"
-          echo "Virtual environment contents:"
-          ls -la "$VENV_PATH"
-
-          # Ensure the virtual environment path is properly set in the job outputs
-          echo "Setting virtual environment path in job outputs..."
-          echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
+          source "$VENV_PATH/bin/activate"
+          python3 -m pip install --upgrade pip
 
       - name: Install system packages
         if: runner.os == 'macOS'
