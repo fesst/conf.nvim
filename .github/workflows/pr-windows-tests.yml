@@ -34,13 +34,12 @@ jobs:
   setup:
     needs: check-changes
     if: needs.check-changes.outputs.run_tests == 'true'
-    uses: ./.github/workflows/setup-environment.yml
+    uses: ./.github/workflows/setup-environment-windows.yml
     with:
       setup_python: true
       setup_rust: true
       setup_node: true
       setup_lua: true
-      runner: windows-latest
 
   test:
     needs: [check-changes, setup]

@@ -1,0 +1,256 @@
+name: Setup macOS Environment
+
+on:
+  workflow_call:
+    inputs:
+      setup_python:
+        required: true
+        type: boolean
+        default: true
+      setup_rust:
+        required: true
+        type: boolean
+        default: true
+      setup_node:
+        required: true
+        type: boolean
+        default: true
+      setup_lua:
+        required: true
+        type: boolean
+        default: true
+    outputs:
+      virtual_env:
+        description: "Path to virtual environment"
+        value: ${{ jobs.setup-environment.outputs.virtual_env }}
+
+jobs:
+  setup-environment:
+    name: Setup Environment
+    runs-on: macos-latest
+    outputs:
+      virtual_env: ${{ steps.venv-mac.outputs.virtual_env }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache Homebrew packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Homebrew
+            /opt/homebrew
+            ~/Library/Logs/Homebrew
+            /opt/homebrew/Library/Caches
+            /opt/homebrew/Library/Logs
+          key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}-${{ runner.arch }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-${{ runner.arch }}-
+            ${{ runner.os }}-homebrew-
+
+      - name: Cache npm packages
+        if: inputs.setup_node
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-${{ runner.arch }}-npm-${{ hashFiles('infra/packages/npm.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-npm-
+            ${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Cache pip packages
+        if: inputs.setup_python
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-${{ runner.arch }}-pip-${{ hashFiles('infra/packages/pip.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-pip-
+            ${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Cache Cargo packages
+        if: inputs.setup_rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('infra/packages/cargo.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-
+            ${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Cache LuaRocks packages
+        if: inputs.setup_lua
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/luarocks
+            ~/.luarocks
+            ~/.local/share/luarocks
+          key: ${{ runner.os }}-${{ runner.arch }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-luarocks-
+            ${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Set up Python
+        if: inputs.setup_python
+        id: setup-python-mac
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Python virtual environment
+        if: inputs.setup_python
+        id: venv-mac
+        shell: bash
+        run: |
+          set -e
+          VENV_PATH="$GITHUB_WORKSPACE/.venv"
+
+          # Clean up any existing virtual environment
+          if [ -d "$VENV_PATH" ]; then
+            echo "Removing existing virtual environment..."
+            rm -rf "$VENV_PATH"
+          fi
+
+          # Create virtual environment
+          echo "Creating virtual environment at: $VENV_PATH"
+          python3 -m venv "$VENV_PATH" || {
+            echo "Error: Failed to create virtual environment"
+            echo "Python version: $(python3 --version)"
+            echo "Python path: $(which python3)"
+            echo "PATH: $PATH"
+            exit 1
+          }
+
+          # Verify virtual environment creation
+          if [ ! -d "$VENV_PATH" ]; then
+            echo "Error: Virtual environment directory not created"
+            echo "Current directory: $(pwd)"
+            echo "Directory contents:"
+            ls -la
+            exit 1
+          fi
+
+          # Set outputs and environment variables
+          echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
+          echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
+          echo "$VENV_PATH/bin" >> $GITHUB_PATH
+          echo "PYTHONPATH=$VENV_PATH/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
+          echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
+          echo "PIP_TARGET=$VENV_PATH/lib/python3.12/site-packages" >> $GITHUB_ENV
+
+          # Activate and upgrade pip
+          source "$VENV_PATH/bin/activate"
+          python3 -m pip install --upgrade pip
+
+      - name: Install system packages
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/brew.sh
+          for i in {1..3}; do
+            if ./infra/packages/brew.sh; then
+              break
+            fi
+            if [ $i -eq 3 ]; then
+              echo "Failed to install system packages after 3 attempts"
+              exit 1
+            fi
+            echo "Attempt $i failed. Retrying..."
+            brew update
+          done
+
+      - name: Install Node.js packages
+        if: inputs.setup_node
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/npm.sh
+          for i in {1..3}; do
+            if ./infra/packages/npm.sh; then
+              break
+            fi
+            if [ $i -eq 3 ]; then
+              echo "Failed to install Node.js packages after 3 attempts"
+              exit 1
+            fi
+            echo "Attempt $i failed. Retrying..."
+            npm cache clean --force
+          done
+
+      - name: Install Rust packages
+        if: inputs.setup_rust
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/cargo.sh
+          for i in {1..3}; do
+            if ./infra/packages/cargo.sh; then
+              break
+            fi
+            if [ $i -eq 3 ]; then
+              echo "Failed to install Rust packages after 3 attempts"
+              exit 1
+            fi
+            echo "Attempt $i failed. Retrying..."
+            cargo clean
+          done
+
+      - name: Install Python packages
+        if: inputs.setup_python
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/pip.sh
+          source "$GITHUB_WORKSPACE/.venv/bin/activate"
+          for i in {1..3}; do
+            if ./infra/packages/pip.sh; then
+              break
+            fi
+            if [ $i -eq 3 ]; then
+              echo "Failed to install Python packages after 3 attempts"
+              exit 1
+            fi
+            echo "Attempt $i failed. Retrying..."
+            pip cache purge
+          done
+
+      - name: Install Lua packages
+        if: inputs.setup_lua
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/luarocks.sh
+          for i in {1..3}; do
+            if ./infra/packages/luarocks.sh; then
+              break
+            fi
+            if [ $i -eq 3 ]; then
+              echo "Failed to install Lua packages after 3 attempts"
+              exit 1
+            fi
+            echo "Attempt $i failed. Retrying..."
+            luarocks config --local lua_version 5.4
+          done
+
+      - name: Install Neovim configuration
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/nvim.sh
+          for i in {1..3}; do
+            if ./infra/packages/nvim.sh; then
+              break
+            fi
+            if [ $i -eq 3 ]; then
+              echo "Failed to install Neovim configuration after 3 attempts"
+              exit 1
+            fi
+            echo "Attempt $i failed. Retrying..."
+            rm -rf ~/.local/share/nvim
+          done

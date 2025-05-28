@@ -6,13 +6,12 @@ on:
 
 jobs:
   setup:
-    uses: ./.github/workflows/setup-environment.yml
+    uses: ./.github/workflows/setup-environment-macos.yml
     with:
       setup_python: true
       setup_rust: true
       setup_node: true
       setup_lua: true
-      runner: macos-latest
 
   test:
     needs: setup
