@@ -133,6 +133,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
 
       - name: Set up Python virtual environment (Windows)
         if: inputs.setup_python && runner.os == 'Windows'
@@ -181,11 +182,12 @@ jobs:
 
           # Create virtual environment
           echo "Creating virtual environment at: $VENV_PATH"
-          if ! python3 -m venv "$VENV_PATH"; then
+          python3 -m venv "$VENV_PATH" || {
             echo "Error: Failed to create virtual environment"
             echo "Python version: $(python3 --version)"
+            echo "Python path: $(which python3)"
             exit 1
-          fi
+          }
 
           # Verify virtual environment creation
           if [ ! -d "$VENV_PATH" ]; then
