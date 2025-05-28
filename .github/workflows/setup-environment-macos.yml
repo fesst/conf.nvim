@@ -42,6 +42,13 @@ jobs:
         with:
           node-version: "20.19.0"
           cache: "npm"
+          cache-dependency-path: |
+            **/package-lock.json
+            **/npm-shrinkwrap.json
+            **/yarn.lock
+            !**/node_modules/**/package-lock.json
+            !**/node_modules/**/npm-shrinkwrap.json
+            !**/node_modules/**/yarn.lock
 
       - name: Cache Homebrew packages
         uses: actions/cache@v4
@@ -68,27 +75,70 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-npm-
             ${{ runner.os }}-${{ runner.arch }}-
 
-      - name: Cache pip packages
+      - name: Set up Python
         if: inputs.setup_python
-        uses: actions/cache@v4
+        uses: actions/setup-python@v5
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-${{ runner.arch }}-pip-${{ hashFiles('infra/packages/pip.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-pip-
-            ${{ runner.os }}-${{ runner.arch }}-
+          python-version: "3.13"
+          cache: "pip"
+          cache-dependency-path: |
+            **/requirements.txt
+            **/requirements/*.txt
+            !**/node_modules/**/requirements.txt
+            !**/node_modules/**/requirements/*.txt
 
-      - name: Cache Cargo packages
+      - name: Set up Python virtual environment
+        if: inputs.setup_python
+        id: venv-mac
+        shell: bash
+        run: |
+          echo "Creating Python virtual environment..."
+          python3 -m venv "${{ runner.tool_cache }}/venv"
+          echo "virtual_env=${{ runner.tool_cache }}/venv" >> $GITHUB_OUTPUT
+
+          echo "Activating virtual environment..."
+          source "${{ runner.tool_cache }}/venv/bin/activate"
+
+          echo "Upgrading pip..."
+          python -m pip install --upgrade pip
+
+          echo "Installing dependencies..."
+          if [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+          fi
+
+          echo "Verifying installation..."
+          python --version
+          pip list
+
+      - name: Set up Rust
+        if: inputs.setup_rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust dependencies
         if: inputs.setup_rust
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('infra/packages/cargo.sh') }}
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-cargo-
-            ${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Set up Lua
+        if: inputs.setup_lua
+        shell: bash
+        run: |
+          echo "Installing Lua..."
+          brew install lua luarocks
+
+          echo "Verifying Lua installation..."
+          lua -v
+          luarocks --version
 
       - name: Cache LuaRocks packages
         if: inputs.setup_lua
@@ -101,75 +151,6 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-luarocks-
-            ${{ runner.os }}-${{ runner.arch }}-
-
-      - name: Set up Python
-        if: inputs.setup_python
-        id: setup-python-mac
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Set up Python virtual environment
-        if: inputs.setup_python
-        id: venv-mac
-        shell: bash
-        run: |
-          set -e
-          VENV_PATH="$GITHUB_WORKSPACE/.venv"
-
-          # Clean up any existing virtual environment
-          if [ -d "$VENV_PATH" ]; then
-            echo "Removing existing virtual environment..."
-            rm -rf "$VENV_PATH"
-          fi
-
-          # Create virtual environment using the Python from setup-python
-          echo "Creating virtual environment at: $VENV_PATH"
-          python3 -m venv "$VENV_PATH" || {
-            echo "Error: Failed to create virtual environment"
-            echo "Python version: $(python3 --version)"
-            echo "Python path: $(which python3)"
-            echo "PATH: $PATH"
-            exit 1
-          }
-
-          # Verify virtual environment creation
-          if [ ! -d "$VENV_PATH" ]; then
-            echo "Error: Virtual environment directory not created"
-            echo "Current directory: $(pwd)"
-            echo "Directory contents:"
-            ls -la
-            exit 1
-          fi
-
-          # Verify activation script exists
-          if [ ! -f "$VENV_PATH/bin/activate" ]; then
-            echo "Error: Activation script not found at: $VENV_PATH/bin/activate"
-            echo "Virtual environment contents:"
-            ls -la "$VENV_PATH/bin"
-            exit 1
-          fi
-
-          # Set outputs and environment variables
-          echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
-          echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
-          echo "$VENV_PATH/bin" >> $GITHUB_PATH
-          echo "PYTHONPATH=$VENV_PATH/lib/python3.12/site-packages:$PYTHONPATH" >> $GITHUB_ENV
-          echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
-          echo "PIP_TARGET=$VENV_PATH/lib/python3.12/site-packages" >> $GITHUB_ENV
-
-          # Activate and upgrade pip
-          source "$VENV_PATH/bin/activate"
-          python3 -m pip install --upgrade pip
-
-          # Verify environment variables
-          echo "Verifying environment variables:"
-          echo "VIRTUAL_ENV: $VIRTUAL_ENV"
-          echo "PYTHONPATH: $PYTHONPATH"
-          echo "PIP_PREFIX: $PIP_PREFIX"
-          echo "PIP_TARGET: $PIP_TARGET"
-          echo "PATH: $PATH"
 
       - name: Install system packages
         shell: bash
