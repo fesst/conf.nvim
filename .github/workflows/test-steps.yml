@@ -97,16 +97,16 @@ jobs:
         shell: bash
         run: |
           echo "=== Python venv Cache Info ==="
-          echo "Cache path: ${{ steps.venv-mac.outputs.virtual_env }}"
+          echo "Cache path: ${{ inputs.venv_path }}"
           echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh') }}"
-          echo "Cache size: $(du -sh ${{ steps.venv-mac.outputs.virtual_env }} 2>/dev/null || echo 'Not found')"
+          echo "Cache size: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
           echo "==========================="
 
       - name: Restore Python venv from cache
         uses: actions/cache@v4
         id: python-venv-cache
         with:
-          path: ${{ steps.venv-mac.outputs.virtual_env }}
+          path: ${{ inputs.venv_path }}
           key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-venv-
@@ -116,7 +116,7 @@ jobs:
         run: |
           echo "=== Python venv Cache Result ==="
           echo "Cache hit: ${{ steps.python-venv-cache.outputs.cache-hit }}"
-          echo "Cache size after restore: $(du -sh ${{ steps.venv-mac.outputs.virtual_env }} 2>/dev/null || echo 'Not found')"
+          echo "Cache size after restore: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
           echo "=============================="
 
       - name: Log Homebrew cache info

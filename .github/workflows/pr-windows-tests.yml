@@ -5,35 +5,7 @@ on:
     branches: ["master"]
 
 jobs:
-  check-changes:
-    name: Check for Changes
-    runs-on: windows-latest
-    outputs:
-      run_tests: ${{ steps.test_check.outputs.run_tests }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Check if tests should run (test/, infra/, *.lua)
-        id: test_check
-        shell: pwsh
-        run: |
-          chmod +x infra/should_run_tests.sh || true
-          bash infra/should_run_tests.sh ${{ github.base_ref }} ${{ github.sha }} || exit_code=$?
-          switch ($exit_code) {
-            0 { Write-Output "run_tests=true" >> $env:GITHUB_OUTPUT }
-            1 { Write-Output "run_tests=false" >> $env:GITHUB_OUTPUT }
-            default {
-              Write-Output "Unexpected error occurred (exit code: $exit_code). Running tests to be safe."
-              Write-Output "run_tests=true" >> $env:GITHUB_OUTPUT
-            }
-          }
-
   setup:
-    needs: check-changes
-    if: needs.check-changes.outputs.run_tests == 'true'
     uses: ./.github/workflows/setup-environment-windows.yml
     with:
       setup_python: true
@@ -42,8 +14,7 @@ jobs:
       setup_lua: true
 
   test:
-    needs: [check-changes, setup]
-    if: needs.check-changes.outputs.run_tests == 'true'
+    needs: setup
     uses: ./.github/workflows/test-steps.yml
     with:
       platform: windows
