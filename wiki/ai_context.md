@@ -263,16 +263,67 @@ Currently supported platforms:
 ###### Environment Setup
 
 - Virtual Environment:
-  - Created in `$GITHUB_WORKSPACE/.venv`
+  - Created in `$GITHUB_WORKSPACE/.venv` or `$RUNNER_TOOL_CACHE/venv`
   - Environment variables set consistently:
-    - VIRTUAL_ENV
-    - PYTHONPATH
-    - PIP_TARGET
-    - PIP_PREFIX
-  - Activated in all Python-dependent jobs
-  - Used for package installation and testing
-  - Cached between workflow runs
-  - Fallback mechanism for environment creation
+    - VIRTUAL_ENV: Set via GITHUB_ENV
+    - PYTHONPATH: Platform-specific paths
+    - PIP_TARGET: Platform-specific paths
+    - PIP_PREFIX: Platform-specific paths
+  - Platform-specific handling:
+    - Windows:
+      - Uses PowerShell Core (pwsh)
+      - Virtual environment in `$RUNNER_TOOL_CACHE\venv`
+      - Activation via `Scripts\activate.ps1`
+    - macOS:
+      - Uses bash
+      - Virtual environment in `$RUNNER_TOOL_CACHE/venv`
+      - Activation via `bin/activate`
+  - Robust error handling:
+    - Verification of virtual environment creation
+    - Verification of activation scripts
+    - Fallback mechanisms for common locations
+    - Detailed error reporting
+  - Caching strategy:
+    - Cached between workflow runs
+    - Platform-specific cache keys
+    - Automatic cache restoration
+  - Output handling:
+    - Uses GITHUB_OUTPUT for workflow outputs:
+      - Virtual environment path for workflow steps
+      - Test execution status
+      - Change detection results
+    - Uses GITHUB_ENV for environment variables:
+      - VIRTUAL_ENV for Python environment
+      - PYTHONPATH for Python module resolution
+      - PIP_TARGET and PIP_PREFIX for package installation
+    - Consistent path handling across platforms:
+      - Windows: Uses PowerShell path format
+      - macOS: Uses Unix path format
+      - Automatic path normalization
+    - Error handling:
+      - Verification of output variables
+      - Fallback mechanisms for missing outputs
+      - Detailed error messages for debugging
+
+###### Workflow Structure
+
+- Main workflows:
+  - `setup-environment.yml`: Core environment setup
+  - `setup-environment-windows.yml`: Windows-specific setup
+  - `setup-environment-macos.yml`: macOS-specific setup
+  - `test-steps.yml`: Common test execution
+  - `pr-windows-tests.yml`: Windows PR testing
+  - `pr-macos-tests.yml`: macOS PR testing
+  - `macos-neovim-tests.yml`: Neovim-specific tests
+
+- Workflow features:
+  - Early change detection
+  - Conditional test execution
+  - Cross-platform support
+  - Efficient caching
+  - Robust error handling
+  - Detailed logging
+  - Automatic cleanup
 
 ###### Lua Module Loading
 

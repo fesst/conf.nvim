@@ -45,13 +45,9 @@ jobs:
             # Check common virtual environment locations
             VENV_LOCATIONS=(
               "${{ inputs.venv_path }}"
-              "${{ runner.tool_cache }}/venv"
-              "${{ runner.tool_cache }}/Python/3.13.3/venv"
-              "${{ runner.tool_cache }}/Python/3.13.3/x64/venv"
-              "/opt/hostedtoolcache/Python/3.13.3/venv"
-              "/opt/hostedtoolcache/Python/3.13.3/x64/venv"
-              "/Users/runner/hostedtoolcache/Python/3.13.3/venv"
-              "/Users/runner/hostedtoolcache/Python/3.13.3/x64/venv"
+              "$RUNNER_TOOL_CACHE/venv"
+              "$RUNNER_TOOL_CACHE/Python/3.13.3/venv"
+              "$RUNNER_TOOL_CACHE/Python/3.13.3/x64/venv"
             )
 
             for venv_path in "${VENV_LOCATIONS[@]}"; do
@@ -63,7 +59,7 @@ jobs:
               fi
             done
 
-            if [ ! -d "$VIRTUAL_ENV" ]; then
+            if [ ! -d "${{ steps.venv-mac.outputs.virtual_env }}" ]; then
               echo "Error: Virtual environment not found in any common locations"
               echo "Checked locations:"
               printf '%s\n' "${VENV_LOCATIONS[@]}"
@@ -77,9 +73,6 @@ jobs:
             echo "virtual_env=${{ inputs.venv_path }}" >> $GITHUB_OUTPUT
           fi
 
-          echo "Virtual environment contents:"
-          ls -la "$VIRTUAL_ENV"
-
       - name: Verify virtual environment path (Windows)
         shell: pwsh
         if: inputs.platform == 'windows'
@@ -91,11 +84,9 @@ jobs:
             # Check common virtual environment locations
             $VENV_LOCATIONS = @(
               "${{ inputs.venv_path }}"
-              "${{ runner.tool_cache }}\venv"
-              "${{ runner.tool_cache }}\Python\3.13.3\venv"
-              "${{ runner.tool_cache }}\Python\3.13.3\x64\venv"
-              "C:\hostedtoolcache\windows\Python\3.13.3\venv"
-              "C:\hostedtoolcache\windows\Python\3.13.3\x64\venv"
+              "$RUNNER_TOOL_CACHE\venv"
+              "$RUNNER_TOOL_CACHE\Python\3.13.3\venv"
+              "$RUNNER_TOOL_CACHE\Python\3.13.3\x64\venv"
             )
 
             foreach ($venv_path in $VENV_LOCATIONS) {

@@ -75,14 +75,47 @@ jobs:
         id: venv-mac
         shell: bash
         run: |
-          echo "Creating Python virtual environment..."
-          python3 -m venv "${{ runner.tool_cache }}/venv"
-          echo "virtual_env=${{ runner.tool_cache }}/venv" >> $GITHUB_OUTPUT
+          set -e
+          VENV_PATH="$RUNNER_TOOL_CACHE/venv"
 
-          echo "Activating virtual environment..."
-          source "${{ runner.tool_cache }}/venv/bin/activate"
+          # Clean up any existing virtual environment
+          if [ -d "$VENV_PATH" ]; then
+            echo "Removing existing virtual environment..."
+            rm -rf "$VENV_PATH"
+          fi
 
-          echo "Upgrading pip..."
+          # Create virtual environment
+          echo "Creating virtual environment at: $VENV_PATH"
+          python -m venv "$VENV_PATH" || {
+            echo "Error: Failed to create virtual environment"
+            echo "Python version: $(python --version)"
+            echo "Python path: $(which python)"
+            echo "PATH: $PATH"
+            exit 1
+          }
+
+          # Verify virtual environment creation
+          if [ ! -d "$VENV_PATH" ]; then
+            echo "Error: Virtual environment directory not created"
+            echo "Current directory: $(pwd)"
+            echo "Directory contents:"
+            ls -la
+            exit 1
+          fi
+
+          # Verify activation script exists
+          if [ ! -f "$VENV_PATH/bin/activate" ]; then
+            echo "Error: Activation script not found at: $VENV_PATH/bin/activate"
+            echo "Virtual environment contents:"
+            ls -la "$VENV_PATH/bin"
+            exit 1
+          fi
+
+          # Set workflow output
+          echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
+
+          # Activate and upgrade pip
+          source "$VENV_PATH/bin/activate"
           python -m pip install --upgrade pip
 
           echo "Installing dependencies..."

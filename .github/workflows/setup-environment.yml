@@ -146,13 +146,8 @@ jobs:
         id: venv-win
         shell: pwsh
         run: |
-          $VENV_PATH = Join-Path $env:GITHUB_WORKSPACE ".venv"
+          $VENV_PATH = Join-Path $env:RUNNER_TOOL_CACHE "venv"
           python -m venv "$VENV_PATH"
-          Write-Output "virtual_env=$VENV_PATH" >> $env:GITHUB_OUTPUT
-          Write-Output "VIRTUAL_ENV=$VENV_PATH" >> $env:GITHUB_ENV
-          Write-Output "$VENV_PATH/Scripts" >> $env:GITHUB_PATH
-          Write-Output "PYTHONPATH=$VENV_PATH/Lib/site-packages;$env:PYTHONPATH" >> $env:GITHUB_ENV
-          Write-Output "PIP_PREFIX=$VENV_PATH" >> $env:GITHUB_ENV
 
           # Verify virtual environment creation
           if (-not (Test-Path $VENV_PATH)) {
@@ -164,6 +159,9 @@ jobs:
           if (-not (Test-Path $activateScript)) {
             throw "Activation script not found at: $activateScript"
           }
+
+          # Set workflow output
+          Write-Output "virtual_env=$VENV_PATH" >> $env:GITHUB_OUTPUT
 
           # Activate and upgrade pip
           & $activateScript
@@ -178,7 +176,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          VENV_PATH="$GITHUB_WORKSPACE/.venv"
+          VENV_PATH="$RUNNER_TOOL_CACHE/venv"
 
           # Clean up any existing virtual environment
           if [ -d "$VENV_PATH" ]; then
@@ -186,7 +184,7 @@ jobs:
             rm -rf "$VENV_PATH"
           fi
 
-          # Create virtual environment using the Python from setup-python
+          # Create virtual environment
           echo "Creating virtual environment at: $VENV_PATH"
           python -m venv "$VENV_PATH" || {
             echo "Error: Failed to create virtual environment"
@@ -213,25 +211,12 @@ jobs:
             exit 1
           fi
 
-          # Set outputs and environment variables
+          # Set workflow output
           echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
-          echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
-          echo "$VENV_PATH/bin" >> $GITHUB_PATH
-          echo "PYTHONPATH=$VENV_PATH/lib/python3.13/site-packages:$PYTHONPATH" >> $GITHUB_ENV
-          echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
-          echo "PIP_TARGET=$VENV_PATH/lib/python3.13/site-packages" >> $GITHUB_ENV
 
           # Activate and upgrade pip
           source "$VENV_PATH/bin/activate"
           python -m pip install --upgrade pip
-
-          # Verify environment variables
-          echo "Verifying environment variables:"
-          echo "VIRTUAL_ENV: $VIRTUAL_ENV"
-          echo "PYTHONPATH: $PYTHONPATH"
-          echo "PIP_PREFIX: $PIP_PREFIX"
-          echo "PIP_TARGET: $PIP_TARGET"
-          echo "PATH: $PATH"
 
       - name: Install system packages
         if: runner.os == 'macOS'

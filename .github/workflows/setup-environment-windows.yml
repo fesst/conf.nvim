@@ -61,11 +61,28 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "Creating Python virtual environment..."
-          python -m venv "$env:RUNNER_TOOL_CACHE\venv"
-          Write-Host "virtual_env=$env:RUNNER_TOOL_CACHE\venv" >> $env:GITHUB_OUTPUT
+          $VENV_PATH = Join-Path $env:RUNNER_TOOL_CACHE "venv"
+          python -m venv "$VENV_PATH"
+
+          # Verify virtual environment creation
+          if (-not (Test-Path $VENV_PATH)) {
+            throw "Failed to create virtual environment at: $VENV_PATH"
+          }
+
+          # Verify activation script exists
+          $activateScript = Join-Path $VENV_PATH "Scripts\activate.ps1"
+          if (-not (Test-Path $activateScript)) {
+            throw "Activation script not found at: $activateScript"
+          }
+
+          # Set workflow output
+          Write-Output "virtual_env=$VENV_PATH" >> $env:GITHUB_OUTPUT
 
           Write-Host "Activating virtual environment..."
-          & "$env:RUNNER_TOOL_CACHE\venv\Scripts\Activate.ps1"
+          & $activateScript
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to activate virtual environment"
+          }
 
           Write-Host "Upgrading pip..."
           python -m pip install --upgrade pip
@@ -78,6 +95,10 @@ jobs:
           Write-Host "Verifying installation..."
           python --version
           pip list
+
+          # Verify output variable was set
+          Write-Host "Virtual environment path: $VENV_PATH"
+          Write-Host "Workflow output set to: $env:GITHUB_OUTPUT"
 
       - name: Set up Rust
         if: inputs.setup_rust
@@ -179,8 +200,17 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
+          $VENV_PATH = Join-Path $env:RUNNER_TOOL_CACHE "venv"
+          $activateScript = Join-Path $VENV_PATH "Scripts\activate.ps1"
+
+          # Activate virtual environment
+          & $activateScript
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to activate virtual environment"
+          }
+
+          # Install packages
           chmod +x infra/packages/pip.sh
-          & "$env:RUNNER_TOOL_CACHE\venv\Scripts\Activate.ps1"
           ./infra/packages/pip.sh
           if ($LASTEXITCODE -ne 0) {
             Write-Host "Failed to install Python packages. Retrying..."
