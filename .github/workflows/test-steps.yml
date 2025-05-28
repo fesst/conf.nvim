@@ -45,7 +45,7 @@ jobs:
             TOOL_CACHE_VENV="${{ runner.tool_cache }}/venv"
             if [ -d "$TOOL_CACHE_VENV" ]; then
               echo "Found virtual environment in tool cache at: $TOOL_CACHE_VENV"
-              echo "virtual_env=$TOOL_CACHE_VENV" >> $GITHUB_OUTPUT
+              echo "VIRTUAL_ENV=$TOOL_CACHE_VENV" >> $GITHUB_ENV
             else
               echo "Error: Virtual environment not found at: ${{ inputs.venv_path }}"
               echo "Also checked tool cache at: $TOOL_CACHE_VENV"
@@ -56,7 +56,7 @@ jobs:
             fi
           else
             echo "Virtual environment found at: ${{ inputs.venv_path }}"
-            echo "virtual_env=${{ inputs.venv_path }}" >> $GITHUB_OUTPUT
+            echo "VIRTUAL_ENV=${{ inputs.venv_path }}" >> $GITHUB_ENV
           fi
 
           echo "Virtual environment contents:"
@@ -72,7 +72,7 @@ jobs:
             $TOOL_CACHE_VENV = "${{ runner.tool_cache }}\venv"
             if (Test-Path $TOOL_CACHE_VENV) {
               Write-Output "Found virtual environment in tool cache at: $TOOL_CACHE_VENV"
-              "virtual_env=$TOOL_CACHE_VENV" >> $env:GITHUB_OUTPUT
+              "VIRTUAL_ENV=$TOOL_CACHE_VENV" >> $env:GITHUB_ENV
             } else {
               Write-Error "Virtual environment not found at: ${{ inputs.venv_path }}"
               Write-Output "Also checked tool cache at: $TOOL_CACHE_VENV"
@@ -83,23 +83,23 @@ jobs:
             }
           } else {
             Write-Output "Virtual environment found at: ${{ inputs.venv_path }}"
-            "virtual_env=${{ inputs.venv_path }}" >> $env:GITHUB_OUTPUT
+            "VIRTUAL_ENV=${{ inputs.venv_path }}" >> $env:GITHUB_ENV
           }
 
       - name: Log Python venv cache info
         shell: bash
         run: |
           echo "=== Python venv Cache Info ==="
-          echo "Cache path: ${{ inputs.venv_path }}"
+          echo "Cache path: $VIRTUAL_ENV"
           echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', '**/requirements.txt') }}"
-          echo "Cache size: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
+          echo "Cache size: $(du -sh $VIRTUAL_ENV 2>/dev/null || echo 'Not found')"
           echo "==========================="
 
       - name: Restore Python venv from cache
         uses: actions/cache@v4
         id: python-venv-cache
         with:
-          path: ${{ inputs.venv_path }}
+          path: $VIRTUAL_ENV
           key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', '**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-venv-
@@ -109,7 +109,7 @@ jobs:
         run: |
           echo "=== Python venv Cache Result ==="
           echo "Cache hit: ${{ steps.python-venv-cache.outputs.cache-hit }}"
-          echo "Cache size after restore: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
+          echo "Cache size after restore: $(du -sh $VIRTUAL_ENV 2>/dev/null || echo 'Not found')"
           echo "=============================="
 
       - name: Log Homebrew cache info
@@ -266,7 +266,7 @@ jobs:
           # Activate virtual environment and run install script
           try {
             # Normalize the virtual environment path
-            $venvPath = [System.IO.Path]::GetFullPath("${{ inputs.venv_path }}")
+            $venvPath = [System.IO.Path]::GetFullPath("$env:VIRTUAL_ENV")
             Write-Output "Using virtual environment at: $venvPath"
 
             # Verify virtual environment exists
@@ -313,8 +313,8 @@ jobs:
         run: |
           set -e
           # Verify virtual environment path
-          if [ ! -d "${{ inputs.venv_path }}" ]; then
-            echo "Error: Virtual environment not found at: ${{ inputs.venv_path }}"
+          if [ ! -d "$VIRTUAL_ENV" ]; then
+            echo "Error: Virtual environment not found at: $VIRTUAL_ENV"
             echo "Current directory: $(pwd)"
             echo "Directory contents:"
             ls -la
@@ -322,10 +322,10 @@ jobs:
           fi
 
           # Verify activation script exists
-          if [ ! -f "${{ inputs.venv_path }}/bin/activate" ]; then
-            echo "Error: Activation script not found at: ${{ inputs.venv_path }}/bin/activate"
+          if [ ! -f "$VIRTUAL_ENV/bin/activate" ]; then
+            echo "Error: Activation script not found at: $VIRTUAL_ENV/bin/activate"
             echo "Virtual environment contents:"
-            ls -la "${{ inputs.venv_path }}/bin"
+            ls -la "$VIRTUAL_ENV/bin"
             exit 1
           fi
 
@@ -342,8 +342,8 @@ jobs:
           done
 
           # Activate virtual environment with error handling
-          echo "Activating virtual environment at: ${{ inputs.venv_path }}"
-          source "${{ inputs.venv_path }}/bin/activate" || {
+          echo "Activating virtual environment at: $VIRTUAL_ENV"
+          source "$VIRTUAL_ENV/bin/activate" || {
             echo "Error: Failed to activate virtual environment"
             echo "Python version: $(python --version)"
             echo "PATH: $PATH"
@@ -365,7 +365,7 @@ jobs:
         shell: pwsh
         run: |
           try {
-            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+            & "$env:VIRTUAL_ENV/Scripts/activate.ps1"
             # Ensure Neovim is in PATH and verify it
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
@@ -396,7 +396,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          source "${{ inputs.venv_path }}/bin/activate"
+          source "$VIRTUAL_ENV/bin/activate"
 
           # Verify Neovim is available
           if ! command -v nvim &> /dev/null; then
@@ -422,7 +422,7 @@ jobs:
         shell: pwsh
         run: |
           try {
-            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+            & "$env:VIRTUAL_ENV/Scripts/activate.ps1"
             # Ensure stylua is in PATH
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
@@ -453,7 +453,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          source "${{ inputs.venv_path }}/bin/activate"
+          source "$VIRTUAL_ENV/bin/activate"
 
           # Verify stylua is available
           if ! command -v stylua &> /dev/null; then
@@ -479,7 +479,7 @@ jobs:
         if: inputs.install_deps && inputs.platform == 'windows'
         shell: pwsh
         run: |
-          & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+          & "$env:VIRTUAL_ENV/Scripts/activate.ps1"
           # Ensure all tools are in PATH
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin;$env:USERPROFILE\.cargo\bin"
@@ -499,7 +499,7 @@ jobs:
         if: inputs.install_deps && inputs.platform == 'macos'
         shell: bash
         run: |
-          source "${{ inputs.venv_path }}/bin/activate"
+          source "$VIRTUAL_ENV/bin/activate"
 
           # Run tests and capture output
           test_output=$(bash infra/nvim_sanity_test.sh 2>&1)
