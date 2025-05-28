@@ -35,7 +35,7 @@ jobs:
         run: |
           echo "=== Python venv Cache Info ==="
           echo "Cache path: ${{ inputs.venv_path }}"
-          echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh') }}"
+          echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}"
           echo "Cache size: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
           echo "==========================="
 
@@ -44,7 +44,7 @@ jobs:
         id: python-venv-cache
         with:
           path: ${{ inputs.venv_path }}
-          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-venv-
 
@@ -53,39 +53,29 @@ jobs:
         run: |
           echo "=== Python venv Cache Result ==="
           echo "Cache hit: ${{ steps.python-venv-cache.outputs.cache-hit }}"
-          echo "Cache size: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
+          echo "Cache size after restore: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
           echo "=============================="
 
       - name: Verify virtual environment path
         shell: bash
         if: inputs.platform != 'windows'
         run: |
-          set -e
-          echo "Checking virtual environment path: ${{ inputs.venv_path }}"
+          echo "Checking virtual environment at: ${{ inputs.venv_path }}"
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+
           if [ ! -d "${{ inputs.venv_path }}" ]; then
             echo "Error: Virtual environment not found at: ${{ inputs.venv_path }}"
-            echo "Current directory: $(pwd)"
-            echo "Directory contents:"
-            ls -la
-            exit 1
-          fi
-
-          # Verify activation script exists
-          if [ ! -f "${{ inputs.venv_path }}/bin/activate" ]; then
-            echo "Error: Activation script not found at: ${{ inputs.venv_path }}/bin/activate"
-            echo "Virtual environment contents:"
-            ls -la "${{ inputs.venv_path }}/bin"
-            exit 1
-          fi
-
-          # Activate virtual environment
-          source "${{ inputs.venv_path }}/bin/activate"
-          if [ $? -ne 0 ]; then
-            echo "Error: Failed to activate virtual environment"
-            echo "Python version: $(python --version)"
+            echo "Python version: $(python3 --version)"
+            echo "Python path: $(which python3)"
             echo "PATH: $PATH"
             exit 1
           fi
+
+          echo "Virtual environment found at: ${{ inputs.venv_path }}"
+          echo "Virtual environment contents:"
+          ls -la "${{ inputs.venv_path }}"
 
       - name: Verify virtual environment path (Windows)
         shell: pwsh

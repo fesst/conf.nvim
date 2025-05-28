@@ -68,7 +68,7 @@ jobs:
         if: inputs.setup_python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Install core dependencies
         if: runner.os == 'macOS'
@@ -87,7 +87,7 @@ jobs:
         id: venv-cache
         with:
           path: ${{ runner.tool_cache }}/venv
-          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-venv-
 
