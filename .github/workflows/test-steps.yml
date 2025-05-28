@@ -58,7 +58,7 @@ jobs:
               echo "Checking location: $venv_path"
               if [ -d "$venv_path" ]; then
                 echo "Found virtual environment at: $venv_path"
-                echo "VIRTUAL_ENV=$venv_path" >> $GITHUB_ENV
+                echo "virtual_env=$venv_path" >> $GITHUB_OUTPUT
                 break
               fi
             done
@@ -74,7 +74,7 @@ jobs:
             fi
           else
             echo "Virtual environment found at: ${{ inputs.venv_path }}"
-            echo "VIRTUAL_ENV=${{ inputs.venv_path }}" >> $GITHUB_ENV
+            echo "virtual_env=${{ inputs.venv_path }}" >> $GITHUB_OUTPUT
           fi
 
           echo "Virtual environment contents:"
@@ -101,7 +101,7 @@ jobs:
               Write-Output "Checking location: $venv_path"
               if (Test-Path $venv_path) {
                 Write-Output "Found virtual environment at: $venv_path"
-                "VIRTUAL_ENV=$venv_path" >> $env:GITHUB_ENV
+                "virtual_env=$venv_path" >> $env:GITHUB_OUTPUT
                 break
               }
             }
@@ -117,23 +117,23 @@ jobs:
             }
           } else {
             Write-Output "Virtual environment found at: ${{ inputs.venv_path }}"
-            "VIRTUAL_ENV=${{ inputs.venv_path }}" >> $env:GITHUB_ENV
+            "virtual_env=${{ inputs.venv_path }}" >> $env:GITHUB_OUTPUT
           }
 
       - name: Log Python venv cache info
         shell: bash
         run: |
           echo "=== Python venv Cache Info ==="
-          echo "Cache path: $VIRTUAL_ENV"
+          echo "Cache path: ${{ steps.venv-mac.outputs.virtual_env }}"
           echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', '**/requirements.txt') }}"
-          echo "Cache size: $(du -sh $VIRTUAL_ENV 2>/dev/null || echo 'Not found')"
+          echo "Cache size: $(du -sh ${{ steps.venv-mac.outputs.virtual_env }} 2>/dev/null || echo 'Not found')"
           echo "==========================="
 
       - name: Restore Python venv from cache
         uses: actions/cache@v4
         id: python-venv-cache
         with:
-          path: $VIRTUAL_ENV
+          path: ${{ steps.venv-mac.outputs.virtual_env }}
           key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', '**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-venv-
@@ -143,7 +143,7 @@ jobs:
         run: |
           echo "=== Python venv Cache Result ==="
           echo "Cache hit: ${{ steps.python-venv-cache.outputs.cache-hit }}"
-          echo "Cache size after restore: $(du -sh $VIRTUAL_ENV 2>/dev/null || echo 'Not found')"
+          echo "Cache size after restore: $(du -sh ${{ steps.venv-mac.outputs.virtual_env }} 2>/dev/null || echo 'Not found')"
           echo "=============================="
 
       - name: Log Homebrew cache info
@@ -271,36 +271,9 @@ jobs:
         if: inputs.install_deps && inputs.platform == 'windows'
         shell: pwsh
         run: |
-          # Install Chocolatey if not present
-          if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
-            Write-Output "Installing Chocolatey..."
-            Set-ExecutionPolicy Bypass -Scope Process -Force
-            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-            Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-          }
-
-          # Install dependencies using Chocolatey
-          choco install neovim -y
-          choco install tree-sitter -y
-
-          # Add Chocolatey bin to PATH and refresh environment
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-          $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
-
-          # Verify Neovim installation
-          Write-Output "Verifying Neovim installation..."
-          $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
-          if (-not $nvimPath) {
-            Write-Error "Neovim not found in PATH after installation"
-            Write-Output "Current PATH: $env:Path"
-            exit 1
-          }
-          Write-Output "Neovim found at: $($nvimPath.Source)"
-
-          # Activate virtual environment and run install script
           try {
             # Normalize the virtual environment path
-            $venvPath = [System.IO.Path]::GetFullPath("$env:VIRTUAL_ENV")
+            $venvPath = [System.IO.Path]::GetFullPath("${{ steps.venv-mac.outputs.virtual_env }}")
             Write-Output "Using virtual environment at: $venvPath"
 
             # Verify virtual environment exists
@@ -347,8 +320,8 @@ jobs:
         run: |
           set -e
           # Verify virtual environment path
-          if [ ! -d "$VIRTUAL_ENV" ]; then
-            echo "Error: Virtual environment not found at: $VIRTUAL_ENV"
+          if [ ! -d "${{ steps.venv-mac.outputs.virtual_env }}" ]; then
+            echo "Error: Virtual environment not found at: ${{ steps.venv-mac.outputs.virtual_env }}"
             echo "Current directory: $(pwd)"
             echo "Directory contents:"
             ls -la
@@ -356,10 +329,10 @@ jobs:
           fi
 
           # Verify activation script exists
-          if [ ! -f "$VIRTUAL_ENV/bin/activate" ]; then
-            echo "Error: Activation script not found at: $VIRTUAL_ENV/bin/activate"
+          if [ ! -f "${{ steps.venv-mac.outputs.virtual_env }}/bin/activate" ]; then
+            echo "Error: Activation script not found at: ${{ steps.venv-mac.outputs.virtual_env }}/bin/activate"
             echo "Virtual environment contents:"
-            ls -la "$VIRTUAL_ENV/bin"
+            ls -la "${{ steps.venv-mac.outputs.virtual_env }}/bin"
             exit 1
           fi
 
@@ -376,8 +349,8 @@ jobs:
           done
 
           # Activate virtual environment with error handling
-          echo "Activating virtual environment at: $VIRTUAL_ENV"
-          source "$VIRTUAL_ENV/bin/activate" || {
+          echo "Activating virtual environment at: ${{ steps.venv-mac.outputs.virtual_env }}"
+          source "${{ steps.venv-mac.outputs.virtual_env }}/bin/activate" || {
             echo "Error: Failed to activate virtual environment"
             echo "Python version: $(python --version)"
             echo "PATH: $PATH"
@@ -399,7 +372,7 @@ jobs:
         shell: pwsh
         run: |
           try {
-            & "$env:VIRTUAL_ENV/Scripts/activate.ps1"
+            & "${{ steps.venv-mac.outputs.virtual_env }}/Scripts/activate.ps1"
             # Ensure Neovim is in PATH and verify it
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
@@ -430,7 +403,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          source "$VIRTUAL_ENV/bin/activate"
+          source "${{ steps.venv-mac.outputs.virtual_env }}/bin/activate"
 
           # Verify Neovim is available
           if ! command -v nvim &> /dev/null; then
@@ -456,7 +429,7 @@ jobs:
         shell: pwsh
         run: |
           try {
-            & "$env:VIRTUAL_ENV/Scripts/activate.ps1"
+            & "${{ steps.venv-mac.outputs.virtual_env }}/Scripts/activate.ps1"
             # Ensure stylua is in PATH
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
@@ -487,7 +460,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          source "$VIRTUAL_ENV/bin/activate"
+          source "${{ steps.venv-mac.outputs.virtual_env }}/bin/activate"
 
           # Verify stylua is available
           if ! command -v stylua &> /dev/null; then
@@ -513,7 +486,7 @@ jobs:
         if: inputs.install_deps && inputs.platform == 'windows'
         shell: pwsh
         run: |
-          & "$env:VIRTUAL_ENV/Scripts/activate.ps1"
+          & "${{ steps.venv-mac.outputs.virtual_env }}/Scripts/activate.ps1"
           # Ensure all tools are in PATH
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin;$env:USERPROFILE\.cargo\bin"
@@ -533,7 +506,7 @@ jobs:
         if: inputs.install_deps && inputs.platform == 'macos'
         shell: bash
         run: |
-          source "$VIRTUAL_ENV/bin/activate"
+          source "${{ steps.venv-mac.outputs.virtual_env }}/bin/activate"
 
           # Run tests and capture output
           test_output=$(bash infra/nvim_sanity_test.sh 2>&1)
