@@ -70,8 +70,8 @@ jobs:
           }
 
           # Install required packages
-          Write-Output "Installing Neovim and Tree-sitter..."
-          choco install neovim tree-sitter -y
+          Write-Output "Installing Neovim, Tree-sitter, and Visual Studio Build Tools..."
+          choco install neovim tree-sitter visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" -y
           if ($LASTEXITCODE -ne 0) {
             throw "Failed to install packages using Chocolatey"
           }
@@ -89,6 +89,7 @@ jobs:
           Write-Output "Current PATH: $env:Path"
           nvim --version
           tree-sitter --version
+          cl.exe /?
 
       - name: Cache virtual environment
         if: inputs.setup_python
@@ -204,27 +205,11 @@ jobs:
           & (Join-Path ${{ steps.venv-win.outputs.virtual_env }} "Scripts\activate.ps1")
           & "${{ github.workspace }}/infra/packages/pip.ps1"
 
-      - name: Install Lua packages
+      - name: Install LuaRocks packages
         if: inputs.setup_lua
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-
-          # Install LuaRocks using Chocolatey
-          Write-Output "Installing LuaRocks..."
-          choco install luarocks -y
-          if ($LASTEXITCODE -ne 0) {
-            throw "Failed to install LuaRocks"
-          }
-
-          # Refresh environment variables to include LuaRocks
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
-
-          # Verify LuaRocks installation
-          Write-Output "Verifying LuaRocks installation..."
-          luarocks --version
-
-          # Install Lua packages
           & "${{ github.workspace }}/infra/packages/luarocks.ps1"
 
       - name: Install Neovim configuration
