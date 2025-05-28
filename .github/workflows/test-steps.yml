@@ -41,14 +41,32 @@ jobs:
 
           # Try to find the virtual environment if the exact path doesn't exist
           if [ ! -d "${{ inputs.venv_path }}" ]; then
-            echo "Virtual environment not found at exact path, searching in tool cache..."
-            TOOL_CACHE_VENV="${{ runner.tool_cache }}/venv"
-            if [ -d "$TOOL_CACHE_VENV" ]; then
-              echo "Found virtual environment in tool cache at: $TOOL_CACHE_VENV"
-              echo "VIRTUAL_ENV=$TOOL_CACHE_VENV" >> $GITHUB_ENV
-            else
-              echo "Error: Virtual environment not found at: ${{ inputs.venv_path }}"
-              echo "Also checked tool cache at: $TOOL_CACHE_VENV"
+            echo "Virtual environment not found at exact path, searching in common locations..."
+            # Check common virtual environment locations
+            VENV_LOCATIONS=(
+              "${{ inputs.venv_path }}"
+              "${{ runner.tool_cache }}/venv"
+              "${{ runner.tool_cache }}/Python/3.13.3/venv"
+              "${{ runner.tool_cache }}/Python/3.13.3/x64/venv"
+              "/opt/hostedtoolcache/Python/3.13.3/venv"
+              "/opt/hostedtoolcache/Python/3.13.3/x64/venv"
+              "/Users/runner/hostedtoolcache/Python/3.13.3/venv"
+              "/Users/runner/hostedtoolcache/Python/3.13.3/x64/venv"
+            )
+
+            for venv_path in "${VENV_LOCATIONS[@]}"; do
+              echo "Checking location: $venv_path"
+              if [ -d "$venv_path" ]; then
+                echo "Found virtual environment at: $venv_path"
+                echo "VIRTUAL_ENV=$venv_path" >> $GITHUB_ENV
+                break
+              fi
+            done
+
+            if [ ! -d "$VIRTUAL_ENV" ]; then
+              echo "Error: Virtual environment not found in any common locations"
+              echo "Checked locations:"
+              printf '%s\n' "${VENV_LOCATIONS[@]}"
               echo "Python version: $(python3 --version)"
               echo "Python path: $(which python3)"
               echo "PATH: $PATH"
@@ -60,7 +78,7 @@ jobs:
           fi
 
           echo "Virtual environment contents:"
-          ls -la "${{ inputs.venv_path }}"
+          ls -la "$VIRTUAL_ENV"
 
       - name: Verify virtual environment path (Windows)
         shell: pwsh
@@ -68,14 +86,30 @@ jobs:
         run: |
           Write-Output "Checking virtual environment at: ${{ inputs.venv_path }}"
           if (-not (Test-Path "${{ inputs.venv_path }}")) {
-            Write-Output "Virtual environment not found at exact path, searching in tool cache..."
-            $TOOL_CACHE_VENV = "${{ runner.tool_cache }}\venv"
-            if (Test-Path $TOOL_CACHE_VENV) {
-              Write-Output "Found virtual environment in tool cache at: $TOOL_CACHE_VENV"
-              "VIRTUAL_ENV=$TOOL_CACHE_VENV" >> $env:GITHUB_ENV
-            } else {
-              Write-Error "Virtual environment not found at: ${{ inputs.venv_path }}"
-              Write-Output "Also checked tool cache at: $TOOL_CACHE_VENV"
+            Write-Output "Virtual environment not found at exact path, searching in common locations..."
+            # Check common virtual environment locations
+            $VENV_LOCATIONS = @(
+              "${{ inputs.venv_path }}"
+              "${{ runner.tool_cache }}\venv"
+              "${{ runner.tool_cache }}\Python\3.13.3\venv"
+              "${{ runner.tool_cache }}\Python\3.13.3\x64\venv"
+              "C:\hostedtoolcache\windows\Python\3.13.3\venv"
+              "C:\hostedtoolcache\windows\Python\3.13.3\x64\venv"
+            )
+
+            foreach ($venv_path in $VENV_LOCATIONS) {
+              Write-Output "Checking location: $venv_path"
+              if (Test-Path $venv_path) {
+                Write-Output "Found virtual environment at: $venv_path"
+                "VIRTUAL_ENV=$venv_path" >> $env:GITHUB_ENV
+                break
+              }
+            }
+
+            if (-not (Test-Path $env:VIRTUAL_ENV)) {
+              Write-Error "Virtual environment not found in any common locations"
+              Write-Output "Checked locations:"
+              $VENV_LOCATIONS | ForEach-Object { Write-Output $_ }
               Write-Output "Python version: $(python --version)"
               Write-Output "Python path: $(Get-Command python).Source"
               Write-Output "PATH: $env:Path"
