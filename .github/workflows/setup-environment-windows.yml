@@ -178,7 +178,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           chmod +x infra/packages/pip.sh
-          & (Join-Path $VENV_PATH "Scripts\activate.ps1")
+          & (Join-Path ${{ steps.venv-win.outputs.virtual_env }} "Scripts\activate.ps1")
           ./infra/packages/pip.sh
 
       - name: Install Lua packages
