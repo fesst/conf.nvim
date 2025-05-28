@@ -41,14 +41,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20.19.0"
-          cache: "npm"
-          cache-dependency-path: |
-            **/package-lock.json
-            **/npm-shrinkwrap.json
-            **/yarn.lock
-            !**/node_modules/**/package-lock.json
-            !**/node_modules/**/npm-shrinkwrap.json
-            !**/node_modules/**/yarn.lock
+          cache: false # Disable automatic cache since we don't have lock files
 
       - name: Cache Homebrew packages
         uses: actions/cache@v4
@@ -113,8 +106,10 @@ jobs:
 
       - name: Set up Rust
         if: inputs.setup_rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions-rs/toolchain@v1
         with:
+          profile: minimal
+          toolchain: stable
           components: rustfmt, clippy
 
       - name: Cache Rust dependencies
