@@ -47,7 +47,7 @@ Thank you for your interest in contributing to this Neovim configuration project
      # Using winget (default)
      .\infra\install.ps1
 
-     # Using Chocolatey
+     # Using Chocolatey (CI)
      .\infra\install.ps1 -UseChocolatey
      ```
 
