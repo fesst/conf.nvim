@@ -209,6 +209,22 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
+
+          # Install LuaRocks using Chocolatey
+          Write-Output "Installing LuaRocks..."
+          choco install luarocks -y
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install LuaRocks"
+          }
+
+          # Refresh environment variables to include LuaRocks
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+
+          # Verify LuaRocks installation
+          Write-Output "Verifying LuaRocks installation..."
+          luarocks --version
+
+          # Install Lua packages
           & "${{ github.workspace }}/infra/packages/luarocks.ps1"
 
       - name: Install Neovim configuration

@@ -31,7 +31,7 @@ Thank you for your interest in contributing to this Neovim configuration project
 1. Fork and clone the repository:
 
    ```bash
-   git clone https://github.com/YOUR_USERNAME/conf.nvim.git ~/.config/nvim
+   git clone https://github.com/fesst/conf.nvim.git ~/.config/nvim
    ```
 
 2. Install dependencies:

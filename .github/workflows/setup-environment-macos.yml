@@ -201,6 +201,18 @@ jobs:
             ./infra/packages/npm.sh
           }
 
+      - name: Cache Cargo packages
+        if: inputs.setup_rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock', 'infra/packages/cargo.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-
+
       - name: Install Rust packages
         if: inputs.setup_rust
         shell: bash

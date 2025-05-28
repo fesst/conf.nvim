@@ -288,9 +288,18 @@ jobs:
             # Run install script
             $env:CI = "true"
             Write-Output "Running install script..."
-            # Skip brew installation on Windows
-            Write-Output "Skipping brew installation on Windows"
-            bash infra/install.sh
+            # Install packages using Chocolatey
+            Write-Output "Installing packages using Chocolatey..."
+            choco install neovim tree-sitter -y
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to install packages using Chocolatey"
+            }
+            # Use PowerShell script with Chocolatey
+            Write-Output "Running PowerShell install script..."
+            & "${{ github.workspace }}/infra/install.ps1" -UseChocolatey
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to run PowerShell install script"
+            }
           } catch {
             Write-Error $_.Exception.Message
             Write-Output "Current directory: $(Get-Location)"
