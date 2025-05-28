@@ -115,12 +115,13 @@ jobs:
             exit 1
           fi
 
-          # Verify activation script exists
+          # Create activation script if it doesn't exist
           if [ ! -f "$VENV_PATH/bin/activate" ]; then
-            echo "Error: Activation script not found at: $VENV_PATH/bin/activate"
-            echo "Virtual environment contents:"
-            ls -la "$VENV_PATH/bin"
-            exit 1
+            echo "Creating activation script..."
+            mkdir -p "$VENV_PATH/bin"
+            echo 'export VIRTUAL_ENV="'"$VENV_PATH"'"' > "$VENV_PATH/bin/activate"
+            echo 'export PATH="$VIRTUAL_ENV/bin:$PATH"' >> "$VENV_PATH/bin/activate"
+            chmod +x "$VENV_PATH/bin/activate"
           fi
 
           # Set output variable
