@@ -125,7 +125,7 @@ jobs:
         run: |
           echo "=== Python venv Cache Info ==="
           echo "Cache path: ${{ steps.venv-mac.outputs.virtual_env }}"
-          echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', '**/requirements.txt') }}"
+          echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh') }}"
           echo "Cache size: $(du -sh ${{ steps.venv-mac.outputs.virtual_env }} 2>/dev/null || echo 'Not found')"
           echo "==========================="
 
@@ -134,7 +134,7 @@ jobs:
         id: python-venv-cache
         with:
           path: ${{ steps.venv-mac.outputs.virtual_env }}
-          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', '**/requirements.txt') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-venv-
 
