@@ -28,6 +28,10 @@ on:
         description: "Path to virtual environment"
         value: ${{ jobs.setup-environment.outputs.virtual_env }}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   setup-environment:
     name: Setup Environment

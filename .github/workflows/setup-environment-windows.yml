@@ -24,6 +24,10 @@ on:
         description: "Path to virtual environment"
         value: ${{ jobs.setup-environment.outputs.virtual_env }}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   setup-environment:
     name: Setup Environment
@@ -96,25 +100,79 @@ jobs:
           $ErrorActionPreference = 'Stop'
           Write-Output "Starting Visual Studio Build Tools installation process..."
 
-          # Download the specific version of VS Build Tools
-          $vsInstallerUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe"
-          $vsInstallerPath = "$env:TEMP\vs_buildtools.exe"
-
-          Write-Output "Downloading VS Build Tools installer from $vsInstallerUrl..."
-          Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath
-
-          # Install VS Build Tools with specific components
-          Write-Output "Running VS Build Tools installer with required components..."
-          Start-Process -FilePath $vsInstallerPath -ArgumentList "--quiet", "--wait", "--norestart", "--nocache", `
-            "--installPath", "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools", `
-            "--add", "Microsoft.VisualStudio.Workload.VCTools", `
-            "--includeRecommended" -NoNewWindow -Wait
-
-          if ($LASTEXITCODE -ne 0) {
-            throw "Failed to install Visual Studio Build Tools"
+          # Create a temporary directory for logs
+          $logDir = Join-Path $env:TEMP "vs_buildtools_logs"
+          if (-not (Test-Path $logDir)) {
+              New-Item -ItemType Directory -Path $logDir -Force | Out-Null
           }
+          $logFile = Join-Path $logDir "vs_buildtools_install.log"
 
-          Write-Output "Visual Studio Build Tools installation completed successfully"
+          try {
+              # Download the specific version of VS Build Tools
+              $vsInstallerUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe"
+              $vsInstallerPath = "$env:TEMP\vs_buildtools.exe"
+
+              Write-Output "Downloading VS Build Tools installer from $vsInstallerUrl..."
+              $downloadStart = Get-Date
+              Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath -UseBasicParsing
+              $downloadTime = (Get-Date) - $downloadStart
+              Write-Output "Download completed in $($downloadTime.TotalSeconds) seconds"
+
+              # Verify the downloaded file
+              if (-not (Test-Path $vsInstallerPath)) {
+                  throw "Failed to download VS Build Tools installer"
+              }
+              $fileSize = (Get-Item $vsInstallerPath).Length
+              Write-Output "Downloaded file size: $($fileSize / 1MB) MB"
+
+              # Install VS Build Tools with specific components
+              Write-Output "Running VS Build Tools installer with required components..."
+              $installStart = Get-Date
+
+              $process = Start-Process -FilePath $vsInstallerPath -ArgumentList "--quiet", "--wait", "--norestart", "--nocache", `
+                  "--installPath", "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools", `
+                  "--add", "Microsoft.VisualStudio.Workload.VCTools", `
+                  "--includeRecommended", `
+                  "--log", $logFile -NoNewWindow -Wait -PassThru
+
+              $installTime = (Get-Date) - $installStart
+              Write-Output "Installation completed in $($installTime.TotalSeconds) seconds"
+
+              if ($process.ExitCode -ne 0) {
+                  Write-Output "Installation failed with exit code: $($process.ExitCode)"
+                  Write-Output "Installation log contents:"
+                  Get-Content $logFile
+                  throw "Failed to install Visual Studio Build Tools"
+              }
+
+              # Verify installation
+              $vsPath = "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools"
+              if (-not (Test-Path $vsPath)) {
+                  throw "Visual Studio Build Tools installation directory not found"
+              }
+
+              $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
+              if (-not (Test-Path $vsDevCmd)) {
+                  throw "Visual Studio Build Tools command prompt not found"
+              }
+
+              Write-Output "Visual Studio Build Tools installation completed successfully"
+              Write-Output "Installation directory: $vsPath"
+              Write-Output "Command prompt location: $vsDevCmd"
+
+          } catch {
+              Write-Error "An error occurred during Visual Studio Build Tools installation: $_"
+              if (Test-Path $logFile) {
+                  Write-Output "Installation log contents:"
+                  Get-Content $logFile
+              }
+              throw
+          } finally {
+              # Clean up
+              if (Test-Path $vsInstallerPath) {
+                  Remove-Item $vsInstallerPath -Force
+              }
+          }
 
       - name: Install system packages
         shell: pwsh
