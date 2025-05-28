@@ -49,124 +49,167 @@ jobs:
           path: ~/.npm
           key: npm-${{ runner.os }}-${{ runner.arch }}
 
+      - name: Cache virtual environment
+        if: inputs.setup_python
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.tool_cache }}/venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
+
       - name: Set up Python
         if: inputs.setup_python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.12"
 
       - name: Set up Python virtual environment
         if: inputs.setup_python
         id: venv-win
         shell: pwsh
         run: |
-          Write-Host "Creating Python virtual environment..."
+          $ErrorActionPreference = 'Stop'
           $VENV_PATH = Join-Path $env:RUNNER_TOOL_CACHE "venv"
-          python -m venv "$VENV_PATH"
 
-          # Verify virtual environment creation
+          # Remove existing virtual environment if it exists
+          if (Test-Path $VENV_PATH) {
+            Write-Output "Removing existing virtual environment..."
+            Remove-Item -Recurse -Force $VENV_PATH
+            # Wait for filesystem to sync
+            Start-Sleep -Seconds 2
+            if (Test-Path $VENV_PATH) {
+              Write-Error "Failed to remove existing virtual environment"
+              exit 1
+            }
+          }
+
+          # Create virtual environment
+          Write-Output "Creating virtual environment at: $VENV_PATH"
+          python -m venv $VENV_PATH
+          if (-not $?) {
+            Write-Error "Failed to create virtual environment"
+            Write-Output "Python version: $(python --version)"
+            Write-Output "Python path: $(Get-Command python | Select-Object -ExpandProperty Source)"
+            exit 1
+          }
+
+          # Verify virtual environment was created
           if (-not (Test-Path $VENV_PATH)) {
-            throw "Failed to create virtual environment at: $VENV_PATH"
+            Write-Error "Virtual environment directory not found after creation"
+            exit 1
           }
 
           # Verify activation script exists
           $activateScript = Join-Path $VENV_PATH "Scripts\activate.ps1"
           if (-not (Test-Path $activateScript)) {
-            throw "Activation script not found at: $activateScript"
+            Write-Error "Activation script not found at: $activateScript"
+            Write-Output "Virtual environment contents:"
+            Get-ChildItem $VENV_PATH -Recurse
+            exit 1
           }
 
-          # Set workflow output
+          # Set output variable
           Write-Output "virtual_env=$VENV_PATH" >> $env:GITHUB_OUTPUT
 
-          Write-Host "Activating virtual environment..."
+          # Activate virtual environment
           & $activateScript
-          if ($LASTEXITCODE -ne 0) {
-            throw "Failed to activate virtual environment"
+          if (-not $?) {
+            Write-Error "Failed to activate virtual environment"
+            Write-Output "Python version: $(python --version)"
+            Write-Output "PATH: $env:Path"
+            exit 1
           }
 
-          Write-Host "Upgrading pip..."
+          # Upgrade pip
           python -m pip install --upgrade pip
-
-          Write-Host "Installing dependencies..."
-          if (Test-Path "requirements.txt") {
-            pip install -r requirements.txt
+          if (-not $?) {
+            Write-Error "Failed to upgrade pip"
+            exit 1
           }
 
-          Write-Host "Verifying installation..."
+          # Verify installation
+          Write-Output "Verifying Python installation..."
           python --version
           pip list
 
           # Verify output variable was set
-          Write-Host "Virtual environment path: $VENV_PATH"
-          Write-Host "Workflow output set to: $env:GITHUB_OUTPUT"
+          Write-Output "Virtual environment path: $VENV_PATH"
+          Write-Output "Output variable set: $env:GITHUB_OUTPUT"
 
-      - name: Set up Rust
-        if: inputs.setup_rust
-        shell: pwsh
-        run: |
-          Write-Host "Installing Rust..."
-          Invoke-WebRequest -Uri https://win.rustup.rs -OutFile rustup-init.exe
-          .\rustup-init.exe -y --default-toolchain stable
-          $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
-
-          Write-Host "Installing Rust components..."
-          rustup component add rustfmt clippy
-
-          Write-Host "Verifying installation..."
-          rustc --version
-          cargo --version
-          rustfmt --version
-          clippy-driver --version
-
-      - name: Cache Rust dependencies
-        if: inputs.setup_rust
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cargo-
-
-      - name: Set up Lua
-        if: inputs.setup_lua
-        shell: pwsh
-        run: |
-          Write-Host "Installing Lua..."
-          choco install lua -y
-          choco install luarocks -y
-
-          # Refresh environment variables
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-
-          Write-Host "Verifying Lua installation..."
-          lua5.1 -v
-          luarocks --version
-
-      - name: Cache LuaRocks packages
-        if: inputs.setup_lua
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/luarocks
-            ~/.luarocks
-            ~/.local/share/luarocks
-          key: ${{ runner.os }}-${{ runner.arch }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-luarocks-
-
-      - name: Install system packages
+      - name: Install Windows packages
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          chmod +x infra/packages/brew.sh
-          ./infra/packages/brew.sh
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Failed to install system packages. Retrying..."
-            choco upgrade all -y
-            ./infra/packages/brew.sh
+
+          # Install Chocolatey if not present
+          if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+            Write-Output "Installing Chocolatey..."
+            Set-ExecutionPolicy Bypass -Scope Process -Force
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+            Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+          }
+
+          # Import Chocolatey profile module
+          Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
+          refreshenv
+
+          if ($env:CI -eq "true") {
+            # Install Neovim and tree-sitter first as they're required for tests
+            Write-Output "Installing Neovim and tree-sitter..."
+            choco install neovim tree-sitter -y
+            refreshenv
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
+
+            # Verify Neovim installation
+            $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+            if (-not $nvimPath) {
+              Write-Error "Neovim not found in PATH after installation"
+              Write-Output "Current PATH: $env:Path"
+              exit 1
+            }
+            Write-Output "Neovim found at: $($nvimPath.Source)"
+
+            # Verify tree-sitter installation
+            $treeSitterPath = Get-Command tree-sitter -ErrorAction SilentlyContinue
+            if (-not $treeSitterPath) {
+              Write-Error "tree-sitter not found in PATH after installation"
+              Write-Output "Current PATH: $env:Path"
+              exit 1
+            }
+            Write-Output "tree-sitter found at: $($treeSitterPath.Source)"
+          }
+
+          if (${{ inputs.setup_python }}) {
+            choco install python312 -y
+            refreshenv
+          }
+
+          if (${{ inputs.setup_node }}) {
+            choco install nodejs -y
+            refreshenv
+          }
+
+          if (${{ inputs.setup_rust }}) {
+            choco install rust -y
+            refreshenv
+            Write-Output "Installing stylua..."
+            cargo install stylua
+            Write-Output "Verifying stylua installation..."
+            $styluaPath = Get-Command stylua -ErrorAction SilentlyContinue
+            if (-not $styluaPath) {
+              Write-Error "stylua not found in PATH after installation"
+              Write-Output "Current PATH: $env:Path"
+              exit 1
+            }
+            Write-Output "stylua found at: $($styluaPath.Source)"
+          }
+
+          refreshenv
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          if (${{ inputs.setup_rust }}) {
+            $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
           }
 
       - name: Install Node.js packages
@@ -174,12 +217,11 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          chmod +x infra/packages/npm.sh
-          ./infra/packages/npm.sh
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Failed to install Node.js packages. Retrying..."
+          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "infra/packages/npm.ps1"
+          & $scriptPath || {
+            Write-Error "Failed to install Node.js packages. Retrying..."
             npm cache clean --force
-            ./infra/packages/npm.sh
+            & $scriptPath
           }
 
       - name: Install Rust packages
@@ -187,12 +229,11 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          chmod +x infra/packages/cargo.sh
-          ./infra/packages/cargo.sh
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Failed to install Rust packages. Retrying..."
+          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "infra/packages/cargo.ps1"
+          & $scriptPath || {
+            Write-Error "Failed to install Rust packages. Retrying..."
             cargo clean
-            ./infra/packages/cargo.sh
+            & $scriptPath
           }
 
       - name: Install Python packages
@@ -200,22 +241,11 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $VENV_PATH = Join-Path $env:RUNNER_TOOL_CACHE "venv"
-          $activateScript = Join-Path $VENV_PATH "Scripts\activate.ps1"
-
-          # Activate virtual environment
-          & $activateScript
-          if ($LASTEXITCODE -ne 0) {
-            throw "Failed to activate virtual environment"
-          }
-
-          # Install packages
-          chmod +x infra/packages/pip.sh
-          ./infra/packages/pip.sh
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Failed to install Python packages. Retrying..."
+          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "infra/packages/pip.ps1"
+          & $scriptPath || {
+            Write-Error "Failed to install Python packages. Retrying..."
             pip cache purge
-            ./infra/packages/pip.sh
+            & $scriptPath
           }
 
       - name: Install Lua packages
@@ -223,22 +253,27 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          chmod +x infra/packages/luarocks.sh
-          ./infra/packages/luarocks.sh
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Failed to install Lua packages. Retrying..."
+          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "infra/packages/luarocks.ps1"
+          & $scriptPath || {
+            Write-Error "Failed to install Lua packages. Retrying..."
             luarocks config --local lua_version 5.4
-            ./infra/packages/luarocks.sh
+            & $scriptPath
           }
 
       - name: Install Neovim configuration
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          chmod +x infra/packages/nvim.sh
-          ./infra/packages/nvim.sh
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "Failed to install Neovim configuration. Retrying..."
+          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "infra/packages/nvim.ps1"
+          & $scriptPath || {
+            Write-Error "Failed to install Neovim configuration. Retrying..."
             Remove-Item -Recurse -Force ~/.local/share/nvim
-            ./infra/packages/nvim.sh
+            & $scriptPath
           }
+
+      - name: Full environment setup
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "infra/ci-setup-windows.ps1"
+          & $scriptPath

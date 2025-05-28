@@ -34,82 +34,63 @@ jobs:
         shell: bash
         if: inputs.platform != 'windows'
         run: |
-          echo "Checking virtual environment at: ${{ inputs.venv_path }}"
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          ls -la
-
-          # Try to find the virtual environment if the exact path doesn't exist
+          set -e
+          echo "Checking virtual environment path: ${{ inputs.venv_path }}"
           if [ ! -d "${{ inputs.venv_path }}" ]; then
-            echo "Virtual environment not found at exact path, searching in common locations..."
-            # Check common virtual environment locations
-            VENV_LOCATIONS=(
-              "${{ inputs.venv_path }}"
-              "$RUNNER_TOOL_CACHE/venv"
-              "$RUNNER_TOOL_CACHE/Python/3.13.3/venv"
-              "$RUNNER_TOOL_CACHE/Python/3.13.3/x64/venv"
-            )
+            echo "Error: Virtual environment not found at: ${{ inputs.venv_path }}"
+            echo "Current directory: $(pwd)"
+            echo "Directory contents:"
+            ls -la
+            exit 1
+          fi
 
-            for venv_path in "${VENV_LOCATIONS[@]}"; do
-              echo "Checking location: $venv_path"
-              if [ -d "$venv_path" ]; then
-                echo "Found virtual environment at: $venv_path"
-                echo "virtual_env=$venv_path" >> $GITHUB_OUTPUT
-                break
-              fi
-            done
+          # Verify activation script exists
+          if [ ! -f "${{ inputs.venv_path }}/bin/activate" ]; then
+            echo "Error: Activation script not found at: ${{ inputs.venv_path }}/bin/activate"
+            echo "Virtual environment contents:"
+            ls -la "${{ inputs.venv_path }}/bin"
+            exit 1
+          fi
 
-            if [ ! -d "${{ steps.venv-mac.outputs.virtual_env }}" ]; then
-              echo "Error: Virtual environment not found in any common locations"
-              echo "Checked locations:"
-              printf '%s\n' "${VENV_LOCATIONS[@]}"
-              echo "Python version: $(python3 --version)"
-              echo "Python path: $(which python3)"
-              echo "PATH: $PATH"
-              exit 1
-            fi
-          else
-            echo "Virtual environment found at: ${{ inputs.venv_path }}"
-            echo "virtual_env=${{ inputs.venv_path }}" >> $GITHUB_OUTPUT
+          # Activate virtual environment
+          source "${{ inputs.venv_path }}/bin/activate"
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to activate virtual environment"
+            echo "Python version: $(python --version)"
+            echo "PATH: $PATH"
+            exit 1
           fi
 
       - name: Verify virtual environment path (Windows)
         shell: pwsh
         if: inputs.platform == 'windows'
-        id: venv-win
         run: |
-          Write-Output "Checking virtual environment at: ${{ inputs.venv_path }}"
-          if (-not (Test-Path "${{ inputs.venv_path }}")) {
-            Write-Output "Virtual environment not found at exact path, searching in common locations..."
-            # Check common virtual environment locations
-            $VENV_LOCATIONS = @(
-              "${{ inputs.venv_path }}"
-              "$RUNNER_TOOL_CACHE\venv"
-              "$RUNNER_TOOL_CACHE\Python\3.13.3\venv"
-              "$RUNNER_TOOL_CACHE\Python\3.13.3\x64\venv"
-            )
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Checking virtual environment path: ${{ inputs.venv_path }}"
+          if (-not (Test-Path ${{ inputs.venv_path }})) {
+            Write-Error "Virtual environment not found at: ${{ inputs.venv_path }}"
+            Write-Output "Current directory: $(Get-Location)"
+            Write-Output "Directory contents:"
+            Get-ChildItem
+            exit 1
+          }
 
-            foreach ($venv_path in $VENV_LOCATIONS) {
-              Write-Output "Checking location: $venv_path"
-              if (Test-Path $venv_path) {
-                Write-Output "Found virtual environment at: $venv_path"
-                "virtual_env=$venv_path" >> $env:GITHUB_OUTPUT
-                break
-              }
-            }
+          # Verify activation script exists
+          $activateScript = Join-Path ${{ inputs.venv_path }} "Scripts\activate.ps1"
+          if (-not (Test-Path $activateScript)) {
+            Write-Error "Activation script not found at: $activateScript"
+            Write-Output "Virtual environment contents:"
+            Get-ChildItem ${{ inputs.venv_path }} -Recurse
+            exit 1
+          }
 
-            if (-not (Test-Path "${{ steps.venv-win.outputs.virtual_env }}")) {
-              Write-Error "Virtual environment not found in any common locations"
-              Write-Output "Checked locations:"
-              $VENV_LOCATIONS | ForEach-Object { Write-Output $_ }
-              Write-Output "Python version: $(python --version)"
-              Write-Output "Python path: $(Get-Command python).Source"
-              Write-Output "PATH: $env:Path"
-              exit 1
-            }
-          } else {
-            Write-Output "Virtual environment found at: ${{ inputs.venv_path }}"
-            "virtual_env=${{ inputs.venv_path }}" >> $env:GITHUB_OUTPUT
+          # Activate virtual environment
+          & $activateScript
+          if (-not $?) {
+            Write-Error "Failed to activate virtual environment"
+            Write-Output "Python version: $(python --version)"
+            Write-Output "PATH: $env:Path"
+            exit 1
           }
 
       - name: Log Python venv cache info
