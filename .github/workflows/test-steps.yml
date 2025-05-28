@@ -56,20 +56,60 @@ jobs:
         if: inputs.platform == 'windows'
         run: |
           Write-Output "Checking virtual environment at: ${{ inputs.venv_path }}"
-          if (-not (Test-Path "${{ inputs.venv_path }}")) { throw "Virtual environment not found at: ${{ inputs.venv_path }}" }
+          if (-not (Test-Path "${{ inputs.venv_path }}")) {
+            Write-Error "Virtual environment not found at: ${{ inputs.venv_path }}"
+            Write-Output "Python version: $(python --version)"
+            Write-Output "Python path: $(Get-Command python).Source"
+            Write-Output "PATH: $env:Path"
+            exit 1
+          }
           Write-Output "Virtual environment found at: ${{ inputs.venv_path }}"
+
+      - name: Log Python venv cache info
+        shell: bash
+        run: |
+          echo "=== Python venv Cache Info ==="
+          echo "Cache path: ${{ inputs.venv_path }}"
+          echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', '**/requirements.txt') }}"
+          echo "Cache size: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
+          echo "==========================="
 
       - name: Restore Python venv from cache
         uses: actions/cache@v4
+        id: python-venv-cache
         with:
           path: ${{ inputs.venv_path }}
-          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1', '**/requirements.txt') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', '**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-venv-
+
+      - name: Log Python venv cache result
+        shell: bash
+        run: |
+          echo "=== Python venv Cache Result ==="
+          echo "Cache hit: ${{ steps.python-venv-cache.outputs.cache-hit }}"
+          echo "Cache size after restore: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
+          echo "=============================="
+
+      - name: Log Homebrew cache info
+        if: inputs.platform == 'macos' && inputs.use_cache
+        shell: bash
+        run: |
+          echo "=== Homebrew Cache Info ==="
+          echo "Cache paths:"
+          echo "- ~/Library/Caches/Homebrew"
+          echo "- /usr/local/Homebrew"
+          echo "- /opt/homebrew"
+          echo "- ~/Library/Logs/Homebrew"
+          echo "- /opt/homebrew/Library/Caches"
+          echo "- /opt/homebrew/Library/Logs"
+          echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}"
+          echo "========================="
 
       - name: Cache Homebrew packages
         if: inputs.platform == 'macos' && inputs.use_cache
         uses: actions/cache@v4
+        id: homebrew-cache
         with:
           path: |
             ~/Library/Caches/Homebrew
@@ -82,9 +122,32 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-homebrew-
 
+      - name: Log Homebrew cache result
+        if: inputs.platform == 'macos' && inputs.use_cache
+        shell: bash
+        run: |
+          echo "=== Homebrew Cache Result ==="
+          echo "Cache hit: ${{ steps.homebrew-cache.outputs.cache-hit }}"
+          echo "Cache sizes:"
+          du -sh ~/Library/Caches/Homebrew /usr/local/Homebrew /opt/homebrew 2>/dev/null || echo "Not found"
+          echo "==========================="
+
+      - name: Log LuaRocks cache info
+        if: inputs.use_cache
+        shell: bash
+        run: |
+          echo "=== LuaRocks Cache Info ==="
+          echo "Cache paths:"
+          echo "- ${{ runner.os == 'Windows' && format('{0}\\.cache\\luarocks', env.USERPROFILE) || '~/.cache/luarocks' }}"
+          echo "- ${{ runner.os == 'Windows' && format('{0}\\.luarocks', env.USERPROFILE) || '~/.luarocks' }}"
+          echo "- ${{ runner.os == 'Windows' && format('{0}\\.local\\share\\luarocks', env.USERPROFILE) || '~/.local/share/luarocks' }}"
+          echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}"
+          echo "========================="
+
       - name: Cache LuaRocks packages
         if: inputs.use_cache
         uses: actions/cache@v4
+        id: luarocks-cache
         with:
           path: |
             ${{ runner.os == 'Windows' && format('{0}\\.cache\\luarocks', env.USERPROFILE) || '~/.cache/luarocks' }}
@@ -94,9 +157,38 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-luarocks-
 
+      - name: Log LuaRocks cache result
+        if: inputs.use_cache
+        shell: bash
+        run: |
+          echo "=== LuaRocks Cache Result ==="
+          echo "Cache hit: ${{ steps.luarocks-cache.outputs.cache-hit }}"
+          echo "Cache sizes:"
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            du -sh "${{ format('{0}\\.cache\\luarocks', env.USERPROFILE) }}" "${{ format('{0}\\.luarocks', env.USERPROFILE) }}" "${{ format('{0}\\.local\\share\\luarocks', env.USERPROFILE) }}" 2>/dev/null || echo "Not found"
+          else
+            du -sh ~/.cache/luarocks ~/.luarocks ~/.local/share/luarocks 2>/dev/null || echo "Not found"
+          fi
+          echo "==========================="
+
+      - name: Log Neovim plugins cache info
+        if: inputs.use_cache
+        shell: bash
+        run: |
+          echo "=== Neovim Plugins Cache Info ==="
+          echo "Cache paths:"
+          echo "- ${{ runner.os == 'Windows' && format('{0}\\.local\\share\\nvim', env.USERPROFILE) || '~/.local/share/nvim' }}"
+          echo "- ${{ runner.os == 'Windows' && format('{0}\\.config\\nvim\\plugin', env.USERPROFILE) || '~/.config/nvim/plugin' }}"
+          echo "- ${{ runner.os == 'Windows' && format('{0}\\.config\\nvim\\lazy', env.USERPROFILE) || '~/.config/nvim/lazy' }}"
+          echo "- ${{ runner.os == 'Windows' && format('{0}\\.local\\state\\nvim', env.USERPROFILE) || '~/.local/state/nvim' }}"
+          echo "- ${{ runner.os == 'Windows' && format('{0}\\.cache\\nvim', env.USERPROFILE) || '~/.cache/nvim' }}"
+          echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-nvim-plugins-${{ hashFiles('lua/**/*.lua', 'after/plugin/**/*.lua', 'infra/packages/nvim.sh') }}"
+          echo "=============================="
+
       - name: Cache Neovim plugins
         if: inputs.use_cache
         uses: actions/cache@v4
+        id: nvim-plugins-cache
         with:
           path: |
             ${{ runner.os == 'Windows' && format('{0}\\.local\\share\\nvim', env.USERPROFILE) || '~/.local/share/nvim' }}
@@ -105,8 +197,20 @@ jobs:
             ${{ runner.os == 'Windows' && format('{0}\\.local\\state\\nvim', env.USERPROFILE) || '~/.local/state/nvim' }}
             ${{ runner.os == 'Windows' && format('{0}\\.cache\\nvim', env.USERPROFILE) || '~/.cache/nvim' }}
           key: ${{ runner.os }}-${{ runner.arch }}-nvim-plugins-${{ hashFiles('lua/**/*.lua', 'after/plugin/**/*.lua', 'infra/packages/nvim.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-nvim-plugins-
+
+      - name: Log Neovim plugins cache result
+        if: inputs.use_cache
+        shell: bash
+        run: |
+          echo "=== Neovim Plugins Cache Result ==="
+          echo "Cache hit: ${{ steps.nvim-plugins-cache.outputs.cache-hit }}"
+          echo "Cache sizes:"
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            du -sh "${{ format('{0}\\.local\\share\\nvim', env.USERPROFILE) }}" "${{ format('{0}\\.config\\nvim\\plugin', env.USERPROFILE) }}" "${{ format('{0}\\.config\\nvim\\lazy', env.USERPROFILE) }}" 2>/dev/null || echo "Not found"
+          else
+            du -sh ~/.local/share/nvim ~/.config/nvim/plugin ~/.config/nvim/lazy 2>/dev/null || echo "Not found"
+          fi
+          echo "================================"
 
       - name: Install minimal dependencies (Windows)
         if: inputs.install_deps && inputs.platform == 'windows'
@@ -172,7 +276,7 @@ jobs:
             # Run install script
             $env:CI = "true"
             Write-Output "Running install script..."
-            ./infra/install.sh
+            bash infra/install.sh
           } catch {
             Write-Error $_.Exception.Message
             Write-Output "Current directory: $(Get-Location)"
@@ -233,7 +337,7 @@ jobs:
           fi
 
           export CI=true
-          ./infra/install.sh
+          bash infra/install.sh
 
       - name: Run Lua tests (Windows)
         if: inputs.platform == 'windows'
@@ -360,7 +464,7 @@ jobs:
           $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin;$env:USERPROFILE\.cargo\bin"
 
           # Run tests and capture output
-          $testOutput = & ./infra/nvim_sanity_test.sh 2>&1
+          $testOutput = & bash infra/nvim_sanity_test.sh 2>&1
           $test_exit_code = $LASTEXITCODE
 
           # Display test results
@@ -377,7 +481,7 @@ jobs:
           source "${{ inputs.venv_path }}/bin/activate"
 
           # Run tests and capture output
-          test_output=$(./infra/nvim_sanity_test.sh 2>&1)
+          test_output=$(bash infra/nvim_sanity_test.sh 2>&1)
           test_exit_code=$?
 
           # Display test results
