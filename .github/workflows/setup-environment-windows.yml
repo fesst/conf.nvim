@@ -135,13 +135,24 @@ jobs:
                   New-Item -ItemType Directory -Path $installerTempDir -Force | Out-Null
               }
 
+              # Use a path that doesn't require elevated permissions
+              $vsInstallPath = Join-Path $env:USERPROFILE "vs_buildtools"
+              Write-Output "Using installation path: $vsInstallPath"
+
+              # Create installation directory if it doesn't exist
+              if (-not (Test-Path $vsInstallPath)) {
+                  Write-Output "Creating installation directory..."
+                  New-Item -ItemType Directory -Path $vsInstallPath -Force | Out-Null
+              }
+
               # Run the installer with explicit paths
+              Write-Output "Starting installation process..."
               $process = Start-Process -FilePath $vsInstallerPath -ArgumentList @(
                   "--quiet",
                   "--wait",
                   "--norestart",
                   "--nocache",
-                  "--installPath", "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools",
+                  "--installPath", $vsInstallPath,
                   "--add", "Microsoft.VisualStudio.Workload.VCTools",
                   "--includeRecommended"
               ) -Wait -PassThru
@@ -161,13 +172,12 @@ jobs:
 
               # Verify installation with detailed checks
               Write-Output "Verifying installation..."
-              $vsPath = "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools"
 
               # Check if the directory exists
-              if (-not (Test-Path $vsPath)) {
-                  Write-Output "Installation directory not found at: $vsPath"
+              if (-not (Test-Path $vsInstallPath)) {
+                  Write-Output "Installation directory not found at: $vsInstallPath"
                   Write-Output "Checking parent directory..."
-                  $parentDir = Split-Path $vsPath -Parent
+                  $parentDir = Split-Path $vsInstallPath -Parent
                   if (Test-Path $parentDir) {
                       Write-Output "Parent directory exists. Contents:"
                       Get-ChildItem $parentDir
@@ -185,7 +195,7 @@ jobs:
               )
 
               foreach ($path in $requiredPaths) {
-                  $fullPath = Join-Path $vsPath $path
+                  $fullPath = Join-Path $vsInstallPath $path
                   if (-not (Test-Path $fullPath)) {
                       Write-Output "Required file not found: $fullPath"
                       Write-Output "Checking parent directory contents:"
@@ -199,7 +209,7 @@ jobs:
               }
 
               # Check for Visual Studio installer
-              $vsInstallerPath = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
+              $vsInstallerPath = Join-Path $vsInstallPath "Installer\vs_installer.exe"
               if (-not (Test-Path $vsInstallerPath)) {
                   Write-Output "Visual Studio Installer not found at: $vsInstallerPath"
               } else {
@@ -214,6 +224,9 @@ jobs:
               }
 
               Write-Output "Visual Studio Build Tools installation verification completed"
+
+              # Add the installation path to the environment
+              $env:Path = "$vsInstallPath\Common7\Tools;$vsInstallPath\VC\Auxiliary\Build;$vsInstallPath\MSBuild\Current\Bin;$env:Path"
 
           } catch {
               Write-Error "An error occurred during Visual Studio Build Tools installation: $_"
