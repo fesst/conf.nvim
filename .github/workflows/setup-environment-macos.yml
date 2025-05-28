@@ -187,7 +187,7 @@ jobs:
         run: |
           set -e
           chmod +x infra/packages/pip.sh
-          source "$GITHUB_WORKSPACE/.venv/bin/activate"
+          source "${{ runner.tool_cache }}/venv/bin/activate"
           ./infra/packages/pip.sh || {
             echo "Failed to install Python packages. Retrying..."
             pip cache purge

@@ -117,8 +117,11 @@ jobs:
           choco install lua -y
           choco install luarocks -y
 
+          # Refresh environment variables
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
           Write-Host "Verifying Lua installation..."
-          lua -v
+          lua5.1 -v
           luarocks --version
 
       - name: Cache LuaRocks packages
