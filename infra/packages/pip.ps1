@@ -18,6 +18,6 @@ foreach ($package in $PIP_PACKAGES) {
     Write-Host "Installing $package..."
     $output = pip install $package --no-cache-dir --verbose 2>&1
     if ($LASTEXITCODE -ne 0) {
-        throw "Failed to install $package: $output"
+        throw "Failed to install ${package}: ${output}"
     }
 }

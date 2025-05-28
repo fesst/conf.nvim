@@ -226,8 +226,35 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          chmod +x infra/packages/nvim.sh
-          ./infra/packages/nvim.sh
+          Write-Output "Installing Neovim configuration..."
+
+          # Verify Neovim is in PATH
+          if (-not (Get-Command nvim -ErrorAction SilentlyContinue)) {
+            throw "Neovim not found in PATH. Current PATH: ${env:Path}"
+          }
+
+          # Create Neovim directories if they don't exist
+          $nvimDirs = @(
+            "${env:USERPROFILE}\.config\nvim",
+            "${env:USERPROFILE}\.local\share\nvim",
+            "${env:USERPROFILE}\.cache\nvim"
+          )
+
+          foreach ($dir in $nvimDirs) {
+            if (-not (Test-Path $dir)) {
+              New-Item -ItemType Directory -Path $dir -Force | Out-Null
+            }
+          }
+
+          # Copy configuration files
+          Copy-Item -Path "${env:GITHUB_WORKSPACE}\*" -Destination "${env:USERPROFILE}\.config\nvim" -Recurse -Force
+
+          # Verify installation
+          if (-not (Test-Path "${env:USERPROFILE}\.config\nvim\init.lua")) {
+            throw "Failed to copy Neovim configuration files"
+          }
+
+          Write-Output "Neovim configuration installed successfully"
 
       - name: Full environment setup
         shell: pwsh

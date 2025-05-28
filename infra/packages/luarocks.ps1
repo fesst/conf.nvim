@@ -23,19 +23,19 @@ $env:LUAROCKS_PACKAGES = $LUAROCKS_PACKAGES
 
 # Install packages
 foreach ($package in $LUAROCKS_PACKAGES) {
-    Write-Host "Installing $package..."
+    Write-Host "Installing ${package}..."
     try {
         $output = luarocks install $package --verbose 2>&1
         if ($LASTEXITCODE -ne 0) {
-            Write-Warning "Failed to install $package, attempting to install without compilation..."
+            Write-Warning "Failed to install ${package}, attempting to install without compilation..."
             $output = luarocks install $package --verbose --no-doc 2>&1
             if ($LASTEXITCODE -ne 0) {
-                throw "Failed to install $package: $output"
+                throw "Failed to install ${package}: ${output}"
             }
         }
     }
     catch {
-        Write-Warning "Failed to install $package: $_"
+        Write-Warning "Failed to install ${package}: ${_}"
         continue
     }
 }

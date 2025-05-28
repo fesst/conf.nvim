@@ -17,37 +17,57 @@ refreshenv
 Write-Host "Installing Neovim and tree-sitter..."
 $output = choco install neovim tree-sitter -y 2>&1
 if ($LASTEXITCODE -ne 0) {
-    throw "Failed to install Neovim and tree-sitter: $output"
+    throw "Failed to install Neovim and tree-sitter: ${output}"
 }
 refreshenv
 
 # Add Neovim to PATH
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-$env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
+$env:Path = "${env:Path};C:\tools\neovim\nvim-win64\bin"
+
+# Verify Neovim installation
+if (-not (Get-Command nvim -ErrorAction SilentlyContinue)) {
+    throw "Neovim not found in PATH after installation. Current PATH: ${env:Path}"
+}
 
 # Install Python
 Write-Host "Installing Python..."
 $output = choco install python312 -y 2>&1
 if ($LASTEXITCODE -ne 0) {
-    throw "Failed to install Python: $output"
+    throw "Failed to install Python: ${output}"
 }
 refreshenv
+
+# Verify Python installation
+if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
+    throw "Python not found in PATH after installation. Current PATH: ${env:Path}"
+}
 
 # Install Node.js
 Write-Host "Installing Node.js..."
 $output = choco install nodejs -y 2>&1
 if ($LASTEXITCODE -ne 0) {
-    throw "Failed to install Node.js: $output"
+    throw "Failed to install Node.js: ${output}"
 }
 refreshenv
+
+# Verify Node.js installation
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+    throw "Node.js not found in PATH after installation. Current PATH: ${env:Path}"
+}
 
 # Install Rust
 Write-Host "Installing Rust..."
 $output = choco install rust -y 2>&1
 if ($LASTEXITCODE -ne 0) {
-    throw "Failed to install Rust: $output"
+    throw "Failed to install Rust: ${output}"
 }
 refreshenv
+
+# Verify Rust installation
+if (-not (Get-Command rustc -ErrorAction SilentlyContinue)) {
+    throw "Rust not found in PATH after installation. Current PATH: ${env:Path}"
+}
 
 # Add Cargo to PATH before installing stylua
 $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
@@ -68,3 +88,5 @@ if (-not (Get-Command stylua -ErrorAction SilentlyContinue)) {
 }
 
 Write-Host "stylua installed successfully at $(Get-Command stylua).Source"
+
+Write-Host "Environment setup completed successfully"
