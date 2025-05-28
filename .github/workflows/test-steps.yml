@@ -30,6 +30,32 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Log Python venv cache info
+        shell: bash
+        run: |
+          echo "=== Python venv Cache Info ==="
+          echo "Cache path: ${{ inputs.venv_path }}"
+          echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh') }}"
+          echo "Cache size: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
+          echo "==========================="
+
+      - name: Restore Python venv from cache
+        uses: actions/cache@v4
+        id: python-venv-cache
+        with:
+          path: ${{ inputs.venv_path }}
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-venv-
+
+      - name: Log Python venv cache result
+        shell: bash
+        run: |
+          echo "=== Python venv Cache Result ==="
+          echo "Cache hit: ${{ steps.python-venv-cache.outputs.cache-hit }}"
+          echo "Cache size: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
+          echo "=============================="
+
       - name: Verify virtual environment path
         shell: bash
         if: inputs.platform != 'windows'
@@ -92,32 +118,6 @@ jobs:
             Write-Output "PATH: $env:Path"
             exit 1
           }
-
-      - name: Log Python venv cache info
-        shell: bash
-        run: |
-          echo "=== Python venv Cache Info ==="
-          echo "Cache path: ${{ inputs.venv_path }}"
-          echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh') }}"
-          echo "Cache size: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
-          echo "==========================="
-
-      - name: Restore Python venv from cache
-        uses: actions/cache@v4
-        id: python-venv-cache
-        with:
-          path: ${{ inputs.venv_path }}
-          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-venv-
-
-      - name: Log Python venv cache result
-        shell: bash
-        run: |
-          echo "=== Python venv Cache Result ==="
-          echo "Cache hit: ${{ steps.python-venv-cache.outputs.cache-hit }}"
-          echo "Cache size: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
-          echo "=============================="
 
       - name: Log Homebrew cache info
         if: inputs.platform == 'macos' && inputs.use_cache
