@@ -90,6 +90,9 @@ jobs:
             $env:Path = "$nvimPath;$env:Path"
           }
 
+          # Set up Visual Studio environment
+          & "${{ github.workspace }}/infra/packages/vs-setup.ps1"
+
           # Refresh environment variables
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 
@@ -97,7 +100,6 @@ jobs:
           Write-Output "Current PATH: $env:Path"
           nvim --version
           tree-sitter --version
-          cl.exe /?
 
       - name: Cache virtual environment
         if: inputs.setup_python

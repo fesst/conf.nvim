@@ -10,9 +10,9 @@ $env:CARGO_PACKAGES = $CARGO_PACKAGES
 
 # Install packages
 foreach ($package in $CARGO_PACKAGES) {
-    Write-Output "Installing $package..."
-    cargo install $package
+    Write-Host "Installing $package..."
+    $output = cargo install $package --verbose 2>&1
     if ($LASTEXITCODE -ne 0) {
-        throw "Failed to install $package"
+        throw "Failed to install $package: $output"
     }
 }

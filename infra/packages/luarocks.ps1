@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 
 # Install Visual Studio Build Tools if not present
 if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue)) {
-    Write-Output "Installing Visual Studio Build Tools..."
+    Write-Host "Installing Visual Studio Build Tools..."
     choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" -y
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to install Visual Studio Build Tools"
@@ -23,12 +23,15 @@ $env:LUAROCKS_PACKAGES = $LUAROCKS_PACKAGES
 
 # Install packages
 foreach ($package in $LUAROCKS_PACKAGES) {
-    Write-Output "Installing $package..."
+    Write-Host "Installing $package..."
     try {
-        luarocks install $package --verbose
+        $output = luarocks install $package --verbose 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Failed to install $package, attempting to install without compilation..."
-            luarocks install $package --verbose --no-doc
+            $output = luarocks install $package --verbose --no-doc 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                throw "Failed to install $package: $output"
+            }
         }
     }
     catch {

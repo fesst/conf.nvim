@@ -16,4 +16,13 @@ if (-not $env:Path.Contains($nvimPath)) {
 
 # Verify installation
 Write-Host "Verifying Neovim installation..."
-nvim --version
+try {
+    $output = nvim --version 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to verify Neovim installation: $output"
+    }
+    Write-Host "Neovim version: $($output[0])"
+} catch {
+    Write-Error "Failed to verify Neovim installation: $_"
+    exit 1
+}

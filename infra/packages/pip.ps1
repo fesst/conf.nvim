@@ -15,9 +15,9 @@ $env:PIP_PACKAGES = $PIP_PACKAGES
 
 # Install packages
 foreach ($package in $PIP_PACKAGES) {
-    Write-Output "Installing $package..."
-    pip install $package
+    Write-Host "Installing $package..."
+    $output = pip install $package --no-cache-dir --verbose 2>&1
     if ($LASTEXITCODE -ne 0) {
-        throw "Failed to install $package"
+        throw "Failed to install $package: $output"
     }
 }
