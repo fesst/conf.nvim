@@ -200,5 +200,4 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          chmod +x infra/ci-setup-windows.sh
-          ./infra/ci-setup-windows.sh
+          & "${{ github.workspace }}/infra/ci-setup-windows.ps1"
