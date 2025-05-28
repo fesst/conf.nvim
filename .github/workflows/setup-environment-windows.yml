@@ -43,6 +43,7 @@ jobs:
             C:\ProgramData\chocolatey\lib
             C:\ProgramData\chocolatey\bin
             C:\tools
+            C:\Users\runneradmin\AppData\Local\Temp\chocolatey
           key: ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-choco-
@@ -98,6 +99,12 @@ jobs:
             if (-not (Test-ChocolateyPackage $package.Name)) {
               Write-Output "Installing $($package.Name)..."
               if ($package.Name -eq "visualstudio2019buildtools") {
+                # Check if VS Build Tools are already installed
+                $vsPath = "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools"
+                if (Test-Path $vsPath) {
+                  Write-Output "Visual Studio Build Tools already installed at $vsPath"
+                  continue
+                }
                 choco install $package.Name --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" -y
               } else {
                 choco install $package.Name -y
