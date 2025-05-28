@@ -8,7 +8,7 @@ on:
     branches: ["master"]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: pr-windows-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
