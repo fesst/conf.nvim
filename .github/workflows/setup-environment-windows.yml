@@ -94,17 +94,17 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          Write-Output "Installing Visual Studio Build Tools..."
+          Write-Output "Starting Visual Studio Build Tools installation process..."
 
           # Download the specific version of VS Build Tools
           $vsInstallerUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe"
           $vsInstallerPath = "$env:TEMP\vs_buildtools.exe"
 
-          Write-Output "Downloading VS Build Tools installer..."
+          Write-Output "Downloading VS Build Tools installer from $vsInstallerUrl..."
           Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath
 
           # Install VS Build Tools with specific components
-          Write-Output "Installing VS Build Tools..."
+          Write-Output "Running VS Build Tools installer with required components..."
           Start-Process -FilePath $vsInstallerPath -ArgumentList "--quiet", "--wait", "--norestart", "--nocache", `
             "--installPath", "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools", `
             "--add", "Microsoft.VisualStudio.Workload.VCTools", `
@@ -114,7 +114,7 @@ jobs:
             throw "Failed to install Visual Studio Build Tools"
           }
 
-          Write-Output "Visual Studio Build Tools installed successfully"
+          Write-Output "Visual Studio Build Tools installation completed successfully"
 
       - name: Install system packages
         shell: pwsh
