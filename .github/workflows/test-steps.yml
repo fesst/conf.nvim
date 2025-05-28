@@ -39,15 +39,26 @@ jobs:
           echo "Directory contents:"
           ls -la
 
+          # Try to find the virtual environment if the exact path doesn't exist
           if [ ! -d "${{ inputs.venv_path }}" ]; then
-            echo "Error: Virtual environment not found at: ${{ inputs.venv_path }}"
-            echo "Python version: $(python3 --version)"
-            echo "Python path: $(which python3)"
-            echo "PATH: $PATH"
-            exit 1
+            echo "Virtual environment not found at exact path, searching in tool cache..."
+            TOOL_CACHE_VENV="${{ runner.tool_cache }}/venv"
+            if [ -d "$TOOL_CACHE_VENV" ]; then
+              echo "Found virtual environment in tool cache at: $TOOL_CACHE_VENV"
+              echo "virtual_env=$TOOL_CACHE_VENV" >> $GITHUB_OUTPUT
+            else
+              echo "Error: Virtual environment not found at: ${{ inputs.venv_path }}"
+              echo "Also checked tool cache at: $TOOL_CACHE_VENV"
+              echo "Python version: $(python3 --version)"
+              echo "Python path: $(which python3)"
+              echo "PATH: $PATH"
+              exit 1
+            fi
+          else
+            echo "Virtual environment found at: ${{ inputs.venv_path }}"
+            echo "virtual_env=${{ inputs.venv_path }}" >> $GITHUB_OUTPUT
           fi
 
-          echo "Virtual environment found at: ${{ inputs.venv_path }}"
           echo "Virtual environment contents:"
           ls -la "${{ inputs.venv_path }}"
 
@@ -57,13 +68,23 @@ jobs:
         run: |
           Write-Output "Checking virtual environment at: ${{ inputs.venv_path }}"
           if (-not (Test-Path "${{ inputs.venv_path }}")) {
-            Write-Error "Virtual environment not found at: ${{ inputs.venv_path }}"
-            Write-Output "Python version: $(python --version)"
-            Write-Output "Python path: $(Get-Command python).Source"
-            Write-Output "PATH: $env:Path"
-            exit 1
+            Write-Output "Virtual environment not found at exact path, searching in tool cache..."
+            $TOOL_CACHE_VENV = "${{ runner.tool_cache }}\venv"
+            if (Test-Path $TOOL_CACHE_VENV) {
+              Write-Output "Found virtual environment in tool cache at: $TOOL_CACHE_VENV"
+              "virtual_env=$TOOL_CACHE_VENV" >> $env:GITHUB_OUTPUT
+            } else {
+              Write-Error "Virtual environment not found at: ${{ inputs.venv_path }}"
+              Write-Output "Also checked tool cache at: $TOOL_CACHE_VENV"
+              Write-Output "Python version: $(python --version)"
+              Write-Output "Python path: $(Get-Command python).Source"
+              Write-Output "PATH: $env:Path"
+              exit 1
+            }
+          } else {
+            Write-Output "Virtual environment found at: ${{ inputs.venv_path }}"
+            "virtual_env=${{ inputs.venv_path }}" >> $env:GITHUB_OUTPUT
           }
-          Write-Output "Virtual environment found at: ${{ inputs.venv_path }}"
 
       - name: Log Python venv cache info
         shell: bash
