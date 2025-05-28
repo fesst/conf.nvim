@@ -52,5 +52,7 @@ jobs:
         if: always()
         with:
           name: codeql-results
-          path: codeql-results/
+          path: |
+            ${{ github.workspace }}/results
+            ${{ github.workspace }}/codeql-results
           if-no-files-found: warn
