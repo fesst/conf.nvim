@@ -288,6 +288,8 @@ jobs:
             # Run install script
             $env:CI = "true"
             Write-Output "Running install script..."
+            # Skip brew installation on Windows
+            Write-Output "Skipping brew installation on Windows"
             bash infra/install.sh
           } catch {
             Write-Error $_.Exception.Message

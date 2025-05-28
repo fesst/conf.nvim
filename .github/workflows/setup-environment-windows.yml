@@ -153,8 +153,8 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          chmod +x infra/packages/brew.sh
-          ./infra/packages/brew.sh
+          # Skip brew installation on Windows
+          Write-Output "Skipping brew installation on Windows"
 
       - name: Install Node.js packages
         if: inputs.setup_node
