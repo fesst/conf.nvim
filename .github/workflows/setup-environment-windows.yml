@@ -36,6 +36,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Node.js
+        if: inputs.setup_node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.19.0"
+          cache: "npm"
+
       - name: Ensure npm cache directory exists
         if: inputs.setup_node
         shell: pwsh
@@ -48,7 +55,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ format('{0}\\.npm', env.USERPROFILE) }}
-          key: ${{ runner.os }}-${{ runner.arch }}-npm-${{ hashFiles('infra/packages/npm.ps1') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-npm-${{ hashFiles('infra/packages/npm.sh') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-npm-
             ${{ runner.os }}-${{ runner.arch }}-
@@ -65,7 +72,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ format('{0}\\pip\\Cache', env.LOCALAPPDATA) }}
-          key: ${{ runner.os }}-${{ runner.arch }}-pip-${{ hashFiles('infra/packages/pip.ps1') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-pip-${{ hashFiles('infra/packages/pip.sh') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-pip-
             ${{ runner.os }}-${{ runner.arch }}-
@@ -86,7 +93,7 @@ jobs:
           path: |
             ${{ format('{0}\\.cargo\\registry', env.USERPROFILE) }}
             ${{ format('{0}\\.cargo\\git', env.USERPROFILE) }}
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('infra/packages/cargo.ps1') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('infra/packages/cargo.sh') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-cargo-
             ${{ runner.os }}-${{ runner.arch }}-
@@ -106,7 +113,7 @@ jobs:
             ${{ format('{0}\\.cache\\luarocks', env.USERPROFILE) }}
             ${{ format('{0}\\.luarocks', env.USERPROFILE) }}
             ${{ format('{0}\\.local\\share\\luarocks', env.USERPROFILE) }}
-          key: ${{ runner.os }}-${{ runner.arch }}-luarocks-${{ hashFiles('infra/packages/luarocks.ps1') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-luarocks-
             ${{ runner.os }}-${{ runner.arch }}-
@@ -200,34 +207,22 @@ jobs:
         if: inputs.setup_node
         shell: pwsh
         run: |
-          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "infra/packages/npm.ps1"
-          for ($i = 1; $i -le 3; $i++) {
-            if (& $scriptPath) {
-              break
-            }
-            if ($i -eq 3) {
-              Write-Error "Failed to install Node.js packages after 3 attempts"
-              exit 1
-            }
-            Write-Output "Attempt $i failed. Retrying..."
+          chmod +x infra/packages/npm.sh
+          bash infra/packages/npm.sh || {
+            Write-Error "Failed to install Node.js packages. Retrying..."
             npm cache clean --force
+            bash infra/packages/npm.sh
           }
 
       - name: Install Rust packages
         if: inputs.setup_rust
         shell: pwsh
         run: |
-          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "infra/packages/cargo.ps1"
-          for ($i = 1; $i -le 3; $i++) {
-            if (& $scriptPath) {
-              break
-            }
-            if ($i -eq 3) {
-              Write-Error "Failed to install Rust packages after 3 attempts"
-              exit 1
-            }
-            Write-Output "Attempt $i failed. Retrying..."
+          chmod +x infra/packages/cargo.sh
+          bash infra/packages/cargo.sh || {
+            Write-Error "Failed to install Rust packages. Retrying..."
             cargo clean
+            bash infra/packages/cargo.sh
           }
 
       - name: Install Python packages
@@ -236,48 +231,30 @@ jobs:
         run: |
           $venvPath = Join-Path $env:GITHUB_WORKSPACE ".venv"
           & (Join-Path $venvPath "Scripts\activate.ps1")
-          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "infra/packages/pip.ps1"
-          for ($i = 1; $i -le 3; $i++) {
-            if (& $scriptPath) {
-              break
-            }
-            if ($i -eq 3) {
-              Write-Error "Failed to install Python packages after 3 attempts"
-              exit 1
-            }
-            Write-Output "Attempt $i failed. Retrying..."
+          chmod +x infra/packages/pip.sh
+          bash infra/packages/pip.sh || {
+            Write-Error "Failed to install Python packages. Retrying..."
             pip cache purge
+            bash infra/packages/pip.sh
           }
 
       - name: Install Lua packages
         if: inputs.setup_lua
         shell: pwsh
         run: |
-          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "infra/packages/luarocks.ps1"
-          for ($i = 1; $i -le 3; $i++) {
-            if (& $scriptPath) {
-              break
-            }
-            if ($i -eq 3) {
-              Write-Error "Failed to install Lua packages after 3 attempts"
-              exit 1
-            }
-            Write-Output "Attempt $i failed. Retrying..."
+          chmod +x infra/packages/luarocks.sh
+          bash infra/packages/luarocks.sh || {
+            Write-Error "Failed to install Lua packages. Retrying..."
             luarocks config --local lua_version 5.4
+            bash infra/packages/luarocks.sh
           }
 
       - name: Install Neovim configuration
         shell: pwsh
         run: |
-          $scriptPath = Join-Path $env:GITHUB_WORKSPACE "infra/packages/nvim.ps1"
-          for ($i = 1; $i -le 3; $i++) {
-            if (& $scriptPath) {
-              break
-            }
-            if ($i -eq 3) {
-              Write-Error "Failed to install Neovim configuration after 3 attempts"
-              exit 1
-            }
-            Write-Output "Attempt $i failed. Retrying..."
+          chmod +x infra/packages/nvim.sh
+          bash infra/packages/nvim.sh || {
+            Write-Error "Failed to install Neovim configuration. Retrying..."
             Remove-Item -Recurse -Force "$env:USERPROFILE\.local\share\nvim"
+            bash infra/packages/nvim.sh
           }
