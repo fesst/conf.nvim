@@ -37,7 +37,7 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
   - Virtual environment management for Python dependencies
   - Sanity check tests
   - Lua code analysis
-  - Security scanning
+  - Security scanning (CodeQL, secret scanning)
   - Docker image building
   - Automated cleanup of old workflow runs
   - Manual check still required for all features
@@ -49,6 +49,7 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
     - Rust packages
     - LuaRocks packages
     - Neovim plugins
+  - Compressed artifacts for faster downloads
 
 ## Installation
 

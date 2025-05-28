@@ -107,6 +107,8 @@ Tests are automatically run in the CI/CD pipeline:
 - Sanity checks on every push
 - Full test suite on pull requests
 - Language-specific tests in parallel
+- Security scanning (CodeQL, secret scanning)
+- Compressed test artifacts for faster downloads
 
 ## Test Categories
 
@@ -121,6 +123,13 @@ Tests are automatically run in the CI/CD pipeline:
 - LSP functionality
 - Debugging setup
 - Language server integration
+
+### Security Tests
+
+- CodeQL analysis
+- Secret scanning
+- Weekly automated security checks
+- Compressed security scan artifacts
 
 ## Writing Tests
 
@@ -147,5 +156,6 @@ Common test issues:
 1. Missing dependencies
 2. Incorrect debug adapter setup
 3. LSP server configuration
+4. Security scan failures
 
 For more details, see the [Troubleshooting](README.md#troubleshooting) section in the README.

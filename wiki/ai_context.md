@@ -199,7 +199,7 @@ Currently supported platforms:
     - Weekly (Mondays at 12:33 UTC)
   - Uses reusable workflow for environment setup
   - Runs Neovim tests and analysis
-  - Uploads test logs as artifacts
+  - Uploads test logs as artifacts with compression
 
 - Setup Environment (`.github/workflows/setup-environment.yml`):
   - Reusable workflow for environment setup
@@ -260,6 +260,16 @@ Currently supported platforms:
     - Handles virtual environment activation for both Windows and macOS
     - Uses platform-specific paths and commands
 
+- Security Scanning (`.github/workflows/codeql.yml`):
+  - CodeQL analysis for security vulnerabilities
+  - Secret scanning for sensitive information
+  - Runs on:
+    - Push to master
+    - Pull requests to master
+    - Weekly (Mondays at 12:33 UTC)
+  - Uploads results as compressed artifacts
+  - Uses security-extended query suite for comprehensive analysis
+
 ###### Environment Setup
 
 - Virtual Environment:
@@ -315,6 +325,7 @@ Currently supported platforms:
   - `pr-windows-tests.yml`: Windows PR testing
   - `pr-macos-tests.yml`: macOS PR testing
   - `macos-neovim-tests.yml`: Neovim-specific tests
+  - `codeql.yml`: Security scanning
 
 - Workflow features:
   - Early change detection
@@ -324,6 +335,8 @@ Currently supported platforms:
   - Robust error handling
   - Detailed logging
   - Automatic cleanup
+  - Compressed artifacts
+  - Security scanning
 
 ###### Lua Module Loading
 

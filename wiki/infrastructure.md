@@ -120,6 +120,12 @@ The infrastructure scripts are integrated with the CI/CD pipeline:
    - Cross-platform compatibility
    - Architecture-specific paths (Intel/Apple Silicon)
 
+4. Security:
+   - CodeQL analysis for security vulnerabilities
+   - Secret scanning for sensitive information
+   - Weekly automated security checks
+   - Compressed security scan artifacts
+
 ## Error Handling
 
 All scripts use the error handling utilities from `lib.sh`:
@@ -148,6 +154,11 @@ The CI workflow uses caching for:
    - Cargo packages
    - pip packages
    - LuaRocks packages
+
+3. Artifacts:
+   - Compressed test results
+   - Compressed security scan results
+   - Compressed build artifacts
 
 ## Platform Support
 
