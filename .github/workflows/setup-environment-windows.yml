@@ -36,6 +36,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Cache Chocolatey packages
+        uses: actions/cache@v4
+        with:
+          path: C:\ProgramData\chocolatey\lib
+          key: ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-choco-
+
       - name: Set up Node.js
         if: inputs.setup_node
         uses: actions/setup-node@v4
