@@ -54,12 +54,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-          cache: false
-          cache-dependency-path: |
-            **/requirements.txt
-            **/requirements/*.txt
-            !**/node_modules/**/requirements.txt
-            !**/node_modules/**/requirements/*.txt
 
       - name: Set up Python virtual environment
         if: inputs.setup_python
