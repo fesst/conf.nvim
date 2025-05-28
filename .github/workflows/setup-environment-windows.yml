@@ -39,7 +39,10 @@ jobs:
       - name: Cache Chocolatey packages
         uses: actions/cache@v4
         with:
-          path: C:\ProgramData\chocolatey\lib
+          path: |
+            C:\ProgramData\chocolatey\lib
+            C:\ProgramData\chocolatey\bin
+            C:\tools
           key: ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-choco-
@@ -77,18 +80,45 @@ jobs:
             Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
           }
 
-          # Install required packages
-          Write-Output "Installing Neovim, Tree-sitter, and Visual Studio Build Tools..."
-          choco install neovim tree-sitter visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" -y
-          if ($LASTEXITCODE -ne 0) {
-            throw "Failed to install packages using Chocolatey"
+          # Function to check if a package is installed
+          function Test-ChocolateyPackage {
+            param($PackageName)
+            $package = choco list --local-only --exact $PackageName
+            return $package -match "^$PackageName\s"
           }
 
-          # Install LuaRocks
-          Write-Output "Installing LuaRocks..."
-          choco install luarocks -y
-          if ($LASTEXITCODE -ne 0) {
-            throw "Failed to install LuaRocks"
+          # Install required packages only if not already installed
+          $packages = @(
+            @{Name = "neovim"; Installed = $false}
+            @{Name = "tree-sitter"; Installed = $false}
+            @{Name = "visualstudio2019buildtools"; Installed = $false}
+          )
+
+          foreach ($package in $packages) {
+            if (-not (Test-ChocolateyPackage $package.Name)) {
+              Write-Output "Installing $($package.Name)..."
+              if ($package.Name -eq "visualstudio2019buildtools") {
+                choco install $package.Name --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" -y
+              } else {
+                choco install $package.Name -y
+              }
+              if ($LASTEXITCODE -ne 0) {
+                throw "Failed to install $($package.Name)"
+              }
+            } else {
+              Write-Output "$($package.Name) is already installed"
+            }
+          }
+
+          # Install LuaRocks if not already installed
+          if (-not (Test-ChocolateyPackage "luarocks")) {
+            Write-Output "Installing LuaRocks..."
+            choco install luarocks -y
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to install LuaRocks"
+            }
+          } else {
+            Write-Output "LuaRocks is already installed"
           }
 
           # Add Neovim to PATH

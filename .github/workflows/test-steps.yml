@@ -291,12 +291,32 @@ jobs:
             # Run install script
             $env:CI = "true"
             Write-Output "Running install script..."
-            # Install packages using Chocolatey
-            Write-Output "Installing packages using Chocolatey..."
-            choco install neovim tree-sitter -y
-            if ($LASTEXITCODE -ne 0) {
-              throw "Failed to install packages using Chocolatey"
+
+            # Function to check if a package is installed
+            function Test-ChocolateyPackage {
+                param($PackageName)
+                $package = choco list --local-only --exact $PackageName
+                return $package -match "^$PackageName\s"
             }
+
+            # Install packages using Chocolatey only if not already installed
+            $packages = @(
+                @{Name = "neovim"; Installed = $false}
+                @{Name = "tree-sitter"; Installed = $false}
+            )
+
+            foreach ($package in $packages) {
+                if (-not (Test-ChocolateyPackage $package.Name)) {
+                    Write-Output "Installing $($package.Name)..."
+                    choco install $package.Name -y
+            if ($LASTEXITCODE -ne 0) {
+                        throw "Failed to install $($package.Name)"
+                    }
+                } else {
+                    Write-Output "$($package.Name) is already installed"
+            }
+            }
+
             # Use PowerShell script with Chocolatey
             Write-Output "Running PowerShell install script..."
             & "${{ github.workspace }}/infra/install.ps1" -UseChocolatey

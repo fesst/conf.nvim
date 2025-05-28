@@ -2,6 +2,13 @@
 
 $ErrorActionPreference = 'Stop'
 
+# Function to check if a package is installed
+function Test-ChocolateyPackage {
+    param($PackageName)
+    $package = choco list --local-only --exact $PackageName
+    return $package -match "^$PackageName\s"
+}
+
 # Install Chocolatey if not present
 if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
     Write-Host "Installing Chocolatey..."
@@ -13,11 +20,22 @@ if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
 Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
 refreshenv
 
-# Install Neovim and tree-sitter
-Write-Host "Installing Neovim and tree-sitter..."
-$output = choco install neovim tree-sitter -y 2>&1
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to install Neovim and tree-sitter: ${output}"
+# Install Neovim and tree-sitter only if not already installed
+$packages = @(
+    @{Name = "neovim"; Installed = $false}
+    @{Name = "tree-sitter"; Installed = $false}
+)
+
+foreach ($package in $packages) {
+    if (-not (Test-ChocolateyPackage $package.Name)) {
+        Write-Host "Installing $($package.Name)..."
+        $output = choco install $package.Name -y 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install $($package.Name): ${output}"
+        }
+    } else {
+        Write-Host "$($package.Name) is already installed"
+    }
 }
 refreshenv
 
@@ -30,11 +48,15 @@ if (-not (Get-Command nvim -ErrorAction SilentlyContinue)) {
     throw "Neovim not found in PATH after installation. Current PATH: ${env:Path}"
 }
 
-# Install Python
-Write-Host "Installing Python..."
-$output = choco install python312 -y 2>&1
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to install Python: ${output}"
+# Install Python if not already installed
+if (-not (Test-ChocolateyPackage "python312")) {
+    Write-Host "Installing Python..."
+    $output = choco install python312 -y 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to install Python: ${output}"
+    }
+} else {
+    Write-Host "Python is already installed"
 }
 refreshenv
 
@@ -43,11 +65,15 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
     throw "Python not found in PATH after installation. Current PATH: ${env:Path}"
 }
 
-# Install Node.js
-Write-Host "Installing Node.js..."
-$output = choco install nodejs -y 2>&1
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to install Node.js: ${output}"
+# Install Node.js if not already installed
+if (-not (Test-ChocolateyPackage "nodejs")) {
+    Write-Host "Installing Node.js..."
+    $output = choco install nodejs -y 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to install Node.js: ${output}"
+    }
+} else {
+    Write-Host "Node.js is already installed"
 }
 refreshenv
 
@@ -56,11 +82,15 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
     throw "Node.js not found in PATH after installation. Current PATH: ${env:Path}"
 }
 
-# Install Rust
-Write-Host "Installing Rust..."
-$output = choco install rust -y 2>&1
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to install Rust: ${output}"
+# Install Rust if not already installed
+if (-not (Test-ChocolateyPackage "rust")) {
+    Write-Host "Installing Rust..."
+    $output = choco install rust -y 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to install Rust: ${output}"
+    }
+} else {
+    Write-Host "Rust is already installed"
 }
 refreshenv
 
