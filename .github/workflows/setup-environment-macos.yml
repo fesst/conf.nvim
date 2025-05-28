@@ -96,7 +96,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          VENV_PATH="$RUNNER_TOOL_CACHE/venv"
+          VENV_PATH="${{ runner.tool_cache }}/venv"
 
           # Remove existing virtual environment if it exists
           if [ -d "$VENV_PATH" ]; then

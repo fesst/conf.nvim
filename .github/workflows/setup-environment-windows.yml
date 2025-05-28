@@ -91,7 +91,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $VENV_PATH = Join-Path $env:RUNNER_TOOL_CACHE "venv"
+          $VENV_PATH = "${{ runner.tool_cache }}/venv"
           Write-Output "Setting up virtual environment at: $VENV_PATH"
 
           # Remove existing virtual environment if it exists
