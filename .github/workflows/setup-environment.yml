@@ -186,12 +186,13 @@ jobs:
             rm -rf "$VENV_PATH"
           fi
 
-          # Create virtual environment
+          # Create virtual environment using the Python from setup-python
           echo "Creating virtual environment at: $VENV_PATH"
-          python3 -m venv "$VENV_PATH" || {
+          python -m venv "$VENV_PATH" || {
             echo "Error: Failed to create virtual environment"
-            echo "Python version: $(python3 --version)"
-            echo "Python path: $(which python3)"
+            echo "Python version: $(python --version)"
+            echo "Python path: $(which python)"
+            echo "PATH: $PATH"
             exit 1
           }
 
@@ -212,16 +213,25 @@ jobs:
             exit 1
           fi
 
-          # Set outputs
+          # Set outputs and environment variables
           echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
           echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
           echo "$VENV_PATH/bin" >> $GITHUB_PATH
           echo "PYTHONPATH=$VENV_PATH/lib/python3.13/site-packages:$PYTHONPATH" >> $GITHUB_ENV
           echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
+          echo "PIP_TARGET=$VENV_PATH/lib/python3.13/site-packages" >> $GITHUB_ENV
 
           # Activate and upgrade pip
           source "$VENV_PATH/bin/activate"
-          python3 -m pip install --upgrade pip
+          python -m pip install --upgrade pip
+
+          # Verify environment variables
+          echo "Verifying environment variables:"
+          echo "VIRTUAL_ENV: $VIRTUAL_ENV"
+          echo "PYTHONPATH: $PYTHONPATH"
+          echo "PIP_PREFIX: $PIP_PREFIX"
+          echo "PIP_TARGET: $PIP_TARGET"
+          echo "PATH: $PATH"
 
       - name: Install system packages
         if: runner.os == 'macOS'
