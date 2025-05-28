@@ -1,5 +1,15 @@
 $ErrorActionPreference = 'Stop'
 
+# Verify LuaRocks is in PATH
+if (-not (Get-Command luarocks -ErrorAction SilentlyContinue)) {
+    Write-Host "LuaRocks not found in PATH, refreshing environment..."
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+    if (-not (Get-Command luarocks -ErrorAction SilentlyContinue)) {
+        throw "LuaRocks not found in PATH after refresh. Please ensure it is installed."
+    }
+}
+
 # Install Visual Studio Build Tools if not present
 if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue)) {
     Write-Host "Installing Visual Studio Build Tools..."

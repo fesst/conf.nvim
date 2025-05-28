@@ -84,6 +84,13 @@ jobs:
             throw "Failed to install packages using Chocolatey"
           }
 
+          # Install LuaRocks
+          Write-Output "Installing LuaRocks..."
+          choco install luarocks -y
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install LuaRocks"
+          }
+
           # Add Neovim to PATH
           $nvimPath = "C:\tools\neovim\nvim-win64\bin"
           if (-not $env:Path.Contains($nvimPath)) {
@@ -96,10 +103,27 @@ jobs:
           # Refresh environment variables
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 
+          # Verify installations
           Write-Output "Verifying installations..."
           Write-Output "Current PATH: $env:Path"
+
+          # Verify Neovim
+          if (-not (Get-Command nvim -ErrorAction SilentlyContinue)) {
+            throw "Neovim not found in PATH after installation"
+          }
           nvim --version
+
+          # Verify Tree-sitter
+          if (-not (Get-Command tree-sitter -ErrorAction SilentlyContinue)) {
+            throw "Tree-sitter not found in PATH after installation"
+          }
           tree-sitter --version
+
+          # Verify LuaRocks
+          if (-not (Get-Command luarocks -ErrorAction SilentlyContinue)) {
+            throw "LuaRocks not found in PATH after installation"
+          }
+          luarocks --version
 
       - name: Cache virtual environment
         if: inputs.setup_python
@@ -227,6 +251,15 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           Write-Output "Installing Neovim configuration..."
+
+          # Ensure Neovim is in PATH
+          $nvimPath = "C:\tools\neovim\nvim-win64\bin"
+          if (-not $env:Path.Contains($nvimPath)) {
+            $env:Path = "${nvimPath};${env:Path}"
+          }
+
+          # Refresh environment variables
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 
           # Verify Neovim is in PATH
           if (-not (Get-Command nvim -ErrorAction SilentlyContinue)) {
