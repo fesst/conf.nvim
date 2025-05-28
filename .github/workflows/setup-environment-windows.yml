@@ -81,9 +81,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.tool_cache }}/venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
           restore-keys: |
-            ${{ runner.os }}-venv-
+            ${{ runner.os }}-${{ runner.arch }}-venv-
 
       - name: Set up Python virtual environment
         if: inputs.setup_python

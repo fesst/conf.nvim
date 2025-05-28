@@ -83,24 +83,33 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           Write-Output "Checking virtual environment path: ${{ inputs.venv_path }}"
-          if (-not (Test-Path ${{ inputs.venv_path }})) {
-            Write-Error "Virtual environment not found at: ${{ inputs.venv_path }}"
+
+          # Normalize the path
+          $venvPath = [System.IO.Path]::GetFullPath("${{ inputs.venv_path }}")
+          Write-Output "Normalized path: $venvPath"
+
+          # Check if directory exists
+          if (-not (Test-Path $venvPath)) {
+            Write-Error "Virtual environment not found at: $venvPath"
             Write-Output "Current directory: $(Get-Location)"
             Write-Output "Directory contents:"
             Get-ChildItem
+            Write-Output "Environment variables:"
+            Get-ChildItem env: | Format-Table -AutoSize
             exit 1
           }
 
           # Verify activation script exists
-          $activateScript = Join-Path ${{ inputs.venv_path }} "Scripts\activate.ps1"
+          $activateScript = Join-Path $venvPath "Scripts\activate.ps1"
           if (-not (Test-Path $activateScript)) {
             Write-Error "Activation script not found at: $activateScript"
             Write-Output "Virtual environment contents:"
-            Get-ChildItem ${{ inputs.venv_path }} -Recurse
+            Get-ChildItem $venvPath -Recurse
             exit 1
           }
 
           # Activate virtual environment
+          Write-Output "Activating virtual environment..."
           & $activateScript
           if (-not $?) {
             Write-Error "Failed to activate virtual environment"
@@ -108,6 +117,8 @@ jobs:
             Write-Output "PATH: $env:Path"
             exit 1
           }
+
+          Write-Output "Virtual environment verified and activated successfully"
 
       - name: Log Homebrew cache info
         if: inputs.platform == 'macos' && inputs.use_cache
