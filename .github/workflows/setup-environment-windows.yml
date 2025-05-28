@@ -44,8 +44,13 @@ jobs:
             C:\ProgramData\chocolatey\bin
             C:\tools
             C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-          key: ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}
+            C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools
+            C:\Program Files (x86)\Microsoft Visual Studio\2019\Community
+            C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
+            C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional
+          key: ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}-vs2019-${{ hashFiles('infra/packages/vs-setup.ps1') }}
           restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}-vs2019-
             ${{ runner.os }}-${{ runner.arch }}-choco-
 
       - name: Set up Node.js
@@ -99,13 +104,27 @@ jobs:
             if (-not (Test-ChocolateyPackage $package.Name)) {
               Write-Output "Installing $($package.Name)..."
               if ($package.Name -eq "visualstudio2019buildtools") {
-                # Check if VS Build Tools are already installed
-                $vsPath = "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools"
-                if (Test-Path $vsPath) {
-                  Write-Output "Visual Studio Build Tools already installed at $vsPath"
-                  continue
+                # Check if VS Build Tools are already installed in any of the possible locations
+                $vsPaths = @(
+                  "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools",
+                  "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community",
+                  "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise",
+                  "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional"
+                )
+
+                $vsInstalled = $false
+                foreach ($path in $vsPaths) {
+                  if (Test-Path $path) {
+                    Write-Output "Visual Studio Build Tools already installed at $path"
+                    $vsInstalled = $true
+                    break
+                  }
                 }
-                choco install $package.Name --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" -y
+
+                if (-not $vsInstalled) {
+                  Write-Output "Installing Visual Studio Build Tools..."
+                  choco install $package.Name --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" -y
+                }
               } else {
                 choco install $package.Name -y
               }
