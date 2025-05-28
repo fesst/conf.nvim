@@ -110,7 +110,12 @@ jobs:
 
           # Activate virtual environment
           Write-Output "Activating virtual environment..."
-          & $activateScript
+          Write-Output "Activation script path: $activateScript"
+          Write-Output "Script contents:"
+          Get-Content $activateScript
+
+          # Import the activation script
+          . $activateScript
           if (-not $?) {
             Write-Error "Failed to activate virtual environment"
             Write-Output "Python version: $(python --version)"
@@ -263,8 +268,13 @@ jobs:
 
             # Activate virtual environment
             Write-Output "Activating virtual environment..."
-            & $activateScript
-            if ($LASTEXITCODE -ne 0) {
+            Write-Output "Activation script path: $activateScript"
+            Write-Output "Script contents:"
+            Get-Content $activateScript
+
+            # Import the activation script
+            . $activateScript
+            if (-not $?) {
               throw "Failed to activate virtual environment"
             }
 
@@ -285,6 +295,7 @@ jobs:
             Write-Output "Directory contents: $(Get-ChildItem)"
             Write-Output "Environment variables:"
             Get-ChildItem env: | Format-Table -AutoSize
+            Write-Output "PATH: $env:Path"
             exit 1
           }
 
