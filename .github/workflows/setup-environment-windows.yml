@@ -55,17 +55,31 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install core dependencies
+      - name: Install system packages
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          Write-Output "Installing core dependencies..."
+          Write-Output "Installing system packages using Chocolatey..."
+
+          # Ensure Chocolatey is installed
+          if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+            Write-Output "Installing Chocolatey..."
+            Set-ExecutionPolicy Bypass -Scope Process -Force
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+            Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+          }
+
+          # Install required packages
+          Write-Output "Installing Neovim and Tree-sitter..."
           choco install neovim tree-sitter -y
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install packages using Chocolatey"
+          }
 
           # Add Neovim to PATH
-          $nvimPath = "C:\Program Files\Neovim\bin"
+          $nvimPath = "C:\tools\neovim\nvim-win64\bin"
           if (-not $env:Path.Contains($nvimPath)) {
-              $env:Path = "$nvimPath;$env:Path"
+            $env:Path = "$nvimPath;$env:Path"
           }
 
           # Refresh environment variables
@@ -161,33 +175,41 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          chmod +x infra/packages/npm.sh
-          ./infra/packages/npm.sh
+          & "${{ github.workspace }}/infra/packages/npm.ps1"
+
+      - name: Cache Cargo packages
+        if: inputs.setup_rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock', 'infra/packages/cargo.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-
 
       - name: Install Rust packages
         if: inputs.setup_rust
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          chmod +x infra/packages/cargo.sh
-          ./infra/packages/cargo.sh
+          & "${{ github.workspace }}/infra/packages/cargo.ps1"
 
       - name: Install Python packages
         if: inputs.setup_python
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          chmod +x infra/packages/pip.sh
           & (Join-Path ${{ steps.venv-win.outputs.virtual_env }} "Scripts\activate.ps1")
-          ./infra/packages/pip.sh
+          & "${{ github.workspace }}/infra/packages/pip.ps1"
 
       - name: Install Lua packages
         if: inputs.setup_lua
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          chmod +x infra/packages/luarocks.sh
-          ./infra/packages/luarocks.sh
+          & "${{ github.workspace }}/infra/packages/luarocks.ps1"
 
       - name: Install Neovim configuration
         shell: pwsh
