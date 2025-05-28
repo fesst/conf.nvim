@@ -48,6 +48,9 @@ jobs:
             C:\Program Files (x86)\Microsoft Visual Studio\2019\Community
             C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
             C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional
+            C:\ProgramData\Microsoft\VisualStudio\Packages
+            C:\ProgramData\Microsoft\VisualStudio\Setup
+            C:\ProgramData\Microsoft\VisualStudio\Packages_vs_bootstrapper_d15
           key: ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}-vs2019-${{ hashFiles('infra/packages/vs-setup.ps1') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}-vs2019-
@@ -71,6 +74,47 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Cache Visual Studio Build Tools
+        uses: actions/cache@v4
+        id: vs-cache
+        with:
+          path: |
+            C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools
+            C:\ProgramData\Microsoft\VisualStudio\Packages
+            C:\ProgramData\Microsoft\VisualStudio\Setup
+            C:\ProgramData\Microsoft\VisualStudio\Packages_vs_bootstrapper_d15
+            C:\Users\runneradmin\AppData\Local\Temp\chocolatey\visualstudio2019buildtools
+          key: ${{ runner.os }}-vs2019-buildtools-16.11.47
+          restore-keys: |
+            ${{ runner.os }}-vs2019-buildtools-
+
+      - name: Install Visual Studio Build Tools
+        if: steps.vs-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Installing Visual Studio Build Tools..."
+
+          # Download the specific version of VS Build Tools
+          $vsInstallerUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe"
+          $vsInstallerPath = "$env:TEMP\vs_buildtools.exe"
+
+          Write-Output "Downloading VS Build Tools installer..."
+          Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath
+
+          # Install VS Build Tools with specific components
+          Write-Output "Installing VS Build Tools..."
+          Start-Process -FilePath $vsInstallerPath -ArgumentList "--quiet", "--wait", "--norestart", "--nocache", `
+            "--installPath", "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools", `
+            "--add", "Microsoft.VisualStudio.Workload.VCTools", `
+            "--includeRecommended" -NoNewWindow -Wait
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to install Visual Studio Build Tools"
+          }
+
+          Write-Output "Visual Studio Build Tools installed successfully"
 
       - name: Install system packages
         shell: pwsh
@@ -97,37 +141,12 @@ jobs:
           $packages = @(
             @{Name = "neovim"; Installed = $false}
             @{Name = "tree-sitter"; Installed = $false}
-            @{Name = "visualstudio2019buildtools"; Installed = $false}
           )
 
           foreach ($package in $packages) {
             if (-not (Test-ChocolateyPackage $package.Name)) {
               Write-Output "Installing $($package.Name)..."
-              if ($package.Name -eq "visualstudio2019buildtools") {
-                # Check if VS Build Tools are already installed in any of the possible locations
-                $vsPaths = @(
-                  "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools",
-                  "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community",
-                  "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise",
-                  "C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional"
-                )
-
-                $vsInstalled = $false
-                foreach ($path in $vsPaths) {
-                  if (Test-Path $path) {
-                    Write-Output "Visual Studio Build Tools already installed at $path"
-                    $vsInstalled = $true
-                    break
-                  }
-                }
-
-                if (-not $vsInstalled) {
-                  Write-Output "Installing Visual Studio Build Tools..."
-                  choco install $package.Name --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" -y
-                }
-              } else {
-                choco install $package.Name -y
-              }
+              choco install $package.Name -y
               if ($LASTEXITCODE -ne 0) {
                 throw "Failed to install $($package.Name)"
               }
