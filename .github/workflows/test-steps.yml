@@ -30,10 +30,17 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Verify virtual environment path
+        shell: ${{ inputs.platform == 'windows' && 'pwsh' || 'bash' }}
+        run: |
+          ${{ inputs.platform == 'windows' && 'Write-Output "Checking virtual environment at: ${{ inputs.venv_path }}"' || 'echo "Checking virtual environment at: ${{ inputs.venv_path }}"' }}
+          ${{ inputs.platform == 'windows' && 'if (-not (Test-Path "${{ inputs.venv_path }}")) { throw "Virtual environment not found at: ${{ inputs.venv_path }}" }' || '[ ! -d "${{ inputs.venv_path }}" ] && { echo "Error: Virtual environment not found at: ${{ inputs.venv_path }}"; exit 1; }' }}
+          ${{ inputs.platform == 'windows' && 'Write-Output "Virtual environment found at: ${{ inputs.venv_path }}"' || 'echo "Virtual environment found at: ${{ inputs.venv_path }}"' }}
+
       - name: Restore Python venv from cache
         uses: actions/cache@v4
         with:
-          path: .venv
+          path: ${{ inputs.venv_path }}
           key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1', '**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-venv-

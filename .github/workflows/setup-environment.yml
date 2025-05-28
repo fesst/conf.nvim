@@ -248,6 +248,10 @@ jobs:
           echo "Virtual environment contents:"
           ls -la "$VENV_PATH"
 
+          # Ensure the virtual environment path is properly set in the job outputs
+          echo "Setting virtual environment path in job outputs..."
+          echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
+
       - name: Install system packages
         if: runner.os == 'macOS'
         shell: bash
