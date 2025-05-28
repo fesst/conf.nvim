@@ -143,26 +143,18 @@ jobs:
                   "--nocache",
                   "--installPath", "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools",
                   "--add", "Microsoft.VisualStudio.Workload.VCTools",
-                  "--includeRecommended",
-                  "--log", $logFile,
-                  "--tempDir", $installerTempDir
-              ) -NoNewWindow -Wait -PassThru
+                  "--includeRecommended"
+              ) -Wait -PassThru
 
               $installTime = (Get-Date) - $installStart
               Write-Output "Installation completed in $($installTime.TotalSeconds) seconds"
 
               if ($process.ExitCode -ne 0) {
                   Write-Output "Installation failed with exit code: $($process.ExitCode)"
-                  if (Test-Path $logFile) {
-                      Write-Output "Installation log contents:"
-                      Get-Content $logFile
-                  } else {
-                      Write-Output "Installation log file not found at: $logFile"
-                      Write-Output "Checking for alternative log locations..."
-                      Get-ChildItem -Path $env:TEMP -Filter "dd_*_*.log" -Recurse | ForEach-Object {
-                          Write-Output "Found log file: $($_.FullName)"
-                          Get-Content $_.FullName
-                      }
+                  # Check for any log files in the temp directory
+                  Get-ChildItem -Path $env:TEMP -Filter "dd_*_*.log" -Recurse | ForEach-Object {
+                      Write-Output "Found log file: $($_.FullName)"
+                      Get-Content $_.FullName
                   }
                   throw "Failed to install Visual Studio Build Tools"
               }
