@@ -83,6 +83,7 @@ jobs:
       - name: Verify virtual environment path (Windows)
         shell: pwsh
         if: inputs.platform == 'windows'
+        id: venv-win
         run: |
           Write-Output "Checking virtual environment at: ${{ inputs.venv_path }}"
           if (-not (Test-Path "${{ inputs.venv_path }}")) {
@@ -106,7 +107,7 @@ jobs:
               }
             }
 
-            if (-not (Test-Path $env:VIRTUAL_ENV)) {
+            if (-not (Test-Path "${{ steps.venv-win.outputs.virtual_env }}")) {
               Write-Error "Virtual environment not found in any common locations"
               Write-Output "Checked locations:"
               $VENV_LOCATIONS | ForEach-Object { Write-Output $_ }
@@ -273,7 +274,7 @@ jobs:
         run: |
           try {
             # Normalize the virtual environment path
-            $venvPath = [System.IO.Path]::GetFullPath("${{ steps.venv-mac.outputs.virtual_env }}")
+            $venvPath = [System.IO.Path]::GetFullPath("${{ steps.venv-win.outputs.virtual_env }}")
             Write-Output "Using virtual environment at: $venvPath"
 
             # Verify virtual environment exists
@@ -372,7 +373,7 @@ jobs:
         shell: pwsh
         run: |
           try {
-            & "${{ steps.venv-mac.outputs.virtual_env }}/Scripts/activate.ps1"
+            & "${{ steps.venv-win.outputs.virtual_env }}/Scripts/activate.ps1"
             # Ensure Neovim is in PATH and verify it
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
@@ -429,7 +430,7 @@ jobs:
         shell: pwsh
         run: |
           try {
-            & "${{ steps.venv-mac.outputs.virtual_env }}/Scripts/activate.ps1"
+            & "${{ steps.venv-win.outputs.virtual_env }}/Scripts/activate.ps1"
             # Ensure stylua is in PATH
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
@@ -486,7 +487,7 @@ jobs:
         if: inputs.install_deps && inputs.platform == 'windows'
         shell: pwsh
         run: |
-          & "${{ steps.venv-mac.outputs.virtual_env }}/Scripts/activate.ps1"
+          & "${{ steps.venv-win.outputs.virtual_env }}/Scripts/activate.ps1"
           # Ensure all tools are in PATH
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin;$env:USERPROFILE\.cargo\bin"
