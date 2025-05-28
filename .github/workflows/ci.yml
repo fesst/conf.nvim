@@ -12,6 +12,10 @@ permissions:
   packages: read
   security-events: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   setup:
     uses: ./.github/workflows/setup-environment-macos.yml
