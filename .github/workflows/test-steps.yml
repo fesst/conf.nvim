@@ -302,19 +302,14 @@ jobs:
               exit 1
           }
 
-          # Activate virtual environment
-          Write-Output "=== Activation Debug ==="
-          Write-Output "Current PATH: $env:Path"
-          Write-Output "Current Python: $(Get-Command python | Select-Object -ExpandProperty Source)"
-          Write-Output "========================="
-
-          . $activateScript
-          if ($LASTEXITCODE -ne 0) {
-              Write-Error "Failed to activate virtual environment"
-              Write-Output "Python version: $(python --version)"
-              Write-Output "PATH: $env:Path"
-              exit 1
-          }
+          # Activate virtual environment (skipped, already set up by workflow)
+          # . $activateScript
+          # if ($LASTEXITCODE -ne 0) {
+          #     Write-Error "Failed to activate virtual environment"
+          #     Write-Output "Python version: $(python --version)"
+          #     Write-Output "PATH: $env:Path"
+          #     exit 1
+          # }
 
           Write-Output "=== Post-Activation Debug ==="
           Write-Output "Updated PATH: $env:Path"
