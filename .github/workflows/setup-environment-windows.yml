@@ -71,84 +71,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Visual Studio Build Tools
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Write-Output "Starting Visual Studio Build Tools installation process..."
-
-          # Create installation directory
-          $vsInstallPath = Join-Path $env:USERPROFILE "vs_buildtools"
-          if (-not (Test-Path $vsInstallPath)) {
-              New-Item -ItemType Directory -Path $vsInstallPath -Force | Out-Null
-          }
-
-          # Download VS Build Tools installer
-          $vsInstallerUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe"
-          $vsInstallerPath = "$env:TEMP\vs_buildtools.exe"
-
-          Write-Output "Downloading VS Build Tools installer..."
-          Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath -UseBasicParsing
-
-          # Install VS Build Tools
-          Write-Output "Installing VS Build Tools..."
-          $process = Start-Process -FilePath $vsInstallerPath -ArgumentList @(
-              "--quiet",
-              "--wait",
-              "--norestart",
-              "--nocache",
-              "--installPath", $vsInstallPath,
-              "--add", "Microsoft.VisualStudio.Workload.VCTools",
-              "--includeRecommended"
-          ) -Wait -PassThru
-
-          if ($process.ExitCode -ne 0) {
-              throw "Failed to install Visual Studio Build Tools. Exit code: $($process.ExitCode)"
-          }
-
-          # Verify installation
-          $vsDevCmd = Join-Path $vsInstallPath "Common7\Tools\VsDevCmd.bat"
-          if (-not (Test-Path $vsDevCmd)) {
-              throw "VsDevCmd.bat not found after installation"
-          }
-
-          Write-Output "Visual Studio Build Tools installed successfully"
-
-      - name: Set up Visual Studio environment
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $vsPath = Join-Path $env:USERPROFILE "vs_buildtools"
-          $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
-
-          if (-not (Test-Path $vsDevCmd)) {
-              throw "VsDevCmd.bat not found at: $vsDevCmd"
-          }
-
-          Write-Output "Setting up Visual Studio environment..."
-          cmd /c "`"$vsDevCmd`" && set" | ForEach-Object {
-              if ($_ -match "^(.*?)=(.*)$") {
-                  $name = $matches[1]
-                  $value = $matches[2]
-                  [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::Process)
-              }
-          }
-
-          # Verify setup
-          $clPath = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
-          if (-not $clPath) {
-              throw "Failed to set up Visual Studio environment. cl.exe not found."
-          }
-          Write-Output "Visual Studio environment set up successfully"
-
-      - name: Install system packages
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Write-Output "Installing system packages..."
-          choco install neovim -y
-          choco install luarocks -y
-
       - name: Cache virtual environment
         if: inputs.setup_python
         uses: actions/cache@v4
@@ -228,7 +150,13 @@ jobs:
           # Activate virtual environment with detailed error handling
           Write-Output "Attempting to activate virtual environment..."
           try {
+              # First, ensure we're using the correct Python
+              $env:VIRTUAL_ENV = $venvPath
+              $env:PATH = "$venvPath\Scripts;$env:PATH"
+
+              # Then source the activation script
               . $activateScript
+
               if ($LASTEXITCODE -ne 0) {
                   throw "Activation script returned non-zero exit code"
               }
@@ -236,6 +164,7 @@ jobs:
               Write-Error "Failed to activate virtual environment: $_"
               Write-Output "Python version: $(python --version)"
               Write-Output "PATH: $env:Path"
+              Write-Output "VIRTUAL_ENV: $env:VIRTUAL_ENV"
               Write-Output "Virtual environment contents:"
               Get-ChildItem $venvPath -Recurse
               exit 1
@@ -248,10 +177,89 @@ jobs:
               Write-Output "Expected Python path to start with: $venvPath"
               Write-Output "Actual Python path: $pythonPath"
               Write-Output "PATH: $env:Path"
+              Write-Output "VIRTUAL_ENV: $env:VIRTUAL_ENV"
               exit 1
           }
 
           Write-Output "Virtual environment activated successfully"
+
+      - name: Install Visual Studio Build Tools
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Starting Visual Studio Build Tools installation process..."
+
+          # Create installation directory
+          $vsInstallPath = Join-Path $env:USERPROFILE "vs_buildtools"
+          if (-not (Test-Path $vsInstallPath)) {
+              New-Item -ItemType Directory -Path $vsInstallPath -Force | Out-Null
+          }
+
+          # Download VS Build Tools installer
+          $vsInstallerUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe"
+          $vsInstallerPath = "$env:TEMP\vs_buildtools.exe"
+
+          Write-Output "Downloading VS Build Tools installer..."
+          Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath -UseBasicParsing
+
+          # Install VS Build Tools
+          Write-Output "Installing VS Build Tools..."
+          $process = Start-Process -FilePath $vsInstallerPath -ArgumentList @(
+              "--quiet",
+              "--wait",
+              "--norestart",
+              "--nocache",
+              "--installPath", $vsInstallPath,
+              "--add", "Microsoft.VisualStudio.Workload.VCTools",
+              "--includeRecommended"
+          ) -Wait -PassThru
+
+          if ($process.ExitCode -ne 0) {
+              throw "Failed to install Visual Studio Build Tools. Exit code: $($process.ExitCode)"
+          }
+
+          # Verify installation
+          $vsDevCmd = Join-Path $vsInstallPath "Common7\Tools\VsDevCmd.bat"
+          if (-not (Test-Path $vsDevCmd)) {
+              throw "VsDevCmd.bat not found after installation"
+          }
+
+          Write-Output "Visual Studio Build Tools installed successfully"
+
+      - name: Set up Visual Studio environment
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vsPath = Join-Path $env:USERPROFILE "vs_buildtools"
+          $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
+
+          if (-not (Test-Path $vsDevCmd)) {
+              throw "VsDevCmd.bat not found at: $vsDevCmd"
+          }
+
+          Write-Output "Setting up Visual Studio environment..."
+          cmd /c "`"$vsDevCmd`" && set" | ForEach-Object {
+              if ($_ -match "^(.*?)=(.*)$") {
+                  $name = $matches[1]
+                  $value = $matches[2]
+                  [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::Process)
+              }
+          }
+
+          # Verify setup
+          $clPath = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
+          if (-not $clPath) {
+              throw "Failed to set up Visual Studio environment. cl.exe not found."
+          }
+          Write-Output "Visual Studio environment set up successfully"
+
+      - name: Install system packages
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Installing system packages..."
+          choco install neovim -y
+          choco install luarocks -y
 
       - name: Install Node.js packages
         if: inputs.setup_node
