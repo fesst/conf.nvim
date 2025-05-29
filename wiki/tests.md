@@ -158,4 +158,4 @@ Common test issues:
 3. LSP server configuration
 4. Security scan failures
 
-For more details, see the [Troubleshooting](README.md#troubleshooting) section in the README.
+For more details, see the [Troubleshooting](../README.md#troubleshooting) section in the README.
