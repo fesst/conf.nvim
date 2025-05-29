@@ -1,23 +1,7 @@
 name: Build and Publish Docker Images
 
 on:
-  push:
-    branches: [master]
-    paths:
-      - "Dockerfile*"
-      - ".github/workflows/docker.yml"
-      - "infra/**"
-      - "lua/**"
-      - "after/**"
-  pull_request:
-    branches: [master]
-    paths:
-      - "Dockerfile*"
-      - ".github/workflows/docker.yml"
-      - "infra/**"
-      - "lua/**"
-      - "after/**"
-  workflow_dispatch: # Allow manual triggering
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -32,6 +16,7 @@ env:
 
 jobs:
   build-and-push-amd64:
+    if: false # Disable this job
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -125,6 +110,7 @@ jobs:
             !**/temp
 
   build-and-push-arm64:
+    if: false # Disable this job
     runs-on: ubuntu-latest
     permissions:
       contents: read

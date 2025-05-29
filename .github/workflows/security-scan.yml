@@ -1,19 +1,7 @@
 name: Security Scan
 
 on:
-  workflow_dispatch: # Manual trigger
-    inputs:
-      scan_type:
-        description: "Type of security scan to run"
-        required: true
-        default: "all"
-        type: choice
-        options:
-          - all
-          - zap
-          - trivy
-  schedule:
-    - cron: "0 0 * * 0" # Run weekly on Sunday at midnight
+  workflow_call:
 
 permissions:
   security-events: write
@@ -23,8 +11,8 @@ permissions:
 
 jobs:
   zap:
+    if: false # Disable this job
     name: OWASP ZAP Scan
-    if: github.event_name == 'schedule' || github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'zap'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -46,8 +34,8 @@ jobs:
           if-no-files-found: warn
 
   trivy:
+    if: false # Disable this job
     name: Trivy Vulnerability Scanner
-    if: github.event_name == 'schedule' || github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'trivy'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

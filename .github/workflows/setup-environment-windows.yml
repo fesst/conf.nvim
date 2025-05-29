@@ -261,8 +261,26 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           Write-Output "Installing system packages..."
-          choco install neovim -y
+
+          # Install Chocolatey if not present
+          if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+              Write-Output "Installing Chocolatey..."
+              Set-ExecutionPolicy Bypass -Scope Process -Force
+              [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+              Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+              refreshenv
+          }
+
+          # Install Lua and LuaRocks using Chocolatey
+          Write-Output "Installing Lua and LuaRocks..."
+          choco install lua -y
           choco install luarocks -y
+          refreshenv
+
+          # Verify installations
+          Write-Output "Verifying installations..."
+          lua -v
+          luarocks --version
 
       - name: Install Node.js packages
         if: inputs.setup_node

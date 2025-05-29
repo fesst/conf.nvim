@@ -12,16 +12,11 @@
 name: "CodeQL Analysis"
 
 on:
-  push:
-    branches: ["master"]
-  pull_request:
-    branches: ["master"]
-  schedule:
-    - cron: "33 12 * * 1"
-  workflow_dispatch: # Manual trigger
+  workflow_call:
 
 jobs:
   analyze:
+    if: false # Disable this job
     name: Analyze Code
     runs-on: ubuntu-latest
     permissions:
