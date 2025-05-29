@@ -204,139 +204,172 @@ jobs:
           Write-Output "PATH: $env:Path"
           Write-Output "================================"
 
-      - name: Install minimum dependencies (Windows)
+      - name: Install minimal dependencies (Windows)
         if: inputs.install_deps && inputs.platform == 'windows'
         shell: pwsh
         run: |
           try {
-            # Validate required environment variables
-            $requiredEnvVars = @{
-              'USERPROFILE' = $env:USERPROFILE
-              'RUNNER_TOOL_CACHE' = $env:RUNNER_TOOL_CACHE
-              'GITHUB_WORKSPACE' = $env:GITHUB_WORKSPACE
-            }
+            $ErrorActionPreference = 'Stop'
+            $env:PYTHONIOENCODING = 'utf-8'  # Ensure proper encoding
 
-            foreach ($var in $requiredEnvVars.GetEnumerator()) {
-              if (-not $var.Value) {
-                throw "Required environment variable not set: $($var.Key)"
-              }
-              Write-Output "Verified $($var.Key): $($var.Value)"
-            }
-
-            # Set and validate PATH
-            $pathComponents = @(
-              [System.Environment]::GetEnvironmentVariable("Path","Machine"),
-              [System.Environment]::GetEnvironmentVariable("Path","User"),
-              "C:\tools\neovim\nvim-win64\bin",
-              "$env:USERPROFILE\.cargo\bin"
-            )
-
-            $env:Path = ($pathComponents | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique) -join ';'
-
-            # Verify critical paths exist
-            $requiredPaths = @(
-              "C:\tools\neovim\nvim-win64\bin",
-              "$env:USERPROFILE\.cargo\bin"
-            )
-
-            foreach ($path in $requiredPaths) {
-              if (-not (Test-Path $path)) {
-                Write-Warning "Required path not found: $path"
-              }
-            }
-
-            # Set CI environment variable
-            $env:CI = "true"
-
-            # Normalize and validate virtual environment path
-            $venvPath = [System.IO.Path]::GetFullPath("${{ inputs.venv_path }}")
-            if ($venvPath.Length -gt 260) {
-              throw "Path exceeds Windows maximum length: $venvPath"
-            }
-
-            Write-Output "=== Installing Minimum Dependencies ==="
+            # Get the virtual environment path
+            $venvPath = "${{ inputs.venv_path }}"
             Write-Output "Using virtual environment at: $venvPath"
-            Write-Output "Current PATH: $env:Path"
+
+            # Normalize the path for Windows
+            $venvPath = [System.IO.Path]::GetFullPath($venvPath)
+            Write-Output "Normalized path: $venvPath"
 
             # Create parent directory if it doesn't exist
             $parentDir = Split-Path -Parent $venvPath
             if (-not (Test-Path $parentDir)) {
-              Write-Output "Creating parent directory: $parentDir"
-              New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+                Write-Output "Creating parent directory: $parentDir"
+                New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
             }
 
             # Verify virtual environment exists
             if (-not (Test-Path $venvPath)) {
-              throw "Virtual environment not found at: $venvPath"
+                Write-Error "Virtual environment not found at: $venvPath"
+                Write-Output "Current directory: $(Get-Location)"
+                Write-Output "Directory contents:"
+                Get-ChildItem | Format-Table -AutoSize
+                Write-Output "Parent directory contents:"
+                Get-ChildItem $parentDir | Format-Table -AutoSize
+                exit 1
             }
 
-            # Verify activation script exists and is accessible
+            # Verify activation script exists
             $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+            Write-Output "Checking activation script at: $activateScript"
+
             if (-not (Test-Path $activateScript)) {
-              throw "Activation script not found at: $activateScript"
+                Write-Error "Activation script not found at: $activateScript"
+                Write-Output "Virtual environment contents:"
+                Get-ChildItem $venvPath -Recurse | Format-Table -AutoSize
+                exit 1
             }
 
-            # Check script permissions
-            $acl = Get-Acl $activateScript
-            if (-not $acl.Access.FileSystemRights -match "Read") {
-              throw "Insufficient permissions for activation script"
+            # Check for Zone.Identifier and unblock if needed
+            if (Get-Item $activateScript -Stream Zone.Identifier -ErrorAction SilentlyContinue) {
+                Write-Output "Zone.Identifier found! Unblocking script..."
+                Unblock-File -Path $activateScript
             }
 
+            # Set execution policy for the process
+            $currentPolicy = Get-ExecutionPolicy
+            Write-Output "Current execution policy: $currentPolicy"
+            Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+            Write-Output "Set execution policy to Bypass for this process"
+
+            # Activate virtual environment
             Write-Output "Activating virtual environment..."
-            . $activateScript
-            if ($LASTEXITCODE -ne 0) {
-              throw "Failed to activate virtual environment"
-            }
+            Write-Output "Current PATH before activation: $env:Path"
+            Write-Output "Current Python before activation: $(Get-Command python | Select-Object -ExpandProperty Source)"
 
-            # Verify Python is using the virtual environment
-            $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
-            if (-not $pythonPath.StartsWith($venvPath)) {
-              throw "Python is not using the virtual environment. Expected: $venvPath, Actual: $pythonPath"
-            }
-
-            # Verify Python version and pip
-            $pythonVersion = python --version
-            $pipVersion = pip --version
-            Write-Output "Python version: $pythonVersion"
-            Write-Output "pip version: $pipVersion"
-
-            # Install dependencies with timeout
-            Write-Output "Installing dependencies..."
-            $timeout = 300 # 5 minutes
+            # Source the activation script with error handling and timeout
             $job = Start-Job -ScriptBlock {
-              python -m pip install --upgrade pip
-              python -m pip install -r requirements.txt
-            }
+                param($scriptPath)
+                & $scriptPath
+            } -ArgumentList $activateScript
+
+            $timeout = 30  # 30 seconds timeout
             $result = Wait-Job $job -Timeout $timeout
             if ($result -eq $null) {
-              Stop-Job $job
-              throw "Dependency installation timed out after $timeout seconds"
+                Stop-Job $job
+                Remove-Job $job
+                throw "Activation script timed out after $timeout seconds"
             }
+
             $output = Receive-Job $job
+            Remove-Job $job
+
             if ($job.State -eq 'Failed') {
-              throw "Dependency installation failed: $output"
+                throw "Activation script failed: $output"
             }
 
-            Write-Output "=== Installation Complete ==="
-            Write-Output "Python version: $(python --version)"
-            Write-Output "pip version: $(pip --version)"
-            Write-Output "Installed packages:"
-            pip list
+            # Verify activation by checking Python path
+            $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
+            if (-not $pythonPath.StartsWith($venvPath)) {
+                Write-Error "Python is not using the virtual environment"
+                Write-Output "Expected Python path to start with: $venvPath"
+                Write-Output "Actual Python path: $pythonPath"
+                exit 1
+            }
 
+            Write-Output "PATH after activation: $env:Path"
+            Write-Output "Python after activation: $pythonPath"
+
+            # Install system packages with timeout
+            Write-Output "Installing system packages..."
+            $chocoJob = Start-Job -ScriptBlock {
+                choco install neovim -y
+                choco install luarocks -y
+            }
+
+            $timeout = 300  # 5 minutes timeout
+            $result = Wait-Job $chocoJob -Timeout $timeout
+            if ($result -eq $null) {
+                Stop-Job $chocoJob
+                Remove-Job $chocoJob
+                throw "Chocolatey installation timed out after $timeout seconds"
+            }
+
+            $output = Receive-Job $chocoJob
+            Remove-Job $chocoJob
+
+            if ($chocoJob.State -eq 'Failed') {
+                throw "Chocolatey installation failed: $output"
+            }
+
+            # Wait for Neovim installation to complete
+            Start-Sleep -Seconds 10
+
+            # Verify Neovim installation
+            $neovimPath = "C:\tools\neovim\nvim-win64\bin"
+            if (-not (Test-Path $neovimPath)) {
+                Write-Output "Neovim path not found, checking alternative locations..."
+                $neovimPath = Get-ChildItem "C:\tools\neovim" -Recurse -Filter "nvim.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty DirectoryName
+                if (-not $neovimPath) {
+                    Write-Error "Neovim installation not found"
+                    Write-Output "Checking C:\tools contents:"
+                    Get-ChildItem "C:\tools" -Recurse | Format-Table -AutoSize
+                    exit 1
+                }
+            }
+
+            # Add Neovim to PATH
+            $env:Path = "$env:Path;$neovimPath"
+            Write-Output "Added Neovim to PATH: $neovimPath"
+
+            # Use PowerShell script with Chocolatey and timeout
+            Write-Output "Running PowerShell install script..."
+            $installJob = Start-Job -ScriptBlock {
+                param($scriptPath)
+                & $scriptPath -UseChocolatey
+            } -ArgumentList "${{ github.workspace }}/infra/install.ps1"
+
+            $timeout = 300  # 5 minutes timeout
+            $result = Wait-Job $installJob -Timeout $timeout
+            if ($result -eq $null) {
+                Stop-Job $installJob
+                Remove-Job $installJob
+                throw "Install script timed out after $timeout seconds"
+            }
+
+            $output = Receive-Job $installJob
+            Remove-Job $installJob
+
+            if ($installJob.State -eq 'Failed') {
+                throw "Install script failed: $output"
+            }
           } catch {
-            $errorDetails = @{
-              Message = $_.Exception.Message
-              ScriptStackTrace = $_.ScriptStackTrace
-              Time = Get-Date
-              Environment = @{
-                Path = $env:Path
-                PythonVersion = python --version
-                CurrentDirectory = Get-Location
-                DirectoryContents = Get-ChildItem
-                EnvironmentVariables = Get-ChildItem env: | ForEach-Object { @{ $_.Name = $_.Value } }
-              }
-            }
-            Write-Output ($errorDetails | ConvertTo-Json -Depth 10)
+            Write-Error $_.Exception.Message
+            Write-Output "Current directory: $(Get-Location)"
+            Write-Output "Directory contents:"
+            Get-ChildItem | Format-Table -AutoSize
+            Write-Output "Environment variables:"
+            Get-ChildItem env: | Format-Table -AutoSize
+            Write-Output "PATH: $env:Path"
             exit 1
           }
 
