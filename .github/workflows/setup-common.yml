@@ -210,14 +210,21 @@ jobs:
           }
 
           # Add Lua and LuaRocks to PATH
-          $luaPath = "C:\Program Files\Lua\5.4"
-          $luarocksPath = "C:\Program Files (x86)\LuaRocks"
-          $env:Path = "$luaPath;$luarocksPath;$env:Path"
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          $env:Path = "C:\ProgramData\chocolatey\bin;$env:Path"
           [Environment]::SetEnvironmentVariable("Path", $env:Path, [System.EnvironmentVariableTarget]::Process)
+
+          # Set up Lua environment variables
+          $env:LUA_PATH = "?.lua;?/init.lua;../lua/?.lua;../lua/?/init.lua"
+          $env:LUA_CPATH = "?.dll;?/init.dll;../lua/?.dll;../lua/?/init.dll"
 
           # Verify Lua and LuaRocks installation
           Write-Output "Verifying Lua installation..."
-          lua -v
+          Write-Output "Current PATH: $env:Path"
+          Write-Output "Checking for Lua executables:"
+          Get-Command lua* -ErrorAction SilentlyContinue | Format-Table -AutoSize
+
+          lua5.1 -v
           if ($LASTEXITCODE -ne 0) {
               throw "Lua not found in PATH after installation"
           }
