@@ -212,248 +212,28 @@ jobs:
             $ErrorActionPreference = 'Stop'
             $env:PYTHONIOENCODING = 'utf-8'  # Ensure proper encoding
 
-            # Get the virtual environment path
-            $venvPath = "${{ inputs.venv_path }}"
-            Write-Output "Using virtual environment at: $venvPath"
+            # Ensure Neovim is in PATH and verify it
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
 
-            # Normalize the path for Windows
-            $venvPath = [System.IO.Path]::GetFullPath($venvPath)
-            Write-Output "Normalized path: $venvPath"
-
-            # Create parent directory if it doesn't exist
-            $parentDir = Split-Path -Parent $venvPath
-            if (-not (Test-Path $parentDir)) {
-                Write-Output "Creating parent directory: $parentDir"
-                New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+            # Verify Neovim is available
+            $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+            if (-not $nvimPath) {
+              throw "Neovim not found in PATH before running tests. Current PATH: $env:Path"
             }
+            Write-Output "Using Neovim from: $($nvimPath.Source)"
 
-            # Create virtual environment if it doesn't exist
-            if (-not (Test-Path $venvPath)) {
-                Write-Output "Creating virtual environment at: $venvPath"
-                python -m venv $venvPath
-                if (-not (Test-Path $venvPath)) {
-                    throw "Failed to create virtual environment at: $venvPath"
-                }
-            }
+            # Set up Lua environment
+            $env:LUA_PATH = "?.lua;?/init.lua;../lua/?.lua;../lua/?/init.lua"
+            $env:LUA_CPATH = "?.dll;?/init.dll;../lua/?.dll;../lua/?/init.dll"
 
-            # Verify virtual environment exists
-            if (-not (Test-Path $venvPath)) {
-                Write-Error "Virtual environment not found at: $venvPath"
-                Write-Output "Current directory: $(Get-Location)"
-                Write-Output "Directory contents:"
-                Get-ChildItem | Format-Table -AutoSize
-                Write-Output "Parent directory contents:"
-                Get-ChildItem $parentDir | Format-Table -AutoSize
-                exit 1
-            }
-
-            # Verify activation script exists
-            $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
-            Write-Output "Checking activation script at: $activateScript"
-
-            if (-not (Test-Path $activateScript)) {
-                Write-Error "Activation script not found at: $activateScript"
-                Write-Output "Virtual environment contents:"
-                Get-ChildItem $venvPath -Recurse | Format-Table -AutoSize
-                exit 1
-            }
-
-            # Check for Zone.Identifier and unblock if needed
-            if (Get-Item $activateScript -Stream Zone.Identifier -ErrorAction SilentlyContinue) {
-                Write-Output "Zone.Identifier found! Unblocking script..."
-                Unblock-File -Path $activateScript
-            }
-
-            # Set execution policy for the process
-            $currentPolicy = Get-ExecutionPolicy
-            Write-Output "Current execution policy: $currentPolicy"
-            Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
-            Write-Output "Set execution policy to Bypass for this process"
-
-            # Activate virtual environment
-            Write-Output "Activating virtual environment..."
-            Write-Output "Current PATH before activation: $env:Path"
-            Write-Output "Current Python before activation: $(Get-Command python | Select-Object -ExpandProperty Source)"
-
-            # Debug virtual environment structure
-            Write-Output "=== Virtual Environment Structure ==="
-            Get-ChildItem $venvPath -Recurse | Where-Object { $_.Name -like "*.exe" -or $_.Name -like "*.ps1" } | Format-Table -AutoSize
-            Write-Output "==================================="
-
-            # Source the activation script with error handling and timeout
-            $job = Start-Job -ScriptBlock {
-                param($scriptPath, $venvPath)
-                try {
-                    Write-Output "Activation script path: $scriptPath"
-                    Write-Output "Virtual environment path: $venvPath"
-
-                    # Check if activation script exists
-                    if (-not (Test-Path $scriptPath)) {
-                        throw "Activation script not found at: $scriptPath"
-                    }
-
-                    # Check script content and permissions
-                    Write-Output "Activation script content:"
-                    Get-Content $scriptPath
-                    Write-Output "Script permissions:"
-                    Get-Acl $scriptPath | Format-List
-
-                    # Set execution policy for this process
-                    Write-Output "Current execution policy: $(Get-ExecutionPolicy)"
-                    Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
-                    Write-Output "New execution policy: $(Get-ExecutionPolicy)"
-
-                    # Ensure proper environment setup
-                    $env:PYTHONIOENCODING = 'utf-8'
-                    $env:PYTHONUNBUFFERED = '1'
-                    $env:VIRTUAL_ENV = $venvPath
-
-                    # Try activation with detailed error capture
-                    $ErrorActionPreference = 'Continue'
-                    Write-Output "Attempting to activate virtual environment..."
-
-                    # Use dot-sourcing instead of direct execution
-                    . $scriptPath
-                    $exitCode = $LASTEXITCODE
-                    Write-Output "Activation completed with exit code: $exitCode"
-
-                    # Verify activation by checking environment variables
-                    Write-Output "Checking environment after activation..."
-                    Write-Output "VIRTUAL_ENV: $env:VIRTUAL_ENV"
-                    Write-Output "PATH: $env:Path"
-
-                    if ($exitCode -ne 0) {
-                        throw "Activation script failed with exit code $exitCode"
-                    }
-
-                    # Verify Python path after activation
-                    $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
-                    Write-Output "Python path after activation: $pythonPath"
-                    Write-Output "Expected to start with: $venvPath"
-
-                    if (-not $pythonPath.StartsWith($venvPath)) {
-                        throw "Python path does not point to virtual environment"
-                    }
-
-                    # Verify environment variables
-                    Write-Output "Environment variables after activation:"
-                    Get-ChildItem env: | Where-Object { $_.Name -like "*PYTHON*" -or $_.Name -like "*VIRTUAL*" } | Format-Table -AutoSize
-
-                    Write-Output "Activation successful"
-                } catch {
-                    Write-Error $_.Exception.Message
-                    Write-Output "Error details: $_"
-                    Write-Output "Script stack trace: $($_.ScriptStackTrace)"
-                    Write-Output "Current location: $(Get-Location)"
-                    Write-Output "Environment variables:"
-                    Get-ChildItem env: | Format-Table -AutoSize
-                    Write-Output "Python version: $(python --version 2>&1)"
-                    Write-Output "Python path: $(Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
-                    throw
-                }
-            } -ArgumentList $activateScript, $venvPath
-
-            $timeout = 30  # 30 seconds timeout
-            $result = Wait-Job $job -Timeout $timeout
-            if ($result -eq $null) {
-                Stop-Job $job
-                Remove-Job $job
-                throw "Activation script timed out after $timeout seconds"
-            }
-
-            $output = Receive-Job $job
-            Remove-Job $job
-
-            if ($job.State -eq 'Failed') {
-                Write-Error "Activation failed with output:"
-                Write-Output $output
-                throw "Virtual environment activation failed"
-            }
-
-            Write-Output "Activation output:"
-            Write-Output $output
-
-            # Verify activation by checking Python path
-            $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
-            if (-not $pythonPath.StartsWith($venvPath)) {
-                Write-Error "Python is not using the virtual environment"
-                Write-Output "Expected Python path to start with: $venvPath"
-                Write-Output "Actual Python path: $pythonPath"
-                Write-Output "Current PATH: $env:Path"
-                exit 1
-            }
-
-            # Install system packages with timeout
-            Write-Output "Installing system packages..."
-            $chocoJob = Start-Job -ScriptBlock {
-                choco install neovim -y
-                choco install luarocks -y
-            }
-
-            $timeout = 300  # 5 minutes timeout
-            $result = Wait-Job $chocoJob -Timeout $timeout
-            if ($result -eq $null) {
-                Stop-Job $chocoJob
-                Remove-Job $chocoJob
-                throw "Chocolatey installation timed out after $timeout seconds"
-            }
-
-            $output = Receive-Job $chocoJob
-            Remove-Job $chocoJob
-
-            if ($chocoJob.State -eq 'Failed') {
-                throw "Chocolatey installation failed: $output"
-            }
-
-            # Wait for Neovim installation to complete
-            Start-Sleep -Seconds 10
-
-            # Verify Neovim installation
-            $neovimPath = "C:\tools\neovim\nvim-win64\bin"
-            if (-not (Test-Path $neovimPath)) {
-                Write-Output "Neovim path not found, checking alternative locations..."
-                $neovimPath = Get-ChildItem "C:\tools\neovim" -Recurse -Filter "nvim.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty DirectoryName
-                if (-not $neovimPath) {
-                    Write-Error "Neovim installation not found"
-                    Write-Output "Checking C:\tools contents:"
-                    Get-ChildItem "C:\tools" -Recurse | Format-Table -AutoSize
-                    exit 1
-                }
-            }
-
-            # Add Neovim to PATH
-            $env:Path = "$env:Path;$neovimPath"
-            Write-Output "Added Neovim to PATH: $neovimPath"
-
-            # Use PowerShell script with Chocolatey and timeout
-            Write-Output "Running PowerShell install script..."
-            $installJob = Start-Job -ScriptBlock {
-                param($scriptPath)
-                & $scriptPath -UseChocolatey
-            } -ArgumentList "${{ github.workspace }}/infra/install.ps1"
-
-            $timeout = 300  # 5 minutes timeout
-            $result = Wait-Job $installJob -Timeout $timeout
-            if ($result -eq $null) {
-                Stop-Job $installJob
-                Remove-Job $installJob
-                throw "Install script timed out after $timeout seconds"
-            }
-
-            $output = Receive-Job $installJob
-            Remove-Job $installJob
-
-            if ($installJob.State -eq 'Failed') {
-                throw "Install script failed: $output"
+            # Run the test
+            nvim --headless -c "lua require('test.lua.test_print_table')" -c "quit"
+            if ($LASTEXITCODE -ne 0) {
+              throw "Test failed with exit code $LASTEXITCODE"
             }
           } catch {
             Write-Error $_.Exception.Message
-            Write-Output "Current directory: $(Get-Location)"
-            Write-Output "Directory contents:"
-            Get-ChildItem | Format-Table -AutoSize
-            Write-Output "Environment variables:"
-            Get-ChildItem env: | Format-Table -AutoSize
-            Write-Output "PATH: $env:Path"
             exit 1
           }
 
