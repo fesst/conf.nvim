@@ -50,7 +50,7 @@ Configuration:
 
 - We have to document groupped information about all mappings we set up in wiki/mappings.md.
 - Especially document all overridden (but only non-default!) mappings in wiki/mappings.md.
-- Highlight which defaults are overriden and propose solutions immediately as soon as conflicts should be avoided with the exception of more sophisticated functionality with similar usage.
+- Highlight which defaults are overridden and propose solutions immediately as soon as conflicts should be avoided with the exception of more sophisticated functionality with similar usage.
 
 #### Test apps
 
