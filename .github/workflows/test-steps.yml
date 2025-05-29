@@ -118,8 +118,6 @@ jobs:
           # Activate virtual environment
           Write-Output "Activating virtual environment..."
           Write-Output "Activation script path: $activateScript"
-          Write-Output "Script contents:"
-          Get-Content $activateScript
 
           # Import the activation script
           . $activateScript
@@ -127,6 +125,15 @@ jobs:
             Write-Error "Failed to activate virtual environment"
             Write-Output "Python version: $(python --version)"
             Write-Output "PATH: $env:Path"
+            exit 1
+          }
+
+          # Verify Python is using the virtual environment
+          $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
+          if (-not $pythonPath.StartsWith($venvPath)) {
+            Write-Error "Python is not using the virtual environment"
+            Write-Output "Expected Python path to start with: $venvPath"
+            Write-Output "Actual Python path: $pythonPath"
             exit 1
           }
 

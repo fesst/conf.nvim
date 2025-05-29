@@ -156,9 +156,16 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
 
-          # Use the correct path for Windows
-          $venvPath = "C:\hostedtoolcache\windows\venv"
+          # Use a more reliable path for Windows
+          $venvPath = Join-Path $env:GITHUB_WORKSPACE "venv"
           Write-Output "Setting up virtual environment at: $venvPath"
+
+          # Create parent directory if it doesn't exist
+          $parentDir = Split-Path -Parent $venvPath
+          if (-not (Test-Path $parentDir)) {
+              Write-Output "Creating parent directory: $parentDir"
+              New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+          }
 
           # Remove existing virtual environment if it exists
           if (Test-Path $venvPath) {
@@ -171,12 +178,22 @@ jobs:
           Write-Output "Creating virtual environment..."
           python -m venv $venvPath
           if ($LASTEXITCODE -ne 0) {
-              throw "Failed to create virtual environment"
+              Write-Error "Failed to create virtual environment"
+              Write-Output "Python version: $(python --version)"
+              Write-Output "Python path: $(Get-Command python | Select-Object -ExpandProperty Source)"
+              Write-Output "Current directory: $(Get-Location)"
+              Write-Output "Directory contents:"
+              Get-ChildItem
+              exit 1
           }
 
           # Verify virtual environment
           if (-not (Test-Path $venvPath)) {
-              throw "Virtual environment directory not found after creation"
+              Write-Error "Virtual environment directory not found after creation"
+              Write-Output "Current directory: $(Get-Location)"
+              Write-Output "Directory contents:"
+              Get-ChildItem
+              exit 1
           }
 
           # Set output variable
@@ -185,18 +202,34 @@ jobs:
           # Activate virtual environment
           $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
           if (-not (Test-Path $activateScript)) {
-              throw "Activation script not found at: $activateScript"
+              Write-Error "Activation script not found at: $activateScript"
+              Write-Output "Virtual environment contents:"
+              Get-ChildItem $venvPath -Recurse
+              exit 1
           }
 
           . $activateScript
           if ($LASTEXITCODE -ne 0) {
-              throw "Failed to activate virtual environment"
+              Write-Error "Failed to activate virtual environment"
+              Write-Output "Python version: $(python --version)"
+              Write-Output "PATH: $env:Path"
+              exit 1
+          }
+
+          # Verify Python is using the virtual environment
+          $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
+          if (-not $pythonPath.StartsWith($venvPath)) {
+              Write-Error "Python is not using the virtual environment"
+              Write-Output "Expected Python path to start with: $venvPath"
+              Write-Output "Actual Python path: $pythonPath"
+              exit 1
           }
 
           # Upgrade pip
           python -m pip install --upgrade pip
           if ($LASTEXITCODE -ne 0) {
-              throw "Failed to upgrade pip"
+              Write-Error "Failed to upgrade pip"
+              exit 1
           }
 
           # Verify installation
