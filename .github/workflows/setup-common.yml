@@ -235,13 +235,6 @@ jobs:
               throw "LuaRocks not found in PATH after installation"
           }
 
-          # Install luaformatter
-          Write-Output "Installing luaformatter..."
-          luarocks install --local luaformatter
-          if ($LASTEXITCODE -ne 0) {
-              throw "Failed to install luaformatter"
-          }
-
           Write-Output "Lua packages installed successfully"
 
       - name: Install Lua packages (Unix)
