@@ -189,6 +189,177 @@ jobs:
               exit 1
           }
 
+      - name: Log Rust cache info
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          Write-Output "=== Rust Cache Info ==="
+          Write-Output "Cache paths:"
+          Write-Output "- $env:USERPROFILE\.cargo"
+          Write-Output "- $env:USERPROFILE\.rustup"
+          Write-Output "Cache key: ${{ runner.os }}-${{ runner.arch }}-rust-${{ hashFiles('infra/packages/cargo.sh', 'infra/packages/cargo.ps1') }}"
+          Write-Output "========================="
+
+      - name: Cache Rust
+        if: inputs.platform == 'windows'
+        uses: actions/cache@v4
+        id: rust-cache
+        with:
+          path: |
+            ${{ runner.os == 'Windows' && format('{0}\\.cargo', env.USERPROFILE) || '~/.cargo' }}
+            ${{ runner.os == 'Windows' && format('{0}\\.rustup', env.USERPROFILE) || '~/.rustup' }}
+          key: ${{ runner.os }}-${{ runner.arch }}-rust-${{ hashFiles('infra/packages/cargo.sh', 'infra/packages/cargo.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-rust-
+
+      - name: Log Rust cache result
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          Write-Output "=== Rust Cache Result ==="
+          Write-Output "Cache hit: ${{ steps.rust-cache.outputs.cache-hit }}"
+          Write-Output "Cache sizes:"
+          if (Test-Path "$env:USERPROFILE\.cargo") {
+              Get-ChildItem "$env:USERPROFILE\.cargo" -Recurse | Measure-Object -Property Length -Sum | Select-Object @{Name="Size(MB)";Expression={"{0:N2}" -f ($_.Sum / 1MB)}}
+          }
+          if (Test-Path "$env:USERPROFILE\.rustup") {
+              Get-ChildItem "$env:USERPROFILE\.rustup" -Recurse | Measure-Object -Property Length -Sum | Select-Object @{Name="Size(MB)";Expression={"{0:N2}" -f ($_.Sum / 1MB)}}
+          }
+          Write-Output "==========================="
+
+      - name: Log Visual Studio Build Tools cache info
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          Write-Output "=== Visual Studio Build Tools Cache Info ==="
+          Write-Output "Cache paths:"
+          Write-Output "- $env:USERPROFILE\vs_buildtools"
+          Write-Output "Cache key: ${{ runner.os }}-${{ runner.arch }}-vstools-${{ hashFiles('infra/packages/vs-setup.ps1') }}"
+          Write-Output "========================="
+
+      - name: Cache Visual Studio Build Tools
+        if: inputs.platform == 'windows'
+        uses: actions/cache@v4
+        id: vstools-cache
+        with:
+          path: ${{ runner.os == 'Windows' && format('{0}\\vs_buildtools', env.USERPROFILE) || '~/vs_buildtools' }}
+          key: ${{ runner.os }}-${{ runner.arch }}-vstools-${{ hashFiles('infra/packages/vs-setup.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-vstools-
+
+      - name: Log Visual Studio Build Tools cache result
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          Write-Output "=== Visual Studio Build Tools Cache Result ==="
+          Write-Output "Cache hit: ${{ steps.vstools-cache.outputs.cache-hit }}"
+          Write-Output "Cache size:"
+          if (Test-Path "$env:USERPROFILE\vs_buildtools") {
+              Get-ChildItem "$env:USERPROFILE\vs_buildtools" -Recurse | Measure-Object -Property Length -Sum | Select-Object @{Name="Size(MB)";Expression={"{0:N2}" -f ($_.Sum / 1MB)}}
+          }
+          Write-Output "==========================="
+
+      - name: Verify Rust installation
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          try {
+            $ErrorActionPreference = 'Stop'
+            Write-Output "Verifying Rust installation..."
+
+            # Check if rustup is available
+            $rustupPath = Get-Command rustup -ErrorAction SilentlyContinue
+            if (-not $rustupPath) {
+                Write-Output "rustup not found, installing Rust..."
+                Invoke-WebRequest -Uri https://win.rustup.rs -OutFile rustup-init.exe
+                .\rustup-init.exe -y
+                Remove-Item rustup-init.exe
+                $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+                $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
+            }
+
+            # Verify rustc and cargo
+            $rustcVersion = rustc --version
+            $cargoVersion = cargo --version
+            Write-Output "Rust version: $rustcVersion"
+            Write-Output "Cargo version: $cargoVersion"
+
+            # Install stylua if not present
+            $styluaPath = Get-Command stylua -ErrorAction SilentlyContinue
+            if (-not $styluaPath) {
+                Write-Output "Installing stylua..."
+                cargo install stylua
+            }
+          } catch {
+            Write-Error $_.Exception.Message
+            Write-Output "Current PATH: $env:Path"
+            exit 1
+          }
+
+      - name: Verify Visual Studio Build Tools
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          try {
+            $ErrorActionPreference = 'Stop'
+            Write-Output "Verifying Visual Studio Build Tools..."
+
+            $vsPath = Join-Path $env:USERPROFILE "vs_buildtools"
+            $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
+
+            if (-not (Test-Path $vsDevCmd)) {
+                Write-Output "Visual Studio Build Tools not found, installing..."
+
+                # Create installation directory
+                if (-not (Test-Path $vsPath)) {
+                    New-Item -ItemType Directory -Path $vsPath -Force | Out-Null
+                }
+
+                # Download VS Build Tools installer
+                $vsInstallerUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe"
+                $vsInstallerPath = "$env:TEMP\vs_buildtools.exe"
+                Write-Output "Downloading VS Build Tools installer..."
+                Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath -UseBasicParsing
+
+                # Install VS Build Tools
+                Write-Output "Installing VS Build Tools..."
+                $process = Start-Process -FilePath $vsInstallerPath -ArgumentList @(
+                    "--quiet",
+                    "--wait",
+                    "--norestart",
+                    "--nocache",
+                    "--installPath", $vsPath,
+                    "--add", "Microsoft.VisualStudio.Workload.VCTools",
+                    "--includeRecommended"
+                ) -Wait -PassThru
+
+                if ($process.ExitCode -ne 0) {
+                    throw "Failed to install Visual Studio Build Tools. Exit code: $($process.ExitCode)"
+                }
+            }
+
+            # Set up Visual Studio environment
+            Write-Output "Setting up Visual Studio environment..."
+            cmd /c "`"$vsDevCmd`" && set" | ForEach-Object {
+                if ($_ -match "^(.*?)=(.*)$") {
+                    $name = $matches[1]
+                    $value = $matches[2]
+                    [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::Process)
+                }
+            }
+
+            # Verify installation
+            $clPath = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
+            if (-not $clPath) {
+                throw "Failed to set up Visual Studio environment. cl.exe not found."
+            }
+            Write-Output "Visual Studio Build Tools verified successfully"
+          } catch {
+            Write-Error $_.Exception.Message
+            Write-Output "Current PATH: $env:Path"
+            exit 1
+          }
+
       - name: Log Homebrew cache info
         if: inputs.platform == 'macos' && inputs.use_cache
         shell: bash
@@ -315,12 +486,10 @@ jobs:
         shell: pwsh
         run: |
           try {
-            # Get the virtual environment path from the setup step
-            $venvPath = "${{ steps.setup.outputs.virtual_env }}"
-            if (-not $venvPath) {
-              # Fallback to the input path if setup output is not available
-              $venvPath = "${{ inputs.venv_path }}"
-            }
+            $ErrorActionPreference = 'Stop'
+
+            # Get the virtual environment path
+            $venvPath = "${{ inputs.venv_path }}"
             Write-Output "Using virtual environment at: $venvPath"
 
             # Normalize the path for Windows
@@ -330,83 +499,80 @@ jobs:
             # Create parent directory if it doesn't exist
             $parentDir = Split-Path -Parent $venvPath
             if (-not (Test-Path $parentDir)) {
-              Write-Output "Creating parent directory: $parentDir"
-              New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+                Write-Output "Creating parent directory: $parentDir"
+                New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
             }
 
             # Verify virtual environment exists
             if (-not (Test-Path $venvPath)) {
-              Write-Error "Virtual environment not found at: $venvPath"
-              Write-Output "Current directory: $(Get-Location)"
-              Write-Output "Directory contents:"
-              Get-ChildItem
-              Write-Output "Parent directory contents:"
-              Get-ChildItem $parentDir
-              exit 1
+                Write-Error "Virtual environment not found at: $venvPath"
+                Write-Output "Current directory: $(Get-Location)"
+                Write-Output "Directory contents:"
+                Get-ChildItem
+                Write-Output "Parent directory contents:"
+                Get-ChildItem $parentDir
+                exit 1
             }
 
             # Verify activation script exists
-            $activateScript = Join-Path $venvPath "Scripts\activate.ps1"
+            $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+            Write-Output "Checking activation script at: $activateScript"
+
             if (-not (Test-Path $activateScript)) {
-              Write-Error "Activation script not found at: $activateScript"
-              Write-Output "Virtual environment contents:"
-              Get-ChildItem $venvPath -Recurse
-              exit 1
+                Write-Error "Activation script not found at: $activateScript"
+                Write-Output "Virtual environment contents:"
+                Get-ChildItem $venvPath -Recurse
+                exit 1
             }
+
+            # Check for Zone.Identifier and unblock if needed
+            if (Get-Item $activateScript -Stream Zone.Identifier -ErrorAction SilentlyContinue) {
+                Write-Output "Zone.Identifier found! Unblocking script..."
+                Unblock-File -Path $activateScript
+            }
+
+            # Set execution policy for the process
+            $currentPolicy = Get-ExecutionPolicy
+            Write-Output "Current execution policy: $currentPolicy"
+            Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+            Write-Output "Set execution policy to Bypass for this process"
 
             # Activate virtual environment
             Write-Output "Activating virtual environment..."
+            Write-Output "Current PATH before activation: $env:Path"
+            Write-Output "Current Python before activation: $(Get-Command python | Select-Object -ExpandProperty Source)"
+
+            # Source the activation script
             . $activateScript
             if ($LASTEXITCODE -ne 0) {
-              Write-Error "Failed to activate virtual environment"
-              Write-Output "Python version: $(python --version)"
-              Write-Output "PATH: $env:Path"
-              exit 1
+                Write-Error "Failed to activate virtual environment"
+                Write-Output "Python version: $(python --version)"
+                Write-Output "PATH after failed activation: $env:Path"
+                exit 1
             }
+
+            Write-Output "PATH after activation: $env:Path"
+            Write-Output "Python after activation: $(Get-Command python | Select-Object -ExpandProperty Source)"
 
             # Verify Python is using the virtual environment
             $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
             if (-not $pythonPath.StartsWith($venvPath)) {
-              Write-Error "Python is not using the virtual environment"
-              Write-Output "Expected Python path to start with: $venvPath"
-              Write-Output "Actual Python path: $pythonPath"
-              exit 1
+                Write-Error "Python is not using the virtual environment"
+                Write-Output "Expected Python path to start with: $venvPath"
+                Write-Output "Actual Python path: $pythonPath"
+                exit 1
             }
 
-            # Run install script
-            $env:CI = "true"
-            Write-Output "Running install script..."
-
-            # Function to check if a package is installed
-            function Test-ChocolateyPackage {
-                param($PackageName)
-                $package = choco list --local-only --exact $PackageName
-                return $package -match "^$PackageName\s"
-            }
-
-            # Install packages using Chocolatey only if not already installed
-            $packages = @(
-                @{Name = "neovim"; Installed = $false}
-                @{Name = "tree-sitter"; Installed = $false}
-            )
-
-            foreach ($package in $packages) {
-                if (-not (Test-ChocolateyPackage $package.Name)) {
-                    Write-Output "Installing $($package.Name)..."
-                    choco install $package.Name -y
-                    if ($LASTEXITCODE -ne 0) {
-                        throw "Failed to install $($package.Name)"
-                    }
-                } else {
-                    Write-Output "$($package.Name) is already installed"
-                }
-            }
+            # Install system packages
+            Write-Output "Installing system packages..."
+            choco install neovim -y
+            choco install luarocks -y
 
             # Use PowerShell script with Chocolatey
             Write-Output "Running PowerShell install script..."
             & "${{ github.workspace }}/infra/install.ps1" -UseChocolatey
             if ($LASTEXITCODE -ne 0) {
-              throw "Failed to run PowerShell install script"
+                throw "Failed to run PowerShell install script"
             }
           } catch {
             Write-Error $_.Exception.Message

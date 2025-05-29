@@ -65,6 +65,73 @@ jobs:
           path: ~/.npm
           key: npm-${{ runner.os }}-${{ runner.arch }}
 
+      - name: Log Rust cache info
+        if: inputs.setup_rust
+        shell: pwsh
+        run: |
+          Write-Output "=== Rust Cache Info ==="
+          Write-Output "Cache paths:"
+          Write-Output "- $env:USERPROFILE\.cargo"
+          Write-Output "- $env:USERPROFILE\.rustup"
+          Write-Output "Cache key: ${{ runner.os }}-${{ runner.arch }}-rust-${{ hashFiles('infra/packages/cargo.sh', 'infra/packages/cargo.ps1') }}"
+          Write-Output "========================="
+
+      - name: Cache Rust
+        if: inputs.setup_rust
+        uses: actions/cache@v4
+        id: rust-cache
+        with:
+          path: |
+            ${{ runner.os == 'Windows' && format('{0}\\.cargo', env.USERPROFILE) || '~/.cargo' }}
+            ${{ runner.os == 'Windows' && format('{0}\\.rustup', env.USERPROFILE) || '~/.rustup' }}
+          key: ${{ runner.os }}-${{ runner.arch }}-rust-${{ hashFiles('infra/packages/cargo.sh', 'infra/packages/cargo.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-rust-
+
+      - name: Log Rust cache result
+        if: inputs.setup_rust
+        shell: pwsh
+        run: |
+          Write-Output "=== Rust Cache Result ==="
+          Write-Output "Cache hit: ${{ steps.rust-cache.outputs.cache-hit }}"
+          Write-Output "Cache sizes:"
+          if (Test-Path "$env:USERPROFILE\.cargo") {
+              Get-ChildItem "$env:USERPROFILE\.cargo" -Recurse | Measure-Object -Property Length -Sum | Select-Object @{Name="Size(MB)";Expression={"{0:N2}" -f ($_.Sum / 1MB)}}
+          }
+          if (Test-Path "$env:USERPROFILE\.rustup") {
+              Get-ChildItem "$env:USERPROFILE\.rustup" -Recurse | Measure-Object -Property Length -Sum | Select-Object @{Name="Size(MB)";Expression={"{0:N2}" -f ($_.Sum / 1MB)}}
+          }
+          Write-Output "==========================="
+
+      - name: Log Visual Studio Build Tools cache info
+        shell: pwsh
+        run: |
+          Write-Output "=== Visual Studio Build Tools Cache Info ==="
+          Write-Output "Cache paths:"
+          Write-Output "- $env:USERPROFILE\vs_buildtools"
+          Write-Output "Cache key: ${{ runner.os }}-${{ runner.arch }}-vstools-${{ hashFiles('infra/packages/vs-setup.ps1') }}"
+          Write-Output "========================="
+
+      - name: Cache Visual Studio Build Tools
+        uses: actions/cache@v4
+        id: vstools-cache
+        with:
+          path: ${{ runner.os == 'Windows' && format('{0}\\vs_buildtools', env.USERPROFILE) || '~/vs_buildtools' }}
+          key: ${{ runner.os }}-${{ runner.arch }}-vstools-${{ hashFiles('infra/packages/vs-setup.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-vstools-
+
+      - name: Log Visual Studio Build Tools cache result
+        shell: pwsh
+        run: |
+          Write-Output "=== Visual Studio Build Tools Cache Result ==="
+          Write-Output "Cache hit: ${{ steps.vstools-cache.outputs.cache-hit }}"
+          Write-Output "Cache size:"
+          if (Test-Path "$env:USERPROFILE\vs_buildtools") {
+              Get-ChildItem "$env:USERPROFILE\vs_buildtools" -Recurse | Measure-Object -Property Length -Sum | Select-Object @{Name="Size(MB)";Expression={"{0:N2}" -f ($_.Sum / 1MB)}}
+          }
+          Write-Output "==========================="
+
       - name: Set up Python
         if: inputs.setup_python
         uses: actions/setup-python@v5
