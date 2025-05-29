@@ -24,6 +24,11 @@ on:
         type: boolean
         default: false
         description: "Whether to install minimal dependencies"
+      setup_python:
+        required: false
+        type: boolean
+        default: false
+        description: "Whether to use the setup file for virtual environment"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.job }}-${{ github.run_id }}
@@ -64,52 +69,37 @@ jobs:
           echo "=============================="
 
       - name: Verify virtual environment path
-        shell: bash
-        if: inputs.platform != 'windows'
-        run: |
-          echo "Checking virtual environment at: ${{ inputs.venv_path }}"
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          ls -la
-
-          if [ ! -d "${{ inputs.venv_path }}" ]; then
-            echo "Error: Virtual environment not found at: ${{ inputs.venv_path }}"
-            echo "Python version: $(python3 --version)"
-            echo "Python path: $(which python3)"
-            echo "PATH: $PATH"
-            exit 1
-          fi
-
-          echo "Virtual environment found at: ${{ inputs.venv_path }}"
-          echo "Virtual environment contents:"
-          ls -la "${{ inputs.venv_path }}"
-
-      - name: Verify virtual environment path (Windows)
+        if: inputs.setup_python
         shell: pwsh
-        if: inputs.platform == 'windows'
         run: |
           $ErrorActionPreference = 'Stop'
-          Write-Output "Checking virtual environment path: ${{ inputs.venv_path }}"
 
-          # Normalize the path
-          $venvPath = [System.IO.Path]::GetFullPath("${{ inputs.venv_path }}")
-          Write-Output "Normalized path: $venvPath"
+          # Get virtual environment path from setup
+          $venvPath = "${{ steps.setup.outputs.virtual_env }}"
+          Write-Output "Virtual environment path from setup: $venvPath"
 
-          # Check if directory exists
+          # Normalize path for Windows
+          if ($IsWindows) {
+              $venvPath = $venvPath.Replace('\', '/')
+              Write-Output "Normalized path for Windows: $venvPath"
+          }
+
+          # Verify virtual environment exists
           if (-not (Test-Path $venvPath)) {
               Write-Error "Virtual environment not found at: $venvPath"
               Write-Output "Current directory: $(Get-Location)"
               Write-Output "Directory contents:"
               Get-ChildItem
-              Write-Output "Environment variables:"
-              Get-ChildItem env: | Format-Table -AutoSize
-              Write-Output "RUNNER_TEMP: $env:RUNNER_TEMP"
-              Write-Output "GITHUB_WORKSPACE: $env:GITHUB_WORKSPACE"
               exit 1
           }
 
           # Verify activation script exists
-          $activateScript = Join-Path $venvPath "Scripts\activate.ps1"
+          $activateScript = if ($IsWindows) {
+              Join-Path $venvPath "Scripts\Activate.ps1"
+          } else {
+              Join-Path $venvPath "bin/activate"
+          }
+
           if (-not (Test-Path $activateScript)) {
               Write-Error "Activation script not found at: $activateScript"
               Write-Output "Virtual environment contents:"
@@ -118,12 +108,8 @@ jobs:
           }
 
           # Activate virtual environment
-          Write-Output "Activating virtual environment..."
-          Write-Output "Activation script path: $activateScript"
-
-          # Import the activation script
           . $activateScript
-          if (-not $?) {
+          if ($LASTEXITCODE -ne 0) {
               Write-Error "Failed to activate virtual environment"
               Write-Output "Python version: $(python --version)"
               Write-Output "PATH: $env:Path"
@@ -138,8 +124,6 @@ jobs:
               Write-Output "Actual Python path: $pythonPath"
               exit 1
           }
-
-          Write-Output "Virtual environment verified and activated successfully"
 
       - name: Log Homebrew cache info
         if: inputs.platform == 'macos' && inputs.use_cache
