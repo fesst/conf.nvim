@@ -126,10 +126,7 @@ jobs:
         run: |
           Write-Output "=== Visual Studio Build Tools Cache Result ==="
           Write-Output "Cache hit: ${{ steps.vstools-cache.outputs.cache-hit }}"
-          Write-Output "Cache size:"
-          if (Test-Path "$env:USERPROFILE\vs_buildtools") {
-              Get-ChildItem "$env:USERPROFILE\vs_buildtools" -Recurse | Measure-Object -Property Length -Sum | Select-Object @{Name="Size(MB)";Expression={"{0:N2}" -f ($_.Sum / 1MB)}}
-          }
+          Write-Output "Cache size: $(Get-ChildItem -Path $env:USERPROFILE\vs_buildtools -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum bytes"
           Write-Output "==========================="
 
       - name: Set up Python
@@ -282,38 +279,11 @@ jobs:
               }
           }
 
-          # Verify cl.exe is available
+          # Verify cl.exe is in PATH
           $clPath = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
           if (-not $clPath) {
-              Write-Output "cl.exe not found in PATH, attempting to locate it..."
-              $possiblePaths = @(
-                  (Join-Path $vsPath "VC\Tools\MSVC\*\bin\Hostx64\x64"),
-                  (Join-Path $vsPath "VC\Tools\MSVC\*\bin\Hostx86\x64")
-              )
-
-              foreach ($path in $possiblePaths) {
-                  $expandedPath = Resolve-Path $path -ErrorAction SilentlyContinue
-                  if ($expandedPath) {
-                      $clPath = Join-Path $expandedPath "cl.exe"
-                      if (Test-Path $clPath) {
-                          Write-Output "Found cl.exe at: $clPath"
-                          $env:Path = "$expandedPath;$env:Path"
-                          break
-                      }
-                  }
-              }
+              throw "cl.exe not found in PATH after installation"
           }
-
-          if (-not $clPath) {
-              Write-Output "Current PATH: $env:Path"
-              Write-Output "Visual Studio installation directory contents:"
-              Get-ChildItem $vsPath -Recurse -Depth 2 | Where-Object { $_.Name -eq "cl.exe" } | ForEach-Object {
-                  Write-Output "Found cl.exe at: $($_.FullName)"
-              }
-              throw "cl.exe not found in PATH after installation and path setup"
-          }
-
-          Write-Output "Visual Studio Build Tools installed successfully"
           Write-Output "cl.exe found at: $clPath"
 
       - name: Set up Visual Studio environment
