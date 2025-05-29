@@ -203,10 +203,29 @@ jobs:
           $ErrorActionPreference = 'Stop'
           Write-Output "Starting Visual Studio Build Tools installation process..."
 
+          # Check if VS Build Tools is already installed and working
+          $vsPath = Join-Path $env:USERPROFILE "vs_buildtools"
+          $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
+
+          if (Test-Path $vsDevCmd) {
+              Write-Output "Visual Studio Build Tools found at: $vsPath"
+
+              # Verify the installation is working
+              $clPath = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
+              if ($clPath) {
+                  Write-Output "Visual Studio Build Tools is already installed and working"
+                  Write-Output "cl.exe found at: $clPath"
+                  exit 0
+              } else {
+                  Write-Output "Visual Studio Build Tools found but cl.exe not in PATH, reinstalling..."
+              }
+          } else {
+              Write-Output "Visual Studio Build Tools not found, installing..."
+          }
+
           # Create installation directory
-          $vsInstallPath = Join-Path $env:USERPROFILE "vs_buildtools"
-          if (-not (Test-Path $vsInstallPath)) {
-              New-Item -ItemType Directory -Path $vsInstallPath -Force | Out-Null
+          if (-not (Test-Path $vsPath)) {
+              New-Item -ItemType Directory -Path $vsPath -Force | Out-Null
           }
 
           # Download VS Build Tools installer
@@ -223,7 +242,7 @@ jobs:
               "--wait",
               "--norestart",
               "--nocache",
-              "--installPath", $vsInstallPath,
+              "--installPath", $vsPath,
               "--add", "Microsoft.VisualStudio.Workload.VCTools",
               "--includeRecommended"
           ) -Wait -PassThru
@@ -233,12 +252,18 @@ jobs:
           }
 
           # Verify installation
-          $vsDevCmd = Join-Path $vsInstallPath "Common7\Tools\VsDevCmd.bat"
           if (-not (Test-Path $vsDevCmd)) {
               throw "VsDevCmd.bat not found after installation"
           }
 
+          # Verify cl.exe is available
+          $clPath = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
+          if (-not $clPath) {
+              throw "cl.exe not found in PATH after installation"
+          }
+
           Write-Output "Visual Studio Build Tools installed successfully"
+          Write-Output "cl.exe found at: $clPath"
 
       - name: Set up Visual Studio environment
         shell: pwsh

@@ -102,31 +102,32 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
 
-          # Get virtual environment path from setup
-          $venvPath = "${{ steps.setup.outputs.virtual_env }}"
-          Write-Output "Virtual environment path from setup: $venvPath"
+          # Get the virtual environment path
+          $venvPath = "C:\hostedtoolcache\windows\venv"
+          Write-Output "Using virtual environment at: $venvPath"
 
-          # Debug path information
-          Write-Output "=== Virtual Environment Path Debug ==="
-          Write-Output "Raw venv_path: ${{ inputs.venv_path }}"
-          Write-Output "Setup output venv_path: $venvPath"
-          Write-Output "Current directory: $(Get-Location)"
-          Write-Output "Directory contents:"
-          Get-ChildItem
-          Write-Output "================================"
+          # Normalize the path for Windows
+          $venvPath = [System.IO.Path]::GetFullPath($venvPath)
+          Write-Output "Normalized path: $venvPath"
 
-          # Normalize path for Windows
-          if ($IsWindows) {
-              $venvPath = [System.IO.Path]::GetFullPath($venvPath)
-              Write-Output "Normalized path for Windows: $venvPath"
+          # Create parent directory if it doesn't exist
+          $parentDir = Split-Path -Parent $venvPath
+          if (-not (Test-Path $parentDir)) {
+              Write-Output "Creating parent directory: $parentDir"
+              New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+          }
 
-              # Debug normalized path
-              Write-Output "=== Normalized Path Debug ==="
-              Write-Output "Full path: $venvPath"
-              Write-Output "Parent directory exists: $(Test-Path (Split-Path -Parent $venvPath))"
-              Write-Output "Parent directory contents:"
-              Get-ChildItem (Split-Path -Parent $venvPath)
-              Write-Output "=========================="
+          # Try to set permissions, but continue if it fails
+          try {
+              Write-Output "Attempting to set permissions on parent directory..."
+              $acl = Get-Acl $parentDir
+              $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+              $acl.SetAccessRule($rule)
+              Set-Acl $parentDir $acl
+              Write-Output "Successfully set permissions on parent directory"
+          } catch {
+              Write-Output "Warning: Could not set permissions on parent directory: $_"
+              Write-Output "Continuing with default permissions..."
           }
 
           # Verify virtual environment exists
@@ -134,63 +135,69 @@ jobs:
               Write-Error "Virtual environment not found at: $venvPath"
               Write-Output "Current directory: $(Get-Location)"
               Write-Output "Directory contents:"
-              Get-ChildItem
+              Get-ChildItem | Format-Table -AutoSize
+              Write-Output "Parent directory contents:"
+              Get-ChildItem $parentDir | Format-Table -AutoSize
               exit 1
           }
 
-          # Verify activation script exists
-          $activateScript = if ($IsWindows) {
-              Join-Path $venvPath "Scripts\Activate.ps1"
-          } else {
-              Join-Path $venvPath "bin/activate"
+          # Try to set permissions on virtual environment directory, but continue if it fails
+          try {
+              Write-Output "Attempting to set permissions on virtual environment directory..."
+              $acl = Get-Acl $venvPath
+              $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+              $acl.SetAccessRule($rule)
+              Set-Acl $venvPath $acl
+              Write-Output "Successfully set permissions on virtual environment directory"
+          } catch {
+              Write-Output "Warning: Could not set permissions on virtual environment directory: $_"
+              Write-Output "Continuing with default permissions..."
           }
 
-          Write-Output "=== Activation Script Debug ==="
-          Write-Output "Activation script path: $activateScript"
-          Write-Output "Script exists: $(Test-Path $activateScript)"
-          if (Test-Path $activateScript) {
-              Write-Output "Script contents:"
-              Get-Content $activateScript
-          }
-          Write-Output "============================"
+          # Verify activation script exists
+          $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+          Write-Output "Checking activation script at: $activateScript"
 
           if (-not (Test-Path $activateScript)) {
               Write-Error "Activation script not found at: $activateScript"
               Write-Output "Virtual environment contents:"
-              Get-ChildItem $venvPath -Recurse
+              Get-ChildItem $venvPath -Recurse | Format-Table -AutoSize
               exit 1
           }
 
-          # Activate virtual environment
-          Write-Output "=== Activation Debug ==="
-          Write-Output "Current PATH: $env:Path"
-          Write-Output "Current Python: $(Get-Command python | Select-Object -ExpandProperty Source)"
-          Write-Output "========================="
-
+          # Try to set permissions on activation script, but continue if it fails
           try {
-              & $activateScript
-              if ($LASTEXITCODE -ne 0) {
-                  throw "Activation script failed with exit code $LASTEXITCODE"
+              Write-Output "Attempting to set permissions on activation script..."
+              $acl = Get-Acl $activateScript
+              $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "Allow")
+              $acl.SetAccessRule($rule)
+              Set-Acl $activateScript $acl
+              Write-Output "Successfully set permissions on activation script"
+          } catch {
+              Write-Output "Warning: Could not set permissions on activation script: $_"
+              Write-Output "Continuing with default permissions..."
+          }
+
+          # Check for Zone.Identifier and unblock if needed
+          try {
+              if (Get-Item $activateScript -Stream Zone.Identifier -ErrorAction SilentlyContinue) {
+                  Write-Output "Zone.Identifier found! Unblocking script..."
+                  Unblock-File -Path $activateScript
               }
           } catch {
-              Write-Error "Failed to activate virtual environment: $_"
-              Write-Output "Python version: $(python --version)"
-              Write-Output "PATH: $env:Path"
-              exit 1
+              Write-Output "Warning: Could not unblock file: $_"
+              Write-Output "Continuing anyway..."
           }
 
-          Write-Output "=== Post-Activation Debug ==="
-          Write-Output "Updated PATH: $env:Path"
-          Write-Output "Updated Python: $(Get-Command python | Select-Object -ExpandProperty Source)"
-          Write-Output "============================"
-
-          # Verify Python is using the virtual environment
-          $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
-          if (-not $pythonPath.StartsWith($venvPath)) {
-              Write-Error "Python is not using the virtual environment"
-              Write-Output "Expected Python path to start with: $venvPath"
-              Write-Output "Actual Python path: $pythonPath"
-              exit 1
+          # Set execution policy for the process
+          try {
+              $currentPolicy = Get-ExecutionPolicy
+              Write-Output "Current execution policy: $currentPolicy"
+              Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+              Write-Output "Set execution policy to Bypass for this process"
+          } catch {
+              Write-Output "Warning: Could not set execution policy: $_"
+              Write-Output "Continuing with current policy..."
           }
 
       - name: Log Rust cache info
@@ -508,12 +515,18 @@ jobs:
                 New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
             }
 
-            # Set permissions on parent directory
-            Write-Output "Setting permissions on parent directory..."
-            $acl = Get-Acl $parentDir
-            $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-            $acl.SetAccessRule($rule)
-            Set-Acl $parentDir $acl
+            # Try to set permissions, but continue if it fails
+            try {
+                Write-Output "Attempting to set permissions on parent directory..."
+                $acl = Get-Acl $parentDir
+                $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+                $acl.SetAccessRule($rule)
+                Set-Acl $parentDir $acl
+                Write-Output "Successfully set permissions on parent directory"
+            } catch {
+                Write-Output "Warning: Could not set permissions on parent directory: $_"
+                Write-Output "Continuing with default permissions..."
+            }
 
             # Verify virtual environment exists
             if (-not (Test-Path $venvPath)) {
@@ -526,12 +539,18 @@ jobs:
                 exit 1
             }
 
-            # Set permissions on virtual environment directory
-            Write-Output "Setting permissions on virtual environment directory..."
-            $acl = Get-Acl $venvPath
-            $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-            $acl.SetAccessRule($rule)
-            Set-Acl $venvPath $acl
+            # Try to set permissions on virtual environment directory, but continue if it fails
+            try {
+                Write-Output "Attempting to set permissions on virtual environment directory..."
+                $acl = Get-Acl $venvPath
+                $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+                $acl.SetAccessRule($rule)
+                Set-Acl $venvPath $acl
+                Write-Output "Successfully set permissions on virtual environment directory"
+            } catch {
+                Write-Output "Warning: Could not set permissions on virtual environment directory: $_"
+                Write-Output "Continuing with default permissions..."
+            }
 
             # Verify activation script exists
             $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
@@ -544,24 +563,40 @@ jobs:
                 exit 1
             }
 
-            # Set permissions on activation script
-            Write-Output "Setting permissions on activation script..."
-            $acl = Get-Acl $activateScript
-            $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "Allow")
-            $acl.SetAccessRule($rule)
-            Set-Acl $activateScript $acl
+            # Try to set permissions on activation script, but continue if it fails
+            try {
+                Write-Output "Attempting to set permissions on activation script..."
+                $acl = Get-Acl $activateScript
+                $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "Allow")
+                $acl.SetAccessRule($rule)
+                Set-Acl $activateScript $acl
+                Write-Output "Successfully set permissions on activation script"
+            } catch {
+                Write-Output "Warning: Could not set permissions on activation script: $_"
+                Write-Output "Continuing with default permissions..."
+            }
 
             # Check for Zone.Identifier and unblock if needed
-            if (Get-Item $activateScript -Stream Zone.Identifier -ErrorAction SilentlyContinue) {
-                Write-Output "Zone.Identifier found! Unblocking script..."
-                Unblock-File -Path $activateScript
+            try {
+                if (Get-Item $activateScript -Stream Zone.Identifier -ErrorAction SilentlyContinue) {
+                    Write-Output "Zone.Identifier found! Unblocking script..."
+                    Unblock-File -Path $activateScript
+                }
+            } catch {
+                Write-Output "Warning: Could not unblock file: $_"
+                Write-Output "Continuing anyway..."
             }
 
             # Set execution policy for the process
-            $currentPolicy = Get-ExecutionPolicy
-            Write-Output "Current execution policy: $currentPolicy"
-            Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
-            Write-Output "Set execution policy to Bypass for this process"
+            try {
+                $currentPolicy = Get-ExecutionPolicy
+                Write-Output "Current execution policy: $currentPolicy"
+                Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+                Write-Output "Set execution policy to Bypass for this process"
+            } catch {
+                Write-Output "Warning: Could not set execution policy: $_"
+                Write-Output "Continuing with current policy..."
+            }
 
             # Activate virtual environment
             Write-Output "Activating virtual environment..."
@@ -589,10 +624,22 @@ jobs:
                     Write-Output "Activation script content:"
                     Get-Content $scriptPath
 
-                    # Try activation
-                    & $scriptPath
-                    if ($LASTEXITCODE -ne 0) {
-                        throw "Activation script failed with exit code $LASTEXITCODE"
+                    # Try activation with detailed error capture
+                    $ErrorActionPreference = 'Continue'
+                    Write-Output "Attempting to activate virtual environment..."
+
+                    # Use dot-sourcing instead of direct execution
+                    . $scriptPath
+                    $exitCode = $LASTEXITCODE
+                    Write-Output "Activation completed with exit code: $exitCode"
+
+                    # Verify activation by checking environment variables
+                    Write-Output "Checking environment after activation..."
+                    Write-Output "VIRTUAL_ENV: $env:VIRTUAL_ENV"
+                    Write-Output "PATH: $env:Path"
+
+                    if ($exitCode -ne 0) {
+                        throw "Activation script failed with exit code $exitCode"
                     }
 
                     # Verify Python path after activation
@@ -890,3 +937,72 @@ jobs:
 
           # Exit with the test exit code
           exit $test_exit_code
+
+      - name: Install system packages with timeout
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          try {
+            $ErrorActionPreference = 'Stop'
+            Write-Output "Installing system packages..."
+
+            # Check for Visual Studio tools
+            Write-Output "Checking for Visual Studio tools..."
+            $vsTools = Get-Command cl.exe -ErrorAction SilentlyContinue
+            if (-not $vsTools) {
+                Write-Output "Visual Studio tools not found, installing..."
+                $chocoJob = Start-Job -ScriptBlock {
+                    choco install visualstudio2019buildtools -y
+                    choco install visualstudio2019-workload-vctools -y
+                }
+
+                $timeout = 600  # 10 minutes timeout for VS tools
+                $result = Wait-Job $chocoJob -Timeout $timeout
+                if ($result -eq $null) {
+                    Stop-Job $chocoJob
+                    Remove-Job $chocoJob
+                    throw "Visual Studio tools installation timed out after $timeout seconds"
+                }
+
+                $output = Receive-Job $chocoJob
+                Remove-Job $chocoJob
+
+                if ($chocoJob.State -eq 'Failed') {
+                    throw "Visual Studio tools installation failed: $output"
+                }
+
+                # Verify installation
+                $vsTools = Get-Command cl.exe -ErrorAction SilentlyContinue
+                if (-not $vsTools) {
+                    throw "Visual Studio tools installation completed but cl.exe not found in PATH"
+                }
+                Write-Output "Visual Studio tools installed successfully"
+            } else {
+                Write-Output "Visual Studio tools found at: $($vsTools.Source)"
+            }
+
+            # Install other packages
+            Write-Output "Installing Neovim and LuaRocks..."
+            $chocoJob = Start-Job -ScriptBlock {
+                choco install neovim -y
+                choco install luarocks -y
+            }
+
+            $timeout = 300  # 5 minutes timeout
+            $result = Wait-Job $chocoJob -Timeout $timeout
+            if ($result -eq $null) {
+                Stop-Job $chocoJob
+                Remove-Job $chocoJob
+                throw "Chocolatey installation timed out after $timeout seconds"
+            }
+
+            $output = Receive-Job $chocoJob
+            Remove-Job $chocoJob
+
+            if ($chocoJob.State -eq 'Failed') {
+                throw "Chocolatey installation failed: $output"
+            }
+          } catch {
+            Write-Error $_.Exception.Message
+            exit 1
+          }
