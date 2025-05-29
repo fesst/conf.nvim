@@ -155,7 +155,10 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $venvPath = Join-Path $env:RUNNER_TOOL_CACHE "venv"
+
+          # Use the correct path for Windows
+          $venvPath = "C:\hostedtoolcache\windows\venv"
+          Write-Output "Setting up virtual environment at: $venvPath"
 
           # Remove existing virtual environment if it exists
           if (Test-Path $venvPath) {
@@ -165,7 +168,7 @@ jobs:
           }
 
           # Create virtual environment
-          Write-Output "Creating virtual environment at: $venvPath"
+          Write-Output "Creating virtual environment..."
           python -m venv $venvPath
           if ($LASTEXITCODE -ne 0) {
               throw "Failed to create virtual environment"
