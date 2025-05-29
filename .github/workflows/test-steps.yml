@@ -283,14 +283,38 @@ jobs:
                         throw "Activation script not found at: $scriptPath"
                     }
 
-                    # Check script content
+                    # Check script content and permissions
                     Write-Output "Activation script content:"
                     Get-Content $scriptPath
+                    Write-Output "Script permissions:"
+                    Get-Acl $scriptPath | Format-List
 
-                    # Try activation
-                    & $scriptPath
-                    if ($LASTEXITCODE -ne 0) {
-                        throw "Activation script failed with exit code $LASTEXITCODE"
+                    # Set execution policy for this process
+                    Write-Output "Current execution policy: $(Get-ExecutionPolicy)"
+                    Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+                    Write-Output "New execution policy: $(Get-ExecutionPolicy)"
+
+                    # Ensure proper environment setup
+                    $env:PYTHONIOENCODING = 'utf-8'
+                    $env:PYTHONUNBUFFERED = '1'
+                    $env:VIRTUAL_ENV = $venvPath
+
+                    # Try activation with detailed error capture
+                    $ErrorActionPreference = 'Continue'
+                    Write-Output "Attempting to activate virtual environment..."
+
+                    # Use dot-sourcing instead of direct execution
+                    . $scriptPath
+                    $exitCode = $LASTEXITCODE
+                    Write-Output "Activation completed with exit code: $exitCode"
+
+                    # Verify activation by checking environment variables
+                    Write-Output "Checking environment after activation..."
+                    Write-Output "VIRTUAL_ENV: $env:VIRTUAL_ENV"
+                    Write-Output "PATH: $env:Path"
+
+                    if ($exitCode -ne 0) {
+                        throw "Activation script failed with exit code $exitCode"
                     }
 
                     # Verify Python path after activation
@@ -302,11 +326,20 @@ jobs:
                         throw "Python path does not point to virtual environment"
                     }
 
+                    # Verify environment variables
+                    Write-Output "Environment variables after activation:"
+                    Get-ChildItem env: | Where-Object { $_.Name -like "*PYTHON*" -or $_.Name -like "*VIRTUAL*" } | Format-Table -AutoSize
+
                     Write-Output "Activation successful"
                 } catch {
                     Write-Error $_.Exception.Message
                     Write-Output "Error details: $_"
                     Write-Output "Script stack trace: $($_.ScriptStackTrace)"
+                    Write-Output "Current location: $(Get-Location)"
+                    Write-Output "Environment variables:"
+                    Get-ChildItem env: | Format-Table -AutoSize
+                    Write-Output "Python version: $(python --version 2>&1)"
+                    Write-Output "Python path: $(Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
                     throw
                 }
             } -ArgumentList $activateScript, $venvPath
