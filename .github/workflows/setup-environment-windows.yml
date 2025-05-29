@@ -40,8 +40,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache Chocolatey packages
-        uses: actions/cache@v4
+      - name: Restore Chocolatey packages
+        uses: actions/cache/restore@v4
+        id: choco-cache-restore
         with:
           path: |
             C:\ProgramData\chocolatey\lib
@@ -50,7 +51,9 @@ jobs:
             C:\Users\runneradmin\AppData\Local\Temp\chocolatey
           key: ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}
           restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}
             ${{ runner.os }}-${{ runner.arch }}-choco-
+          fail-on-cache-miss: false
 
       - name: Set up Node.js
         if: inputs.setup_node
@@ -340,3 +343,14 @@ jobs:
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           rustup default stable
           cargo install stylua
+
+      - name: Save Chocolatey packages
+        uses: actions/cache/save@v4
+        if: steps.choco-cache-restore.outputs.cache-hit != 'true'
+        with:
+          path: |
+            C:\ProgramData\chocolatey\lib
+            C:\ProgramData\chocolatey\bin
+            C:\tools
+            C:\Users\runneradmin\AppData\Local\Temp\chocolatey
+          key: ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}
