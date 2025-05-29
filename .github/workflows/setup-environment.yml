@@ -193,17 +193,41 @@ jobs:
             ./infra/packages/npm.sh
           }
 
-      - name: Install Rust packages
-        if: inputs.setup_rust
+      - name: Setup Rust
         shell: bash
         run: |
-          set -e
-          chmod +x infra/packages/cargo.sh
-          INSTALL_STYLUA=false ./infra/packages/cargo.sh || {
-            echo "Failed to install Rust packages. Retrying..."
-            cargo clean
-            INSTALL_STYLUA=false ./infra/packages/cargo.sh
-          }
+          set -euo pipefail
+
+          # Install Rust if not present
+          if ! command -v rustc &> /dev/null; then
+            echo "Installing Rust..."
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            source "$HOME/.cargo/env"
+          fi
+
+          # Verify Rust installation
+          rustc --version
+          cargo --version
+
+          # Install stylua
+          echo "Installing stylua..."
+          cargo install stylua
+
+          # Verify stylua installation
+          if ! command -v stylua &> /dev/null; then
+            echo "Error: stylua not found in PATH"
+            echo "Current PATH: $PATH"
+            echo "Cargo bin: $HOME/.cargo/bin"
+            echo "Checking Cargo bin contents:"
+            ls -la "$HOME/.cargo/bin"
+            exit 1
+          fi
+
+          echo "stylua version: $(stylua --version)"
+
+          # Update PATH to ensure Cargo bin is first
+          export PATH="$HOME/.cargo/bin:$PATH"
+          echo "Updated PATH: $PATH"
 
       - name: Install Python packages
         if: inputs.setup_python

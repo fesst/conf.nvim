@@ -227,6 +227,15 @@ jobs:
                 New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
             }
 
+            # Create virtual environment if it doesn't exist
+            if (-not (Test-Path $venvPath)) {
+                Write-Output "Creating virtual environment at: $venvPath"
+                python -m venv $venvPath
+                if (-not (Test-Path $venvPath)) {
+                    throw "Failed to create virtual environment at: $venvPath"
+                }
+            }
+
             # Verify virtual environment exists
             if (-not (Test-Path $venvPath)) {
                 Write-Error "Virtual environment not found at: $venvPath"
@@ -667,7 +676,31 @@ jobs:
         shell: pwsh
         run: |
           try {
-            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+            # Debug virtual environment
+            Write-Output "=== Virtual Environment Debug ==="
+            Write-Output "VENV_PATH: ${{ inputs.venv_path }}"
+            Write-Output "VENV_PATH exists: $(Test-Path '${{ inputs.venv_path }}')"
+            if (Test-Path '${{ inputs.venv_path }}') {
+              Write-Output "VENV_PATH contents:"
+              Get-ChildItem '${{ inputs.venv_path }}' -Recurse
+            }
+            Write-Output "=============================="
+
+            # Activate virtual environment
+            $activateScript = Join-Path '${{ inputs.venv_path }}' 'Scripts\Activate.ps1'
+            Write-Output "Activation script path: $activateScript"
+            Write-Output "Activation script exists: $(Test-Path $activateScript)"
+
+            if (-not (Test-Path $activateScript)) {
+              throw "Activation script not found at: $activateScript"
+            }
+
+            # Activate virtual environment
+            & $activateScript
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to activate virtual environment"
+            }
+
             # Ensure Neovim is in PATH and verify it
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
@@ -690,6 +723,7 @@ jobs:
             }
           } catch {
             Write-Error $_.Exception.Message
+            Write-Error "Stack trace: $($_.ScriptStackTrace)"
             exit 1
           }
 
@@ -704,17 +738,28 @@ jobs:
           if ! command -v nvim &> /dev/null; then
             echo "Installing Neovim..."
             brew install neovim
+            # Verify Homebrew installation
+            if [ ! -f "/opt/homebrew/bin/nvim" ]; then
+              echo "Error: Neovim not found in Homebrew path after installation"
+              echo "Checking Homebrew paths:"
+              ls -la /opt/homebrew/bin/
+              exit 1
+            fi
           fi
 
-          # Verify Neovim is available
+          # Verify Neovim is available and show its location
           if ! command -v nvim &> /dev/null; then
             echo "Error: Neovim not found in PATH after installation"
             echo "Current PATH: $PATH"
             echo "Homebrew prefix: $(brew --prefix)"
             echo "Homebrew bin: $(brew --prefix)/bin"
+            echo "Checking for nvim in common locations:"
+            ls -la /opt/homebrew/bin/nvim 2>/dev/null || echo "Not in /opt/homebrew/bin"
+            ls -la /usr/local/bin/nvim 2>/dev/null || echo "Not in /usr/local/bin"
             exit 1
           fi
           echo "Using Neovim from: $(which nvim)"
+          echo "Neovim version: $(nvim --version | head -n 1)"
 
           # Set up Lua environment
           export LUA_PATH="?.lua;?/init.lua;../lua/?.lua;../lua/?/init.lua"
