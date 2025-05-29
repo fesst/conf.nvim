@@ -501,211 +501,68 @@ jobs:
             $venvPath = "${{ inputs.venv_path }}"
             Write-Output "Using virtual environment at: $venvPath"
 
-            # Normalize the path for Windows
-            $venvPath = [System.IO.Path]::GetFullPath($venvPath)
-            Write-Output "Normalized path: $venvPath"
+            # Check if we're already in the virtual environment
+            $currentPython = (Get-Command python | Select-Object -ExpandProperty Source)
+            if ($currentPython.StartsWith($venvPath)) {
+                Write-Output "Already in virtual environment at: $venvPath"
+                Write-Output "Current Python: $currentPython"
+            } else {
+                # Normalize the path for Windows
+                $venvPath = [System.IO.Path]::GetFullPath($venvPath)
+                Write-Output "Normalized path: $venvPath"
 
-            # Create parent directory if it doesn't exist
-            $parentDir = Split-Path -Parent $venvPath
-            if (-not (Test-Path $parentDir)) {
-                Write-Output "Creating parent directory: $parentDir"
-                New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
-            }
-
-            # Try to set permissions, but continue if it fails
-            try {
-                Write-Output "Attempting to set permissions on parent directory..."
-                $acl = Get-Acl $parentDir
-                $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-                $acl.SetAccessRule($rule)
-                Set-Acl $parentDir $acl
-                Write-Output "Successfully set permissions on parent directory"
-            } catch {
-                Write-Output "Warning: Could not set permissions on parent directory: $_"
-                Write-Output "Continuing with default permissions..."
-            }
-
-            # Verify virtual environment exists
-            if (-not (Test-Path $venvPath)) {
-                Write-Error "Virtual environment not found at: $venvPath"
-                Write-Output "Current directory: $(Get-Location)"
-                Write-Output "Directory contents:"
-                Get-ChildItem | Format-Table -AutoSize
-                Write-Output "Parent directory contents:"
-                Get-ChildItem $parentDir | Format-Table -AutoSize
-                exit 1
-            }
-
-            # Try to set permissions on virtual environment directory, but continue if it fails
-            try {
-                Write-Output "Attempting to set permissions on virtual environment directory..."
-                $acl = Get-Acl $venvPath
-                $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-                $acl.SetAccessRule($rule)
-                Set-Acl $venvPath $acl
-                Write-Output "Successfully set permissions on virtual environment directory"
-            } catch {
-                Write-Output "Warning: Could not set permissions on virtual environment directory: $_"
-                Write-Output "Continuing with default permissions..."
-            }
-
-            # Verify activation script exists
-            $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
-            Write-Output "Checking activation script at: $activateScript"
-
-            if (-not (Test-Path $activateScript)) {
-                Write-Error "Activation script not found at: $activateScript"
-                Write-Output "Virtual environment contents:"
-                Get-ChildItem $venvPath -Recurse | Format-Table -AutoSize
-                exit 1
-            }
-
-            # Try to set permissions on activation script, but continue if it fails
-            try {
-                Write-Output "Attempting to set permissions on activation script..."
-                $acl = Get-Acl $activateScript
-                $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "Allow")
-                $acl.SetAccessRule($rule)
-                Set-Acl $activateScript $acl
-                Write-Output "Successfully set permissions on activation script"
-            } catch {
-                Write-Output "Warning: Could not set permissions on activation script: $_"
-                Write-Output "Continuing with default permissions..."
-            }
-
-            # Check for Zone.Identifier and unblock if needed
-            try {
-                if (Get-Item $activateScript -Stream Zone.Identifier -ErrorAction SilentlyContinue) {
-                    Write-Output "Zone.Identifier found! Unblocking script..."
-                    Unblock-File -Path $activateScript
+                # Create parent directory if it doesn't exist
+                $parentDir = Split-Path -Parent $venvPath
+                if (-not (Test-Path $parentDir)) {
+                    Write-Output "Creating parent directory: $parentDir"
+                    New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
                 }
-            } catch {
-                Write-Output "Warning: Could not unblock file: $_"
-                Write-Output "Continuing anyway..."
-            }
 
-            # Set execution policy for the process
-            try {
-                $currentPolicy = Get-ExecutionPolicy
-                Write-Output "Current execution policy: $currentPolicy"
+                # Verify virtual environment exists
+                if (-not (Test-Path $venvPath)) {
+                    Write-Error "Virtual environment not found at: $venvPath"
+                    Write-Output "Current directory: $(Get-Location)"
+                    Write-Output "Directory contents:"
+                    Get-ChildItem | Format-Table -AutoSize
+                    Write-Output "Parent directory contents:"
+                    Get-ChildItem $parentDir | Format-Table -AutoSize
+                    exit 1
+                }
+
+                # Verify activation script exists
+                $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+                Write-Output "Checking activation script at: $activateScript"
+
+                if (-not (Test-Path $activateScript)) {
+                    Write-Error "Activation script not found at: $activateScript"
+                    Write-Output "Virtual environment contents:"
+                    Get-ChildItem $venvPath -Recurse | Format-Table -AutoSize
+                    exit 1
+                }
+
+                # Set execution policy for the process
                 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
-                Write-Output "Set execution policy to Bypass for this process"
-            } catch {
-                Write-Output "Warning: Could not set execution policy: $_"
-                Write-Output "Continuing with current policy..."
-            }
 
-            # Activate virtual environment
-            Write-Output "Activating virtual environment..."
-            Write-Output "Current PATH before activation: $env:Path"
-            Write-Output "Current Python before activation: $(Get-Command python | Select-Object -ExpandProperty Source)"
+                # Activate virtual environment
+                Write-Output "Activating virtual environment..."
+                Write-Output "Current PATH before activation: $env:Path"
+                Write-Output "Current Python before activation: $currentPython"
 
-            # Debug virtual environment structure
-            Write-Output "=== Virtual Environment Structure ==="
-            Get-ChildItem $venvPath -Recurse | Where-Object { $_.Name -like "*.exe" -or $_.Name -like "*.ps1" } | Format-Table -AutoSize
-            Write-Output "==================================="
-
-            # Source the activation script with error handling and timeout
-            $job = Start-Job -ScriptBlock {
-                param($scriptPath, $venvPath)
-                try {
-                    Write-Output "Activation script path: $scriptPath"
-                    Write-Output "Virtual environment path: $venvPath"
-
-                    # Check if activation script exists
-                    if (-not (Test-Path $scriptPath)) {
-                        throw "Activation script not found at: $scriptPath"
-                    }
-
-                    # Check script content and permissions
-                    Write-Output "Activation script content:"
-                    Get-Content $scriptPath
-                    Write-Output "Script permissions:"
-                    Get-Acl $scriptPath | Format-List
-
-                    # Set execution policy for this process
-                    Write-Output "Current execution policy: $(Get-ExecutionPolicy)"
-                    Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
-                    Write-Output "New execution policy: $(Get-ExecutionPolicy)"
-
-                    # Ensure proper environment setup
-                    $env:PYTHONIOENCODING = 'utf-8'
-                    $env:PYTHONUNBUFFERED = '1'
-                    $env:VIRTUAL_ENV = $venvPath
-
-                    # Try activation with detailed error capture
-                    $ErrorActionPreference = 'Continue'
-                    Write-Output "Attempting to activate virtual environment..."
-
-                    # Use dot-sourcing instead of direct execution
-                    . $scriptPath
-                    $exitCode = $LASTEXITCODE
-                    Write-Output "Activation completed with exit code: $exitCode"
-
-                    # Verify activation by checking environment variables
-                    Write-Output "Checking environment after activation..."
-                    Write-Output "VIRTUAL_ENV: $env:VIRTUAL_ENV"
-                    Write-Output "PATH: $env:Path"
-
-                    if ($exitCode -ne 0) {
-                        throw "Activation script failed with exit code $exitCode"
-                    }
-
-                    # Verify Python path after activation
-                    $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
-                    Write-Output "Python path after activation: $pythonPath"
-                    Write-Output "Expected to start with: $venvPath"
-
-                    if (-not $pythonPath.StartsWith($venvPath)) {
-                        throw "Python path does not point to virtual environment"
-                    }
-
-                    # Verify environment variables
-                    Write-Output "Environment variables after activation:"
-                    Get-ChildItem env: | Where-Object { $_.Name -like "*PYTHON*" -or $_.Name -like "*VIRTUAL*" } | Format-Table -AutoSize
-
-                    Write-Output "Activation successful"
-                } catch {
-                    Write-Error $_.Exception.Message
-                    Write-Output "Error details: $_"
-                    Write-Output "Script stack trace: $($_.ScriptStackTrace)"
-                    Write-Output "Current location: $(Get-Location)"
-                    Write-Output "Environment variables:"
-                    Get-ChildItem env: | Format-Table -AutoSize
-                    Write-Output "Python version: $(python --version 2>&1)"
-                    Write-Output "Python path: $(Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
-                    throw
+                # Source the activation script
+                & $activateScript
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Failed to activate virtual environment"
                 }
-            } -ArgumentList $activateScript, $venvPath
 
-            $timeout = 30  # 30 seconds timeout
-            $result = Wait-Job $job -Timeout $timeout
-            if ($result -eq $null) {
-                Stop-Job $job
-                Remove-Job $job
-                throw "Activation script timed out after $timeout seconds"
-            }
-
-            $output = Receive-Job $job
-            Remove-Job $job
-
-            if ($job.State -eq 'Failed') {
-                Write-Error "Activation failed with output:"
-                Write-Output $output
-                throw "Virtual environment activation failed"
-            }
-
-            Write-Output "Activation output:"
-            Write-Output $output
-
-            # Verify activation by checking Python path
-            $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
-            if (-not $pythonPath.StartsWith($venvPath)) {
-                Write-Error "Python is not using the virtual environment"
-                Write-Output "Expected Python path to start with: $venvPath"
-                Write-Output "Actual Python path: $pythonPath"
-                Write-Output "Current PATH: $env:Path"
-                exit 1
+                # Verify activation by checking Python path
+                $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
+                if (-not $pythonPath.StartsWith($venvPath)) {
+                    Write-Error "Python is not using the virtual environment"
+                    Write-Output "Expected Python path to start with: $venvPath"
+                    Write-Output "Actual Python path: $pythonPath"
+                    Write-Output "Current PATH: $env:Path"
+                    exit 1
+                }
             }
 
             # Ensure Neovim is in PATH and verify it
@@ -895,13 +752,28 @@ jobs:
           set -e
           source "${{ inputs.venv_path }}/bin/activate"
 
+          # Ensure Cargo is in PATH
+          export PATH="$HOME/.cargo/bin:$PATH"
+          echo "Updated PATH: $PATH"
+
+          # Check if stylua is installed, install if not found
+          if ! command -v stylua &> /dev/null; then
+            echo "Installing stylua via Cargo..."
+            cargo install stylua
+            if [ $? -ne 0 ]; then
+              echo "Error: Failed to install stylua"
+              exit 1
+            fi
+          fi
+
           # Verify stylua is available
           if ! command -v stylua &> /dev/null; then
-            echo "Error: stylua not found in PATH"
+            echo "Error: stylua not found in PATH after installation"
             echo "Current PATH: $PATH"
             exit 1
           fi
           echo "Using stylua from: $(which stylua)"
+          echo "stylua version: $(stylua --version)"
 
           # Check formatting
           stylua --check lua/
