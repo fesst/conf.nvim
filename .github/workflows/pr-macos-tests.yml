@@ -5,6 +5,8 @@ permissions:
 
 on:
   workflow_call:
+  pull_request:
+    branches: ["master"]
 
 concurrency:
   group: pr-macos-${{ github.ref }}
@@ -12,7 +14,6 @@ concurrency:
 
 jobs:
   setup:
-    if: false # Disable this job
     uses: ./.github/workflows/setup-environment-macos.yml
     with:
       setup_python: true
@@ -21,7 +22,6 @@ jobs:
       setup_lua: true
 
   test:
-    if: false # Disable this job
     needs: setup
     uses: ./.github/workflows/test-steps.yml
     with:
