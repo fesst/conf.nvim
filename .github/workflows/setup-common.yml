@@ -195,7 +195,7 @@ jobs:
           # Install Lua and LuaRocks if needed
           if (-not $luaInstalled) {
               Write-Output "Installing Lua..."
-              winget install -e --id Lua.Lua
+              choco install lua -y
               if ($LASTEXITCODE -ne 0) {
                   throw "Failed to install Lua"
               }
@@ -203,7 +203,7 @@ jobs:
 
           if (-not $luarocksInstalled) {
               Write-Output "Installing LuaRocks..."
-              winget install -e --id Lua.LuaRocks
+              choco install luarocks -y
               if ($LASTEXITCODE -ne 0) {
                   throw "Failed to install LuaRocks"
               }
