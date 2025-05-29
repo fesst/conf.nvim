@@ -29,328 +29,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  cache:
+    uses: ./.github/workflows/cache-config.yml
+    with:
+      platform: windows
+      setup_python: ${{ inputs.setup_python }}
+      setup_rust: ${{ inputs.setup_rust }}
+      setup_node: ${{ inputs.setup_node }}
+
   setup-environment:
-    name: Setup Environment
+    needs: cache
+    uses: ./.github/workflows/setup-common.yml
+    with:
+      platform: windows
+      setup_python: ${{ inputs.setup_python }}
+      setup_rust: ${{ inputs.setup_rust }}
+      setup_node: ${{ inputs.setup_node }}
+      setup_lua: ${{ inputs.setup_lua }}
+
+  save-cache:
+    needs: [cache, setup-environment]
+    if: needs.cache.outputs.choco-cache-hit != 'true'
     runs-on: windows-latest
-    outputs:
-      virtual_env: ${{ steps.venv-win.outputs.virtual_env }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Restore Chocolatey packages
-        uses: actions/cache/restore@v4
-        id: choco-cache-restore
-        with:
-          path: |
-            C:\ProgramData\chocolatey\lib
-            C:\ProgramData\chocolatey\bin
-            C:\tools
-            C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-          key: ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}
-            ${{ runner.os }}-${{ runner.arch }}-choco-
-          fail-on-cache-miss: false
-
-      - name: Set up Node.js
-        if: inputs.setup_node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20.19.0"
-
-      - name: Cache npm packages
-        if: inputs.setup_node
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: npm-${{ runner.os }}-${{ runner.arch }}
-
-      - name: Log Rust cache info
-        if: inputs.setup_rust
-        shell: pwsh
-        run: |
-          Write-Output "=== Rust Cache Info ==="
-          Write-Output "Cache paths:"
-          Write-Output "- $env:USERPROFILE\.cargo"
-          Write-Output "- $env:USERPROFILE\.rustup"
-          Write-Output "Cache key: ${{ runner.os }}-${{ runner.arch }}-rust-${{ hashFiles('infra/packages/cargo.sh', 'infra/packages/cargo.ps1') }}"
-          Write-Output "========================="
-
-      - name: Cache Rust
-        if: inputs.setup_rust
-        uses: actions/cache@v4
-        id: rust-cache
-        with:
-          path: |
-            ${{ runner.os == 'Windows' && format('{0}\\.cargo', env.USERPROFILE) || '~/.cargo' }}
-            ${{ runner.os == 'Windows' && format('{0}\\.rustup', env.USERPROFILE) || '~/.rustup' }}
-          key: ${{ runner.os }}-${{ runner.arch }}-rust-${{ hashFiles('infra/packages/cargo.sh', 'infra/packages/cargo.ps1') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-rust-
-
-      - name: Log Rust cache result
-        if: inputs.setup_rust
-        shell: pwsh
-        run: |
-          Write-Output "=== Rust Cache Result ==="
-          Write-Output "Cache hit: ${{ steps.rust-cache.outputs.cache-hit }}"
-          Write-Output "Cache sizes:"
-          if (Test-Path "$env:USERPROFILE\.cargo") {
-              Get-ChildItem "$env:USERPROFILE\.cargo" -Recurse | Measure-Object -Property Length -Sum | Select-Object @{Name="Size(MB)";Expression={"{0:N2}" -f ($_.Sum / 1MB)}}
-          }
-          if (Test-Path "$env:USERPROFILE\.rustup") {
-              Get-ChildItem "$env:USERPROFILE\.rustup" -Recurse | Measure-Object -Property Length -Sum | Select-Object @{Name="Size(MB)";Expression={"{0:N2}" -f ($_.Sum / 1MB)}}
-          }
-          Write-Output "==========================="
-
-      - name: Log Visual Studio Build Tools cache info
-        shell: pwsh
-        run: |
-          Write-Output "=== Visual Studio Build Tools Cache Info ==="
-          Write-Output "Cache paths:"
-          Write-Output "- $env:USERPROFILE\vs_buildtools"
-          Write-Output "Cache key: ${{ runner.os }}-${{ runner.arch }}-vstools-${{ hashFiles('infra/packages/vs-setup.ps1') }}"
-          Write-Output "========================="
-
-      - name: Cache Visual Studio Build Tools
-        uses: actions/cache@v4
-        id: vstools-cache
-        with:
-          path: ${{ runner.os == 'Windows' && format('{0}\\vs_buildtools', env.USERPROFILE) || '~/vs_buildtools' }}
-          key: ${{ runner.os }}-${{ runner.arch }}-vstools-${{ hashFiles('infra/packages/vs-setup.ps1') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-vstools-
-
-      - name: Log Visual Studio Build Tools cache result
-        shell: pwsh
-        run: |
-          Write-Output "=== Visual Studio Build Tools Cache Result ==="
-          Write-Output "Cache hit: ${{ steps.vstools-cache.outputs.cache-hit }}"
-          Write-Output "Cache size: $(Get-ChildItem -Path $env:USERPROFILE\vs_buildtools -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum bytes"
-          Write-Output "==========================="
-
-      - name: Set up Python
-        if: inputs.setup_python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Cache virtual environment
-        if: inputs.setup_python
-        uses: actions/cache@v4
-        id: venv-cache
-        with:
-          path: ${{ runner.tool_cache }}/venv
-          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-venv-
-
-      - name: Set up Python virtual environment
-        if: inputs.setup_python
-        id: venv-win
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-
-          # Use runner.tool_cache for consistent path
-          $venvPath = Join-Path $env:RUNNER_TOOL_CACHE "venv"
-          Write-Output "Setting up virtual environment at: $venvPath"
-
-          # Create parent directory if it doesn't exist
-          $parentDir = Split-Path -Parent $venvPath
-          if (-not (Test-Path $parentDir)) {
-              Write-Output "Creating parent directory: $parentDir"
-              New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
-          }
-
-          # Check if virtual environment exists in cache
-          if (Test-Path $venvPath) {
-              Write-Output "Found existing virtual environment in cache"
-              # Verify the activation script exists
-              $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
-              if (-not (Test-Path $activateScript)) {
-                  Write-Output "Activation script not found, recreating virtual environment..."
-                  Remove-Item -Path $venvPath -Recurse -Force
-                  Start-Sleep -Seconds 2
-              }
-          }
-
-          # Create new virtual environment if needed
-          if (-not (Test-Path $venvPath)) {
-              Write-Output "Creating new virtual environment..."
-              python -m venv $venvPath
-              if ($LASTEXITCODE -ne 0) {
-                  Write-Error "Failed to create virtual environment"
-                  Write-Output "Python version: $(python --version)"
-                  Write-Output "Python path: $(Get-Command python | Select-Object -ExpandProperty Source)"
-                  Write-Output "Current directory: $(Get-Location)"
-                  Write-Output "Directory contents:"
-                  Get-ChildItem
-                  exit 1
-              }
-          }
-
-          # Set the output variable
-          Write-Output "virtual_env=$venvPath" >> $env:GITHUB_OUTPUT
-          Write-Output "Setting virtual_env output to: $venvPath"
-
-      - name: Install Visual Studio Build Tools
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Write-Output "Starting Visual Studio Build Tools installation process..."
-
-          # Check if VS Build Tools is already installed and working
-          $vsPath = Join-Path $env:USERPROFILE "vs_buildtools"
-          $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
-
-          if (Test-Path $vsDevCmd) {
-              Write-Output "Visual Studio Build Tools found at: $vsPath"
-
-              # Verify the installation is working
-              $clPath = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
-              if ($clPath) {
-                  Write-Output "Visual Studio Build Tools is already installed and working"
-                  Write-Output "cl.exe found at: $clPath"
-                  exit 0
-              } else {
-                  Write-Output "Visual Studio Build Tools found but cl.exe not in PATH, reinstalling..."
-              }
-          } else {
-              Write-Output "Visual Studio Build Tools not found, installing..."
-          }
-
-          # Create installation directory
-          if (-not (Test-Path $vsPath)) {
-              New-Item -ItemType Directory -Path $vsPath -Force | Out-Null
-          }
-
-          # Download VS Build Tools installer
-          $vsInstallerUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe"
-          $vsInstallerPath = "$env:TEMP\vs_buildtools.exe"
-
-          Write-Output "Downloading VS Build Tools installer..."
-          Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath -UseBasicParsing
-
-          # Install VS Build Tools
-          Write-Output "Installing VS Build Tools..."
-          $process = Start-Process -FilePath $vsInstallerPath -ArgumentList @(
-              "--quiet",
-              "--wait",
-              "--norestart",
-              "--nocache",
-              "--installPath", $vsPath,
-              "--add", "Microsoft.VisualStudio.Workload.VCTools",
-              "--includeRecommended"
-          ) -Wait -PassThru
-
-          if ($process.ExitCode -ne 0) {
-              throw "Failed to install Visual Studio Build Tools. Exit code: $($process.ExitCode)"
-          }
-
-          # Verify installation
-          if (-not (Test-Path $vsDevCmd)) {
-              throw "VsDevCmd.bat not found after installation"
-          }
-
-          # Set up environment variables
-          Write-Output "Setting up Visual Studio environment variables..."
-          cmd /c "`"$vsDevCmd`" && set" | ForEach-Object {
-              if ($_ -match "^(.*?)=(.*)$") {
-                  $name = $matches[1]
-                  $value = $matches[2]
-                  [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::Process)
-              }
-          }
-
-          # Add Visual Studio paths to PATH
-          $vcvarsPath = Join-Path $vsPath "VC\Auxiliary\Build"
-          if (Test-Path $vcvarsPath) {
-              $vcvarsBat = Join-Path $vcvarsPath "vcvars64.bat"
-              if (Test-Path $vcvarsBat) {
-                  Write-Output "Setting up Visual Studio environment using vcvars64.bat..."
-                  cmd /c "`"$vcvarsBat`" && set" | ForEach-Object {
-                      if ($_ -match "^(.*?)=(.*)$") {
-                          $name = $matches[1]
-                          $value = $matches[2]
-                          [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::Process)
-                      }
-                  }
-              }
-          }
-
-          # Verify cl.exe is in PATH
-          $clPath = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
-          if (-not $clPath) {
-              throw "cl.exe not found in PATH after installation"
-          }
-          Write-Output "cl.exe found at: $clPath"
-
-      - name: Set up Visual Studio environment
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $vsPath = Join-Path $env:USERPROFILE "vs_buildtools"
-          $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
-
-          if (-not (Test-Path $vsDevCmd)) {
-              throw "VsDevCmd.bat not found at: $vsDevCmd"
-          }
-
-          Write-Output "Setting up Visual Studio environment..."
-          cmd /c "`"$vsDevCmd`" && set" | ForEach-Object {
-              if ($_ -match "^(.*?)=(.*)$") {
-                  $name = $matches[1]
-                  $value = $matches[2]
-                  [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::Process)
-              }
-          }
-
-          # Verify setup
-          $clPath = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
-          if (-not $clPath) {
-              throw "Failed to set up Visual Studio environment. cl.exe not found."
-          }
-          Write-Output "Visual Studio environment set up successfully"
-
-      - name: Install system packages
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Write-Output "Installing system packages..."
-          choco install neovim -y
-          choco install luarocks -y
-
-      - name: Install Node.js packages
-        if: inputs.setup_node
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Write-Output "Installing Node.js packages..."
-          npm install -g neovim
-
-      - name: Install Rust
-        if: inputs.setup_rust
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Write-Output "Installing Rust..."
-          Invoke-WebRequest -Uri https://win.rustup.rs -OutFile rustup-init.exe
-          .\rustup-init.exe -y
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-          rustup default stable
-          cargo install stylua
-
       - name: Save Chocolatey packages
         uses: actions/cache/save@v4
-        if: steps.choco-cache-restore.outputs.cache-hit != 'true'
         with:
           path: |
             C:\ProgramData\chocolatey\lib
             C:\ProgramData\chocolatey\bin
             C:\tools
             C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-          key: ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}
+          key: ${{ github.runner.os }}-${{ github.runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}

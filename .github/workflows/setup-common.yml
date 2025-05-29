@@ -1,0 +1,177 @@
+name: Common Setup
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        required: true
+        type: string
+        description: "Platform (macos/windows)"
+      setup_python:
+        required: true
+        type: boolean
+        default: true
+      setup_rust:
+        required: true
+        type: boolean
+        default: true
+      setup_node:
+        required: true
+        type: boolean
+        default: true
+      setup_lua:
+        required: true
+        type: boolean
+        default: true
+    outputs:
+      virtual_env:
+        description: "Path to virtual environment"
+        value: ${{ jobs.setup-common.outputs.virtual_env }}
+
+jobs:
+  setup-common:
+    runs-on: ${{ inputs.platform }}-latest
+    outputs:
+      virtual_env: ${{ steps.venv.outputs.virtual_env }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        if: inputs.setup_node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.19.0"
+
+      - name: Set up Python
+        if: inputs.setup_python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Set up Python virtual environment (Windows)
+        if: inputs.setup_python && inputs.platform == 'windows'
+        id: venv
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $venvPath = Join-Path $env:RUNNER_TOOL_CACHE "venv"
+          Write-Output "Setting up virtual environment at: $venvPath"
+
+          if (-not (Test-Path $venvPath)) {
+              Write-Output "Creating new virtual environment..."
+              python -m venv $venvPath
+              if ($LASTEXITCODE -ne 0) {
+                  Write-Error "Failed to create virtual environment"
+                  exit 1
+              }
+          }
+
+          Write-Output "virtual_env=$venvPath" >> $env:GITHUB_OUTPUT
+
+      - name: Set up Python virtual environment (Unix)
+        if: inputs.setup_python && inputs.platform == 'macos'
+        id: venv-unix
+        shell: bash
+        run: |
+          set -euo pipefail
+          VENV_PATH="${{ env.RUNNER_TOOL_CACHE }}/venv"
+
+          if [ ! -d "$VENV_PATH" ]; then
+              echo "Creating virtual environment at: $VENV_PATH"
+              python3 -m venv "$VENV_PATH"
+              if [ $? -ne 0 ]; then
+                  echo "Error: Failed to create virtual environment"
+                  exit 1
+              fi
+          fi
+
+          echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
+
+      - name: Install Node.js packages (Windows)
+        if: inputs.setup_node && inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Installing Node.js packages..."
+          npm install -g neovim
+
+      - name: Install Node.js packages (Unix)
+        if: inputs.setup_node && inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/npm.sh
+          ./infra/packages/npm.sh || {
+              echo "Failed to install Node.js packages. Retrying..."
+              npm cache clean --force
+              ./infra/packages/npm.sh
+          }
+
+      - name: Install Rust packages (Windows)
+        if: inputs.setup_rust && inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Installing Rust..."
+          Invoke-WebRequest -Uri https://win.rustup.rs -OutFile rustup-init.exe
+          .\rustup-init.exe -y
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          rustup default stable
+          cargo install stylua
+
+      - name: Install Rust packages (Unix)
+        if: inputs.setup_rust && inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/cargo.sh
+          ./infra/packages/cargo.sh || {
+              echo "Failed to install Rust packages. Retrying..."
+              cargo clean
+              ./infra/packages/cargo.sh
+          }
+
+      - name: Install Python packages (Windows)
+        if: inputs.setup_python && inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Installing Python packages..."
+          & "${{ steps.venv.outputs.virtual_env }}\Scripts\Activate.ps1"
+          pip install -r requirements.txt
+
+      - name: Install Python packages (Unix)
+        if: inputs.setup_python && inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/pip.sh
+          source "${{ steps.venv-unix.outputs.virtual_env }}/bin/activate"
+          ./infra/packages/pip.sh || {
+              echo "Failed to install Python packages. Retrying..."
+              pip cache purge
+              ./infra/packages/pip.sh
+          }
+
+      - name: Install Lua packages (Windows)
+        if: inputs.setup_lua && inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Installing Lua packages..."
+          luarocks install --local luaformatter
+
+      - name: Install Lua packages (Unix)
+        if: inputs.setup_lua && inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/luarocks.sh
+          ./infra/packages/luarocks.sh || {
+              echo "Failed to install Lua packages. Retrying..."
+              luarocks config --local lua_version 5.4
+              ./infra/packages/luarocks.sh
+          }
