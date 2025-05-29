@@ -266,11 +266,50 @@ jobs:
             Write-Output "Current PATH before activation: $env:Path"
             Write-Output "Current Python before activation: $(Get-Command python | Select-Object -ExpandProperty Source)"
 
+            # Debug virtual environment structure
+            Write-Output "=== Virtual Environment Structure ==="
+            Get-ChildItem $venvPath -Recurse | Where-Object { $_.Name -like "*.exe" -or $_.Name -like "*.ps1" } | Format-Table -AutoSize
+            Write-Output "==================================="
+
             # Source the activation script with error handling and timeout
             $job = Start-Job -ScriptBlock {
-                param($scriptPath)
-                & $scriptPath
-            } -ArgumentList $activateScript
+                param($scriptPath, $venvPath)
+                try {
+                    Write-Output "Activation script path: $scriptPath"
+                    Write-Output "Virtual environment path: $venvPath"
+
+                    # Check if activation script exists
+                    if (-not (Test-Path $scriptPath)) {
+                        throw "Activation script not found at: $scriptPath"
+                    }
+
+                    # Check script content
+                    Write-Output "Activation script content:"
+                    Get-Content $scriptPath
+
+                    # Try activation
+                    & $scriptPath
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "Activation script failed with exit code $LASTEXITCODE"
+                    }
+
+                    # Verify Python path after activation
+                    $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
+                    Write-Output "Python path after activation: $pythonPath"
+                    Write-Output "Expected to start with: $venvPath"
+
+                    if (-not $pythonPath.StartsWith($venvPath)) {
+                        throw "Python path does not point to virtual environment"
+                    }
+
+                    Write-Output "Activation successful"
+                } catch {
+                    Write-Error $_.Exception.Message
+                    Write-Output "Error details: $_"
+                    Write-Output "Script stack trace: $($_.ScriptStackTrace)"
+                    throw
+                }
+            } -ArgumentList $activateScript, $venvPath
 
             $timeout = 30  # 30 seconds timeout
             $result = Wait-Job $job -Timeout $timeout
@@ -284,8 +323,13 @@ jobs:
             Remove-Job $job
 
             if ($job.State -eq 'Failed') {
-                throw "Activation script failed: $output"
+                Write-Error "Activation failed with output:"
+                Write-Output $output
+                throw "Virtual environment activation failed"
             }
+
+            Write-Output "Activation output:"
+            Write-Output $output
 
             # Verify activation by checking Python path
             $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
@@ -293,11 +337,9 @@ jobs:
                 Write-Error "Python is not using the virtual environment"
                 Write-Output "Expected Python path to start with: $venvPath"
                 Write-Output "Actual Python path: $pythonPath"
+                Write-Output "Current PATH: $env:Path"
                 exit 1
             }
-
-            Write-Output "PATH after activation: $env:Path"
-            Write-Output "Python after activation: $pythonPath"
 
             # Install system packages with timeout
             Write-Output "Installing system packages..."
@@ -625,10 +667,18 @@ jobs:
           set -e
           source "${{ inputs.venv_path }}/bin/activate"
 
+          # Install Neovim if not present
+          if ! command -v nvim &> /dev/null; then
+            echo "Installing Neovim..."
+            brew install neovim
+          fi
+
           # Verify Neovim is available
           if ! command -v nvim &> /dev/null; then
-            echo "Error: Neovim not found in PATH before running tests"
+            echo "Error: Neovim not found in PATH after installation"
             echo "Current PATH: $PATH"
+            echo "Homebrew prefix: $(brew --prefix)"
+            echo "Homebrew bin: $(brew --prefix)/bin"
             exit 1
           fi
           echo "Using Neovim from: $(which nvim)"
