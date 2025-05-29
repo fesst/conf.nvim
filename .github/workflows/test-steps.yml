@@ -97,22 +97,24 @@ jobs:
 
           # Check if directory exists
           if (-not (Test-Path $venvPath)) {
-            Write-Error "Virtual environment not found at: $venvPath"
-            Write-Output "Current directory: $(Get-Location)"
-            Write-Output "Directory contents:"
-            Get-ChildItem
-            Write-Output "Environment variables:"
-            Get-ChildItem env: | Format-Table -AutoSize
-            exit 1
+              Write-Error "Virtual environment not found at: $venvPath"
+              Write-Output "Current directory: $(Get-Location)"
+              Write-Output "Directory contents:"
+              Get-ChildItem
+              Write-Output "Environment variables:"
+              Get-ChildItem env: | Format-Table -AutoSize
+              Write-Output "RUNNER_TEMP: $env:RUNNER_TEMP"
+              Write-Output "GITHUB_WORKSPACE: $env:GITHUB_WORKSPACE"
+              exit 1
           }
 
           # Verify activation script exists
           $activateScript = Join-Path $venvPath "Scripts\activate.ps1"
           if (-not (Test-Path $activateScript)) {
-            Write-Error "Activation script not found at: $activateScript"
-            Write-Output "Virtual environment contents:"
-            Get-ChildItem $venvPath -Recurse
-            exit 1
+              Write-Error "Activation script not found at: $activateScript"
+              Write-Output "Virtual environment contents:"
+              Get-ChildItem $venvPath -Recurse
+              exit 1
           }
 
           # Activate virtual environment
@@ -122,19 +124,19 @@ jobs:
           # Import the activation script
           . $activateScript
           if (-not $?) {
-            Write-Error "Failed to activate virtual environment"
-            Write-Output "Python version: $(python --version)"
-            Write-Output "PATH: $env:Path"
-            exit 1
+              Write-Error "Failed to activate virtual environment"
+              Write-Output "Python version: $(python --version)"
+              Write-Output "PATH: $env:Path"
+              exit 1
           }
 
           # Verify Python is using the virtual environment
           $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
           if (-not $pythonPath.StartsWith($venvPath)) {
-            Write-Error "Python is not using the virtual environment"
-            Write-Output "Expected Python path to start with: $venvPath"
-            Write-Output "Actual Python path: $pythonPath"
-            exit 1
+              Write-Error "Python is not using the virtual environment"
+              Write-Output "Expected Python path to start with: $venvPath"
+              Write-Output "Actual Python path: $pythonPath"
+              exit 1
           }
 
           Write-Output "Virtual environment verified and activated successfully"

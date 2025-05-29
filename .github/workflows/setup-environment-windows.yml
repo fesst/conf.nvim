@@ -149,6 +149,16 @@ jobs:
           choco install neovim -y
           choco install luarocks -y
 
+      - name: Cache virtual environment
+        if: inputs.setup_python
+        uses: actions/cache@v4
+        id: venv-cache
+        with:
+          path: ${{ runner.tool_cache }}/venv
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-venv-
+
       - name: Set up Python virtual environment
         if: inputs.setup_python
         id: venv-win
@@ -156,8 +166,8 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
 
-          # Use a more reliable path for Windows
-          $venvPath = Join-Path $env:GITHUB_WORKSPACE "venv"
+          # Use RUNNER_TEMP for more reliable path
+          $venvPath = Join-Path $env:RUNNER_TEMP "venv"
           Write-Output "Setting up virtual environment at: $venvPath"
 
           # Create parent directory if it doesn't exist
