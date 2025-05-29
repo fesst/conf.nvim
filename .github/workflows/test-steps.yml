@@ -931,30 +931,19 @@ jobs:
         shell: bash
         run: |
           set -e
-          source "${{ inputs.venv_path }}/bin/activate"
 
-          # Add cargo bin to PATH using GITHUB_PATH
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-
-          # Verify stylua is available
+          # Install stylua if not present
           if ! command -v stylua &> /dev/null; then
-            echo "Error: stylua not found in PATH"
-            echo "Current PATH: $PATH"
-            exit 1
+            echo "Installing stylua..."
+            cargo install stylua
           fi
-          echo "Using stylua from: $(which stylua)"
+
+          # Verify stylua installation
+          stylua --version
 
           # Check formatting
           stylua --check lua/
-          if [ $? -ne 0 ]; then
-            echo "Error: Format check failed for lua/ directory"
-            exit 1
-          fi
           stylua --check after/plugin/
-          if [ $? -ne 0 ]; then
-            echo "Error: Format check failed for after/plugin/ directory"
-            exit 1
-          fi
 
       - name: Run sanity tests (Windows)
         if: inputs.install_deps && inputs.platform == 'windows'

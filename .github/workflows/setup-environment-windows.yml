@@ -166,36 +166,59 @@ jobs:
               New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
           }
 
-          # Check if virtual environment exists in cache
+          # Remove existing virtual environment if it exists
           if (Test-Path $venvPath) {
-              Write-Output "Found existing virtual environment in cache"
-              # Verify the activation script exists
-              $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
-              if (-not (Test-Path $activateScript)) {
-                  Write-Output "Activation script not found, recreating virtual environment..."
-                  Remove-Item -Path $venvPath -Recurse -Force
-                  Start-Sleep -Seconds 2
-              }
+              Write-Output "Removing existing virtual environment..."
+              Remove-Item -Path $venvPath -Recurse -Force
+              Start-Sleep -Seconds 2  # Wait for filesystem to sync
           }
 
-          # Create new virtual environment if needed
+          # Create new virtual environment
+          Write-Output "Creating new virtual environment..."
+          python -m venv $venvPath
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to create virtual environment"
+              Write-Output "Python version: $(python --version)"
+              Write-Output "Python path: $(Get-Command python | Select-Object -ExpandProperty Source)"
+              exit 1
+          }
+
+          # Verify virtual environment was created
           if (-not (Test-Path $venvPath)) {
-              Write-Output "Creating new virtual environment..."
-              python -m venv $venvPath
-              if ($LASTEXITCODE -ne 0) {
-                  Write-Error "Failed to create virtual environment"
-                  Write-Output "Python version: $(python --version)"
-                  Write-Output "Python path: $(Get-Command python | Select-Object -ExpandProperty Source)"
-                  Write-Output "Current directory: $(Get-Location)"
-                  Write-Output "Directory contents:"
-                  Get-ChildItem
-                  exit 1
-              }
+              Write-Error "Virtual environment directory not found after creation"
+              exit 1
           }
 
           # Set the output variable
           Write-Output "virtual_env=$venvPath" >> $env:GITHUB_OUTPUT
           Write-Output "Setting virtual_env output to: $venvPath"
+
+          # Verify activation script exists
+          $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+          if (-not (Test-Path $activateScript)) {
+              Write-Error "Activation script not found at: $activateScript"
+              exit 1
+          }
+
+          # Set execution policy for the process
+          Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+
+          # Test activation
+          Write-Output "Testing virtual environment activation..."
+          & $activateScript
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to activate virtual environment"
+              exit 1
+          }
+
+          # Verify Python path is correct
+          $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
+          if (-not $pythonPath.StartsWith($venvPath)) {
+              Write-Error "Python is not using the virtual environment"
+              Write-Output "Expected Python path to start with: $venvPath"
+              Write-Output "Actual Python path: $pythonPath"
+              exit 1
+          }
 
       - name: Install Visual Studio Build Tools
         shell: pwsh
