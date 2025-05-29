@@ -177,24 +177,29 @@ jobs:
               New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
           }
 
-          # Remove existing virtual environment if it exists
+          # Check if virtual environment exists in cache
           if (Test-Path $venvPath) {
-              Write-Output "Removing existing virtual environment..."
-              Remove-Item -Path $venvPath -Recurse -Force
-              Start-Sleep -Seconds 2
-          }
+              Write-Output "Found existing virtual environment in cache"
+          } else {
+              Write-Output "Creating new virtual environment..."
+              # Remove any existing virtual environment
+              if (Test-Path $venvPath) {
+                  Write-Output "Removing existing virtual environment..."
+                  Remove-Item -Path $venvPath -Recurse -Force
+                  Start-Sleep -Seconds 2
+              }
 
-          # Create virtual environment
-          Write-Output "Creating virtual environment..."
-          python -m venv $venvPath
-          if ($LASTEXITCODE -ne 0) {
-              Write-Error "Failed to create virtual environment"
-              Write-Output "Python version: $(python --version)"
-              Write-Output "Python path: $(Get-Command python | Select-Object -ExpandProperty Source)"
-              Write-Output "Current directory: $(Get-Location)"
-              Write-Output "Directory contents:"
-              Get-ChildItem
-              exit 1
+              # Create virtual environment
+              python -m venv $venvPath
+              if ($LASTEXITCODE -ne 0) {
+                  Write-Error "Failed to create virtual environment"
+                  Write-Output "Python version: $(python --version)"
+                  Write-Output "Python path: $(Get-Command python | Select-Object -ExpandProperty Source)"
+                  Write-Output "Current directory: $(Get-Location)"
+                  Write-Output "Directory contents:"
+                  Get-ChildItem
+                  exit 1
+              }
           }
 
           # Verify virtual environment

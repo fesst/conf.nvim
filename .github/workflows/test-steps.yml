@@ -251,39 +251,63 @@ jobs:
         shell: pwsh
         run: |
           try {
-            # Normalize the virtual environment path
-            $venvPath = [System.IO.Path]::GetFullPath("${{ inputs.venv_path }}")
+            # Get the virtual environment path from the setup step
+            $venvPath = "${{ steps.setup.outputs.virtual_env }}"
+            if (-not $venvPath) {
+              # Fallback to the input path if setup output is not available
+              $venvPath = "${{ inputs.venv_path }}"
+            }
             Write-Output "Using virtual environment at: $venvPath"
+
+            # Normalize the path for Windows
+            $venvPath = [System.IO.Path]::GetFullPath($venvPath)
+            Write-Output "Normalized path: $venvPath"
+
+            # Create parent directory if it doesn't exist
+            $parentDir = Split-Path -Parent $venvPath
+            if (-not (Test-Path $parentDir)) {
+              Write-Output "Creating parent directory: $parentDir"
+              New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+            }
 
             # Verify virtual environment exists
             if (-not (Test-Path $venvPath)) {
-              throw "Virtual environment not found at: $venvPath"
+              Write-Error "Virtual environment not found at: $venvPath"
+              Write-Output "Current directory: $(Get-Location)"
+              Write-Output "Directory contents:"
+              Get-ChildItem
+              Write-Output "Parent directory contents:"
+              Get-ChildItem $parentDir
+              exit 1
             }
 
             # Verify activation script exists
             $activateScript = Join-Path $venvPath "Scripts\activate.ps1"
             if (-not (Test-Path $activateScript)) {
-              throw "Activation script not found at: $activateScript"
+              Write-Error "Activation script not found at: $activateScript"
+              Write-Output "Virtual environment contents:"
+              Get-ChildItem $venvPath -Recurse
+              exit 1
             }
 
             # Activate virtual environment
             Write-Output "Activating virtual environment..."
-            Write-Output "Activation script path: $activateScript"
-            Write-Output "Script contents:"
-            Get-Content $activateScript
-
-            # Import the activation script
             . $activateScript
-            if (-not $?) {
-              throw "Failed to activate virtual environment"
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to activate virtual environment"
+              Write-Output "Python version: $(python --version)"
+              Write-Output "PATH: $env:Path"
+              exit 1
             }
 
-            # Verify Python is available
-            $pythonPath = Get-Command python -ErrorAction SilentlyContinue
-            if (-not $pythonPath) {
-              throw "Python not found in PATH after activation"
+            # Verify Python is using the virtual environment
+            $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
+            if (-not $pythonPath.StartsWith($venvPath)) {
+              Write-Error "Python is not using the virtual environment"
+              Write-Output "Expected Python path to start with: $venvPath"
+              Write-Output "Actual Python path: $pythonPath"
+              exit 1
             }
-            Write-Output "Using Python from: $($pythonPath.Source)"
 
             # Run install script
             $env:CI = "true"
@@ -306,12 +330,12 @@ jobs:
                 if (-not (Test-ChocolateyPackage $package.Name)) {
                     Write-Output "Installing $($package.Name)..."
                     choco install $package.Name -y
-            if ($LASTEXITCODE -ne 0) {
+                    if ($LASTEXITCODE -ne 0) {
                         throw "Failed to install $($package.Name)"
                     }
                 } else {
                     Write-Output "$($package.Name) is already installed"
-            }
+                }
             }
 
             # Use PowerShell script with Chocolatey
