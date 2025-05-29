@@ -271,16 +271,43 @@ jobs:
               refreshenv
           }
 
+          # Import Chocolatey profile module
+          Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
+
           # Install Lua and LuaRocks using Chocolatey
           Write-Output "Installing Lua and LuaRocks..."
           choco install lua -y
           choco install luarocks -y
+
+          # Update PATH with Lua installation directory
+          $luaPath = "C:\Program Files (x86)\Lua\5.1"
+          $env:Path = "$env:Path;$luaPath"
+          [System.Environment]::SetEnvironmentVariable("Path", $env:Path, [System.EnvironmentVariableTarget]::Process)
+
+          # Refresh environment variables
           refreshenv
 
-          # Verify installations
+          # Verify installations with full path
           Write-Output "Verifying installations..."
-          lua -v
-          luarocks --version
+          $luaExe = Join-Path $luaPath "lua.exe"
+          if (Test-Path $luaExe) {
+              & $luaExe -v
+          } else {
+              Write-Error "Lua executable not found at: $luaExe"
+              Write-Output "Current PATH: $env:Path"
+              Write-Output "Directory contents of Lua path:"
+              Get-ChildItem $luaPath -ErrorAction SilentlyContinue
+              exit 1
+          }
+
+          # Verify LuaRocks
+          if (Get-Command luarocks -ErrorAction SilentlyContinue) {
+              luarocks --version
+          } else {
+              Write-Error "LuaRocks not found in PATH"
+              Write-Output "Current PATH: $env:Path"
+              exit 1
+          }
 
       - name: Install Node.js packages
         if: inputs.setup_node
