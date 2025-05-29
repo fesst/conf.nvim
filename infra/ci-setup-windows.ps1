@@ -119,4 +119,25 @@ if (-not (Get-Command stylua -ErrorAction SilentlyContinue)) {
 
 Write-Host "stylua installed successfully at $(Get-Command stylua).Source"
 
+# Create and activate virtual environment
+$venvPath = Join-Path $PSScriptRoot ".venv"
+if (-not (Test-Path $venvPath)) {
+    Write-Host "Creating virtual environment at $venvPath"
+    python -m venv $venvPath
+}
+
+# Activate virtual environment
+$activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+if (Test-Path $activateScript) {
+    Write-Host "Activating virtual environment..."
+    . $activateScript
+} else {
+    throw "Virtual environment activation script not found at $activateScript"
+}
+
+# Verify virtual environment activation
+if (-not $env:VIRTUAL_ENV) {
+    throw "Failed to activate virtual environment"
+}
+
 Write-Host "Environment setup completed successfully"

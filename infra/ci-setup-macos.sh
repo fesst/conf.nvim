@@ -17,6 +17,9 @@ chmod +x infra/packages/npm.sh
   ./infra/packages/npm.sh
 }
 
+# Ensure Cargo bin is in PATH
+export PATH="$HOME/.cargo/bin:$PATH"
+
 # Install Rust packages
 chmod +x infra/packages/cargo.sh
 ./infra/packages/cargo.sh || {
