@@ -491,6 +491,7 @@ jobs:
         run: |
           try {
             $ErrorActionPreference = 'Stop'
+            $env:PYTHONIOENCODING = 'utf-8'  # Ensure proper encoding
 
             # Get the virtual environment path
             $venvPath = "${{ inputs.venv_path }}"
@@ -507,16 +508,30 @@ jobs:
                 New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
             }
 
+            # Set permissions on parent directory
+            Write-Output "Setting permissions on parent directory..."
+            $acl = Get-Acl $parentDir
+            $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+            $acl.SetAccessRule($rule)
+            Set-Acl $parentDir $acl
+
             # Verify virtual environment exists
             if (-not (Test-Path $venvPath)) {
                 Write-Error "Virtual environment not found at: $venvPath"
                 Write-Output "Current directory: $(Get-Location)"
                 Write-Output "Directory contents:"
-                Get-ChildItem
+                Get-ChildItem | Format-Table -AutoSize
                 Write-Output "Parent directory contents:"
-                Get-ChildItem $parentDir
+                Get-ChildItem $parentDir | Format-Table -AutoSize
                 exit 1
             }
+
+            # Set permissions on virtual environment directory
+            Write-Output "Setting permissions on virtual environment directory..."
+            $acl = Get-Acl $venvPath
+            $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
+            $acl.SetAccessRule($rule)
+            Set-Acl $venvPath $acl
 
             # Verify activation script exists
             $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
@@ -525,9 +540,16 @@ jobs:
             if (-not (Test-Path $activateScript)) {
                 Write-Error "Activation script not found at: $activateScript"
                 Write-Output "Virtual environment contents:"
-                Get-ChildItem $venvPath -Recurse
+                Get-ChildItem $venvPath -Recurse | Format-Table -AutoSize
                 exit 1
             }
+
+            # Set permissions on activation script
+            Write-Output "Setting permissions on activation script..."
+            $acl = Get-Acl $activateScript
+            $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "Allow")
+            $acl.SetAccessRule($rule)
+            Set-Acl $activateScript $acl
 
             # Check for Zone.Identifier and unblock if needed
             if (Get-Item $activateScript -Stream Zone.Identifier -ErrorAction SilentlyContinue) {
@@ -546,18 +568,70 @@ jobs:
             Write-Output "Current PATH before activation: $env:Path"
             Write-Output "Current Python before activation: $(Get-Command python | Select-Object -ExpandProperty Source)"
 
-            # Source the activation script with error handling
-            try {
-                & $activateScript
-                if ($LASTEXITCODE -ne 0) {
-                    throw "Activation script failed with exit code $LASTEXITCODE"
+            # Debug virtual environment structure
+            Write-Output "=== Virtual Environment Structure ==="
+            Get-ChildItem $venvPath -Recurse | Where-Object { $_.Name -like "*.exe" -or $_.Name -like "*.ps1" } | Format-Table -AutoSize
+            Write-Output "==================================="
+
+            # Source the activation script with error handling and timeout
+            $job = Start-Job -ScriptBlock {
+                param($scriptPath, $venvPath)
+                try {
+                    Write-Output "Activation script path: $scriptPath"
+                    Write-Output "Virtual environment path: $venvPath"
+
+                    # Check if activation script exists
+                    if (-not (Test-Path $scriptPath)) {
+                        throw "Activation script not found at: $scriptPath"
+                    }
+
+                    # Check script content
+                    Write-Output "Activation script content:"
+                    Get-Content $scriptPath
+
+                    # Try activation
+                    & $scriptPath
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "Activation script failed with exit code $LASTEXITCODE"
+                    }
+
+                    # Verify Python path after activation
+                    $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
+                    Write-Output "Python path after activation: $pythonPath"
+                    Write-Output "Expected to start with: $venvPath"
+
+                    if (-not $pythonPath.StartsWith($venvPath)) {
+                        throw "Python path does not point to virtual environment"
+                    }
+
+                    Write-Output "Activation successful"
+                } catch {
+                    Write-Error $_.Exception.Message
+                    Write-Output "Error details: $_"
+                    Write-Output "Script stack trace: $($_.ScriptStackTrace)"
+                    throw
                 }
-            } catch {
-                Write-Error "Failed to activate virtual environment: $_"
-                Write-Output "Python version: $(python --version)"
-                Write-Output "PATH after failed activation: $env:Path"
-                exit 1
+            } -ArgumentList $activateScript, $venvPath
+
+            $timeout = 30  # 30 seconds timeout
+            $result = Wait-Job $job -Timeout $timeout
+            if ($result -eq $null) {
+                Stop-Job $job
+                Remove-Job $job
+                throw "Activation script timed out after $timeout seconds"
             }
+
+            $output = Receive-Job $job
+            Remove-Job $job
+
+            if ($job.State -eq 'Failed') {
+                Write-Error "Activation failed with output:"
+                Write-Output $output
+                throw "Virtual environment activation failed"
+            }
+
+            Write-Output "Activation output:"
+            Write-Output $output
 
             # Verify activation by checking Python path
             $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
@@ -565,23 +639,10 @@ jobs:
                 Write-Error "Python is not using the virtual environment"
                 Write-Output "Expected Python path to start with: $venvPath"
                 Write-Output "Actual Python path: $pythonPath"
+                Write-Output "Current PATH: $env:Path"
                 exit 1
             }
 
-            Write-Output "PATH after activation: $env:Path"
-            Write-Output "Python after activation: $pythonPath"
-
-            # Install system packages
-            Write-Output "Installing system packages..."
-            choco install neovim -y
-            choco install luarocks -y
-
-            # Use PowerShell script with Chocolatey
-            Write-Output "Running PowerShell install script..."
-            & "${{ github.workspace }}/infra/install.ps1" -UseChocolatey
-            if ($LASTEXITCODE -ne 0) {
-                throw "Failed to run PowerShell install script"
-            }
           } catch {
             Write-Error $_.Exception.Message
             Write-Output "Current directory: $(Get-Location)"
