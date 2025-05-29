@@ -892,6 +892,9 @@ jobs:
           set -e
           source "${{ inputs.venv_path }}/bin/activate"
 
+          # Add cargo bin to PATH using GITHUB_PATH
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
           # Verify stylua is available
           if ! command -v stylua &> /dev/null; then
             echo "Error: stylua not found in PATH"
