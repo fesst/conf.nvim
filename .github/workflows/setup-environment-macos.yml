@@ -85,6 +85,24 @@ jobs:
           nvim --version
           tree-sitter --version
 
+      - name: Set up Rust environment
+        if: inputs.setup_rust
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Add Cargo bin to PATH
+          export PATH="$HOME/.cargo/bin:$PATH"
+          echo "Updated PATH: $PATH"
+
+          # Verify stylua is available
+          if ! command -v stylua &> /dev/null; then
+            echo "Error: stylua not found in PATH"
+            echo "Current PATH: $PATH"
+            echo "Cargo bin: $HOME/.cargo/bin"
+            exit 1
+          fi
+          echo "Using stylua from: $(which stylua)"
+
       - name: Cache virtual environment
         if: inputs.setup_python
         uses: actions/cache@v4

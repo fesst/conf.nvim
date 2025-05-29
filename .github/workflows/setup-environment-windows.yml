@@ -95,6 +95,10 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
 
+          # Set execution policy to bypass for this process
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+          Write-Output "Current execution policy: $(Get-ExecutionPolicy)"
+
           # Use runner.tool_cache for consistent path
           $venvPath = Join-Path $env:RUNNER_TOOL_CACHE "venv"
           Write-Output "Setting up virtual environment at: $venvPath"
@@ -136,6 +140,25 @@ jobs:
           # Set the output variable
           Write-Output "virtual_env=$venvPath" >> $env:GITHUB_OUTPUT
           Write-Output "Setting virtual_env output to: $venvPath"
+
+          # Verify activation script exists and is accessible
+          $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+          if (-not (Test-Path $activateScript)) {
+              Write-Error "Activation script not found at: $activateScript"
+              Write-Output "Virtual environment contents:"
+              Get-ChildItem $venvPath -Recurse
+              exit 1
+          }
+
+          # Test activation
+          Write-Output "Testing virtual environment activation..."
+          . $activateScript
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to activate virtual environment"
+              Write-Output "Python version: $(python --version)"
+              Write-Output "PATH: $env:Path"
+              exit 1
+          }
 
       - name: Install Visual Studio Build Tools
         shell: pwsh
