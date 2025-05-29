@@ -167,9 +167,13 @@ jobs:
           Write-Output "Current Python: $(Get-Command python | Select-Object -ExpandProperty Source)"
           Write-Output "========================="
 
-          . $activateScript
-          if ($LASTEXITCODE -ne 0) {
-              Write-Error "Failed to activate virtual environment"
+          try {
+              & $activateScript
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Activation script failed with exit code $LASTEXITCODE"
+              }
+          } catch {
+              Write-Error "Failed to activate virtual environment: $_"
               Write-Output "Python version: $(python --version)"
               Write-Output "PATH: $env:Path"
               exit 1
@@ -542,19 +546,20 @@ jobs:
             Write-Output "Current PATH before activation: $env:Path"
             Write-Output "Current Python before activation: $(Get-Command python | Select-Object -ExpandProperty Source)"
 
-            # Source the activation script
-            . $activateScript
-            if ($LASTEXITCODE -ne 0) {
-                Write-Error "Failed to activate virtual environment"
+            # Source the activation script with error handling
+            try {
+                & $activateScript
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Activation script failed with exit code $LASTEXITCODE"
+                }
+            } catch {
+                Write-Error "Failed to activate virtual environment: $_"
                 Write-Output "Python version: $(python --version)"
                 Write-Output "PATH after failed activation: $env:Path"
                 exit 1
             }
 
-            Write-Output "PATH after activation: $env:Path"
-            Write-Output "Python after activation: $(Get-Command python | Select-Object -ExpandProperty Source)"
-
-            # Verify Python is using the virtual environment
+            # Verify activation by checking Python path
             $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
             if (-not $pythonPath.StartsWith($venvPath)) {
                 Write-Error "Python is not using the virtual environment"
@@ -562,6 +567,9 @@ jobs:
                 Write-Output "Actual Python path: $pythonPath"
                 exit 1
             }
+
+            Write-Output "PATH after activation: $env:Path"
+            Write-Output "Python after activation: $pythonPath"
 
             # Install system packages
             Write-Output "Installing system packages..."
@@ -642,7 +650,18 @@ jobs:
         shell: pwsh
         run: |
           try {
-            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+            try {
+                & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Activation script failed with exit code $LASTEXITCODE"
+                }
+            } catch {
+                Write-Error "Failed to activate virtual environment: $_"
+                Write-Output "Python version: $(python --version)"
+                Write-Output "PATH: $env:Path"
+                exit 1
+            }
+
             # Ensure Neovim is in PATH and verify it
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
@@ -699,7 +718,18 @@ jobs:
         shell: pwsh
         run: |
           try {
-            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+            try {
+                & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Activation script failed with exit code $LASTEXITCODE"
+                }
+            } catch {
+                Write-Error "Failed to activate virtual environment: $_"
+                Write-Output "Python version: $(python --version)"
+                Write-Output "PATH: $env:Path"
+                exit 1
+            }
+
             # Ensure stylua is in PATH
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
@@ -756,7 +786,18 @@ jobs:
         if: inputs.install_deps && inputs.platform == 'windows'
         shell: pwsh
         run: |
-          & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+          try {
+              & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Activation script failed with exit code $LASTEXITCODE"
+              }
+          } catch {
+              Write-Error "Failed to activate virtual environment: $_"
+              Write-Output "Python version: $(python --version)"
+              Write-Output "PATH: $env:Path"
+              exit 1
+          }
+
           # Ensure all tools are in PATH
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin;$env:USERPROFILE\.cargo\bin"
