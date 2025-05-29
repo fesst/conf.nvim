@@ -24,12 +24,16 @@ if [ "${INSTALL_STYLUA:-true}" = "true" ]; then
     # Install each package
     for package in "${CARGO_PACKAGES[@]}"; do
         echo "Installing $package..."
-        if ! cargo install "$package"; then
+        echo "Current cargo version: $(cargo --version)"
+        echo "Current rustc version: $(rustc --version)"
+        if ! cargo install "$package" --verbose; then
             echo "Failed to install $package. Retrying with --force..."
-            if ! cargo install "$package" --force; then
+            if ! cargo install "$package" --force --verbose; then
                 echo "Error: Failed to install $package even with --force"
                 echo "Current PATH: $PATH"
                 echo "Cargo bin location: $HOME/.cargo/bin"
+                echo "Contents of cargo bin directory:"
+                ls -la "$HOME/.cargo/bin"
                 exit 1
             fi
         fi

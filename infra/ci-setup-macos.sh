@@ -17,6 +17,13 @@ chmod +x infra/packages/npm.sh
   ./infra/packages/npm.sh
 }
 
+# Install Rust if not already installed
+if ! command -v rustc &> /dev/null; then
+  echo "Installing Rust..."
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  source "$HOME/.cargo/env"
+fi
+
 # Ensure Cargo bin is in PATH
 export PATH="$HOME/.cargo/bin:$PATH"
 
