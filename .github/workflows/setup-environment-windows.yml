@@ -180,16 +180,18 @@ jobs:
           # Check if virtual environment exists in cache
           if (Test-Path $venvPath) {
               Write-Output "Found existing virtual environment in cache"
-          } else {
-              Write-Output "Creating new virtual environment..."
-              # Remove any existing virtual environment
-              if (Test-Path $venvPath) {
-                  Write-Output "Removing existing virtual environment..."
+              # Verify the activation script exists
+              $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+              if (-not (Test-Path $activateScript)) {
+                  Write-Output "Activation script not found, recreating virtual environment..."
                   Remove-Item -Path $venvPath -Recurse -Force
                   Start-Sleep -Seconds 2
               }
+          }
 
-              # Create virtual environment
+          # Create new virtual environment if needed
+          if (-not (Test-Path $venvPath)) {
+              Write-Output "Creating new virtual environment..."
               python -m venv $venvPath
               if ($LASTEXITCODE -ne 0) {
                   Write-Error "Failed to create virtual environment"
@@ -202,20 +204,10 @@ jobs:
               }
           }
 
-          # Verify virtual environment
-          if (-not (Test-Path $venvPath)) {
-              Write-Error "Virtual environment directory not found after creation"
-              Write-Output "Current directory: $(Get-Location)"
-              Write-Output "Directory contents:"
-              Get-ChildItem
-              exit 1
-          }
-
-          # Set output variable
-          Write-Output "virtual_env=$venvPath" >> $env:GITHUB_OUTPUT
-
-          # Activate virtual environment
+          # Verify virtual environment structure
           $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+          $pythonExe = Join-Path $venvPath "Scripts\python.exe"
+
           if (-not (Test-Path $activateScript)) {
               Write-Error "Activation script not found at: $activateScript"
               Write-Output "Virtual environment contents:"
@@ -223,11 +215,29 @@ jobs:
               exit 1
           }
 
-          . $activateScript
-          if ($LASTEXITCODE -ne 0) {
-              Write-Error "Failed to activate virtual environment"
+          if (-not (Test-Path $pythonExe)) {
+              Write-Error "Python executable not found at: $pythonExe"
+              Write-Output "Virtual environment contents:"
+              Get-ChildItem $venvPath -Recurse
+              exit 1
+          }
+
+          # Set output variable
+          Write-Output "virtual_env=$venvPath" >> $env:GITHUB_OUTPUT
+
+          # Activate virtual environment with detailed error handling
+          Write-Output "Attempting to activate virtual environment..."
+          try {
+              . $activateScript
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Activation script returned non-zero exit code"
+              }
+          } catch {
+              Write-Error "Failed to activate virtual environment: $_"
               Write-Output "Python version: $(python --version)"
               Write-Output "PATH: $env:Path"
+              Write-Output "Virtual environment contents:"
+              Get-ChildItem $venvPath -Recurse
               exit 1
           }
 
@@ -237,20 +247,11 @@ jobs:
               Write-Error "Python is not using the virtual environment"
               Write-Output "Expected Python path to start with: $venvPath"
               Write-Output "Actual Python path: $pythonPath"
+              Write-Output "PATH: $env:Path"
               exit 1
           }
 
-          # Upgrade pip
-          python -m pip install --upgrade pip
-          if ($LASTEXITCODE -ne 0) {
-              Write-Error "Failed to upgrade pip"
-              exit 1
-          }
-
-          # Verify installation
-          Write-Output "Verifying Python installation..."
-          python --version
-          pip list
+          Write-Output "Virtual environment activated successfully"
 
       - name: Install Node.js packages
         if: inputs.setup_node
