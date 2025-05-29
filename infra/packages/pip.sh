@@ -9,5 +9,13 @@ PIP_PACKAGES=(
     "isort"         # Required for Python import sorting
 )
 
-# Export variables
-export PIP_PACKAGES
+# Install packages
+echo "Installing Python packages..."
+for package in "${PIP_PACKAGES[@]}"; do
+    echo "Installing $package..."
+    pip install "$package"
+done
+
+# Verify installations
+echo "Verifying installations..."
+pip list
