@@ -620,9 +620,21 @@ jobs:
                         throw "Activation script not found at: $scriptPath"
                     }
 
-                    # Check script content
+                    # Check script content and permissions
                     Write-Output "Activation script content:"
                     Get-Content $scriptPath
+                    Write-Output "Script permissions:"
+                    Get-Acl $scriptPath | Format-List
+
+                    # Set execution policy for this process
+                    Write-Output "Current execution policy: $(Get-ExecutionPolicy)"
+                    Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+                    Write-Output "New execution policy: $(Get-ExecutionPolicy)"
+
+                    # Ensure proper environment setup
+                    $env:PYTHONIOENCODING = 'utf-8'
+                    $env:PYTHONUNBUFFERED = '1'
+                    $env:VIRTUAL_ENV = $venvPath
 
                     # Try activation with detailed error capture
                     $ErrorActionPreference = 'Continue'
@@ -651,11 +663,20 @@ jobs:
                         throw "Python path does not point to virtual environment"
                     }
 
+                    # Verify environment variables
+                    Write-Output "Environment variables after activation:"
+                    Get-ChildItem env: | Where-Object { $_.Name -like "*PYTHON*" -or $_.Name -like "*VIRTUAL*" } | Format-Table -AutoSize
+
                     Write-Output "Activation successful"
                 } catch {
                     Write-Error $_.Exception.Message
                     Write-Output "Error details: $_"
                     Write-Output "Script stack trace: $($_.ScriptStackTrace)"
+                    Write-Output "Current location: $(Get-Location)"
+                    Write-Output "Environment variables:"
+                    Get-ChildItem env: | Format-Table -AutoSize
+                    Write-Output "Python version: $(python --version 2>&1)"
+                    Write-Output "Python path: $(Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
                     throw
                 }
             } -ArgumentList $activateScript, $venvPath
@@ -690,86 +711,6 @@ jobs:
                 exit 1
             }
 
-          } catch {
-            Write-Error $_.Exception.Message
-            Write-Output "Current directory: $(Get-Location)"
-            Write-Output "Directory contents: $(Get-ChildItem)"
-            Write-Output "Environment variables:"
-            Get-ChildItem env: | Format-Table -AutoSize
-            Write-Output "PATH: $env:Path"
-            exit 1
-          }
-
-      - name: Install minimal dependencies (macOS)
-        if: inputs.install_deps && inputs.platform == 'macos'
-        shell: bash
-        run: |
-          set -e
-          # Verify virtual environment path
-          if [ ! -d "${{ inputs.venv_path }}" ]; then
-            echo "Error: Virtual environment not found at: ${{ inputs.venv_path }}"
-            echo "Current directory: $(pwd)"
-            echo "Directory contents:"
-            ls -la
-            exit 1
-          fi
-
-          # Verify activation script exists
-          if [ ! -f "${{ inputs.venv_path }}/bin/activate" ]; then
-            echo "Error: Activation script not found at: ${{ inputs.venv_path }}/bin/activate"
-            echo "Virtual environment contents:"
-            ls -la "${{ inputs.venv_path }}/bin"
-            exit 1
-          fi
-
-          # Retry brew install with exponential backoff
-          for i in {1..3}; do
-            if brew install neovim tree-sitter; then
-              break
-            fi
-            if [ $i -eq 3 ]; then
-              echo "Failed to install dependencies after 3 attempts"
-              exit 1
-            fi
-            sleep $((2 ** i))
-          done
-
-          # Activate virtual environment with error handling
-          echo "Activating virtual environment at: ${{ inputs.venv_path }}"
-          source "${{ inputs.venv_path }}/bin/activate" || {
-            echo "Error: Failed to activate virtual environment"
-            echo "Python version: $(python --version)"
-            echo "PATH: $PATH"
-            exit 1
-          }
-
-          # Verify Python is available after activation
-          if ! command -v python &> /dev/null; then
-            echo "Error: Python not found in PATH after activation"
-            echo "PATH: $PATH"
-            exit 1
-          fi
-
-          export CI=true
-          bash infra/install.sh
-
-      - name: Run Lua tests (Windows)
-        if: inputs.platform == 'windows'
-        shell: pwsh
-        run: |
-          try {
-            try {
-                & "${{ inputs.venv_path }}/Scripts/activate.ps1"
-                if ($LASTEXITCODE -ne 0) {
-                    throw "Activation script failed with exit code $LASTEXITCODE"
-                }
-            } catch {
-                Write-Error "Failed to activate virtual environment: $_"
-                Write-Output "Python version: $(python --version)"
-                Write-Output "PATH: $env:Path"
-                exit 1
-            }
-
             # Ensure Neovim is in PATH and verify it
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
@@ -777,7 +718,7 @@ jobs:
             # Verify Neovim is available
             $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
             if (-not $nvimPath) {
-              throw "Neovim not found in PATH before running tests. Current PATH: $env:Path"
+                throw "Neovim not found in PATH before running tests. Current PATH: $env:Path"
             }
             Write-Output "Using Neovim from: $($nvimPath.Source)"
 
@@ -788,10 +729,311 @@ jobs:
             # Run the test
             nvim --headless -c "lua require('test.lua.test_print_table')" -c "quit"
             if ($LASTEXITCODE -ne 0) {
-              throw "Test failed with exit code $LASTEXITCODE"
+                throw "Test failed with exit code $LASTEXITCODE"
             }
           } catch {
             Write-Error $_.Exception.Message
+            exit 1
+          }
+
+      - name: Run Lua tests (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          try {
+            $ErrorActionPreference = 'Stop'
+            $env:PYTHONIOENCODING = 'utf-8'
+
+            # Debug initial environment
+            Write-Output "=== Initial Environment Debug ==="
+            Write-Output "Current directory: $(Get-Location)"
+            Write-Output "Directory contents:"
+            Get-ChildItem | Format-Table -AutoSize
+            Write-Output "System PATH:"
+            $env:Path -split ';' | ForEach-Object { Write-Output "  $_" }
+            Write-Output "Python version: $(python --version 2>&1)"
+            Write-Output "Python path: $(Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
+            Write-Output "PowerShell version: $($PSVersionTable.PSVersion)"
+            Write-Output "OS version: $(Get-CimInstance Win32_OperatingSystem).Version"
+            Write-Output "=============================="
+
+            # Get the virtual environment path
+            $venvPath = "${{ inputs.venv_path }}"
+            Write-Output "Using virtual environment at: $venvPath"
+
+            # Normalize the path for Windows
+            $venvPath = [System.IO.Path]::GetFullPath($venvPath)
+            Write-Output "Normalized path: $venvPath"
+
+            # Debug path information
+            Write-Output "=== Path Debug Info ==="
+            Write-Output "Parent directory: $(Split-Path -Parent $venvPath)"
+            Write-Output "Parent directory exists: $(Test-Path (Split-Path -Parent $venvPath))"
+            Write-Output "Parent directory contents:"
+            Get-ChildItem (Split-Path -Parent $venvPath) | Format-Table -AutoSize
+            Write-Output "========================="
+
+            # Create parent directory if it doesn't exist
+            $parentDir = Split-Path -Parent $venvPath
+            if (-not (Test-Path $parentDir)) {
+                Write-Output "Creating parent directory: $parentDir"
+                New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+
+                # Debug directory creation
+                Write-Output "=== Directory Creation Debug ==="
+                Write-Output "Directory created: $(Test-Path $parentDir)"
+                Write-Output "Directory permissions:"
+                Get-Acl $parentDir | Format-List
+                Write-Output "=============================="
+            }
+
+            # Verify virtual environment exists
+            if (-not (Test-Path $venvPath)) {
+                Write-Error "Virtual environment not found at: $venvPath"
+                Write-Output "=== Virtual Environment Debug ==="
+                Write-Output "Current directory: $(Get-Location)"
+                Write-Output "Directory contents:"
+                Get-ChildItem | Format-Table -AutoSize
+                Write-Output "Parent directory contents:"
+                Get-ChildItem $parentDir | Format-Table -AutoSize
+                Write-Output "=============================="
+                exit 1
+            }
+
+            # Debug virtual environment structure
+            Write-Output "=== Virtual Environment Structure ==="
+            Write-Output "Virtual environment exists: $(Test-Path $venvPath)"
+            Write-Output "Virtual environment permissions:"
+            Get-Acl $venvPath | Format-List
+            Write-Output "Virtual environment contents:"
+            Get-ChildItem $venvPath -Recurse | Where-Object { $_.Name -like "*.exe" -or $_.Name -like "*.ps1" } | Format-Table -AutoSize
+            Write-Output "==================================="
+
+            # Verify activation script exists
+            $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+            Write-Output "Checking activation script at: $activateScript"
+
+            if (-not (Test-Path $activateScript)) {
+                Write-Error "Activation script not found at: $activateScript"
+                Write-Output "=== Activation Script Debug ==="
+                Write-Output "Script path exists: $(Test-Path $activateScript)"
+                Write-Output "Scripts directory exists: $(Test-Path (Join-Path $venvPath 'Scripts'))"
+                Write-Output "Scripts directory contents:"
+                Get-ChildItem (Join-Path $venvPath 'Scripts') | Format-Table -AutoSize
+                Write-Output "=============================="
+                exit 1
+            }
+
+            # Debug activation script
+            Write-Output "=== Activation Script Debug ==="
+            Write-Output "Script exists: $(Test-Path $activateScript)"
+            Write-Output "Script permissions:"
+            Get-Acl $activateScript | Format-List
+            Write-Output "Script content (first 10 lines):"
+            Get-Content $activateScript -TotalCount 10
+            Write-Output "=============================="
+
+            # Check for Zone.Identifier and unblock if needed
+            if (Get-Item $activateScript -Stream Zone.Identifier -ErrorAction SilentlyContinue) {
+                Write-Output "Zone.Identifier found! Unblocking script..."
+                Unblock-File -Path $activateScript
+                Write-Output "Script unblocked: $(-not (Get-Item $activateScript -Stream Zone.Identifier -ErrorAction SilentlyContinue))"
+            }
+
+            # Set execution policy for the process
+            $currentPolicy = Get-ExecutionPolicy
+            Write-Output "Current execution policy: $currentPolicy"
+            Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+            Write-Output "New execution policy: $(Get-ExecutionPolicy)"
+
+            # Activate virtual environment
+            Write-Output "=== Pre-Activation Environment ==="
+            Write-Output "Current PATH: $env:Path"
+            Write-Output "Current Python: $(Get-Command python | Select-Object -ExpandProperty Source)"
+            Write-Output "Current environment variables:"
+            Get-ChildItem env: | Where-Object { $_.Name -like "*PYTHON*" -or $_.Name -like "*VIRTUAL*" } | Format-Table -AutoSize
+            Write-Output "================================"
+
+            # Source the activation script with error handling and timeout
+            $job = Start-Job -ScriptBlock {
+                param($scriptPath, $venvPath)
+                try {
+                    Write-Output "=== Job Environment Debug ==="
+                    Write-Output "Current location: $(Get-Location)"
+                    Write-Output "Script path: $scriptPath"
+                    Write-Output "Virtual environment path: $venvPath"
+                    Write-Output "Current execution policy: $(Get-ExecutionPolicy)"
+                    Write-Output "Current environment variables:"
+                    Get-ChildItem env: | Where-Object { $_.Name -like "*PYTHON*" -or $_.Name -like "*VIRTUAL*" } | Format-Table -AutoSize
+                    Write-Output "============================"
+
+                    # Check if activation script exists
+                    if (-not (Test-Path $scriptPath)) {
+                        throw "Activation script not found at: $scriptPath"
+                    }
+
+                    # Check script content and permissions
+                    Write-Output "=== Script Debug ==="
+                    Write-Output "Script content (first 10 lines):"
+                    Get-Content $scriptPath -TotalCount 10
+                    Write-Output "Script permissions:"
+                    Get-Acl $scriptPath | Format-List
+                    Write-Output "===================="
+
+                    # Set execution policy for this process
+                    Write-Output "Setting execution policy..."
+                    Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+                    Write-Output "New execution policy: $(Get-ExecutionPolicy)"
+
+                    # Ensure proper environment setup
+                    $env:PYTHONIOENCODING = 'utf-8'
+                    $env:PYTHONUNBUFFERED = '1'
+                    $env:VIRTUAL_ENV = $venvPath
+
+                    # Try activation with detailed error capture
+                    $ErrorActionPreference = 'Continue'
+                    Write-Output "Attempting to activate virtual environment..."
+
+                    # Use dot-sourcing instead of direct execution
+                    . $scriptPath
+                    $exitCode = $LASTEXITCODE
+                    Write-Output "Activation completed with exit code: $exitCode"
+
+                    # Verify activation by checking environment variables
+                    Write-Output "=== Post-Activation Environment ==="
+                    Write-Output "VIRTUAL_ENV: $env:VIRTUAL_ENV"
+                    Write-Output "PATH: $env:Path"
+                    Write-Output "Python path: $(Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
+                    Write-Output "Environment variables:"
+                    Get-ChildItem env: | Where-Object { $_.Name -like "*PYTHON*" -or $_.Name -like "*VIRTUAL*" } | Format-Table -AutoSize
+                    Write-Output "================================="
+
+                    if ($exitCode -ne 0) {
+                        throw "Activation script failed with exit code $exitCode"
+                    }
+
+                    # Verify Python path after activation
+                    $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
+                    Write-Output "Python path after activation: $pythonPath"
+                    Write-Output "Expected to start with: $venvPath"
+
+                    if (-not $pythonPath.StartsWith($venvPath)) {
+                        throw "Python path does not point to virtual environment"
+                    }
+
+                    Write-Output "Activation successful"
+                } catch {
+                    Write-Error $_.Exception.Message
+                    Write-Output "=== Error Details ==="
+                    Write-Output "Error message: $($_.Exception.Message)"
+                    Write-Output "Error type: $($_.Exception.GetType().FullName)"
+                    Write-Output "Script stack trace: $($_.ScriptStackTrace)"
+                    Write-Output "Current location: $(Get-Location)"
+                    Write-Output "Environment variables:"
+                    Get-ChildItem env: | Format-Table -AutoSize
+                    Write-Output "Python version: $(python --version 2>&1)"
+                    Write-Output "Python path: $(Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
+                    Write-Output "===================="
+                    throw
+                }
+            } -ArgumentList $activateScript, $venvPath
+
+            $timeout = 30  # 30 seconds timeout
+            $result = Wait-Job $job -Timeout $timeout
+            if ($result -eq $null) {
+                Stop-Job $job
+                Remove-Job $job
+                throw "Activation script timed out after $timeout seconds"
+            }
+
+            $output = Receive-Job $job
+            Remove-Job $job
+
+            if ($job.State -eq 'Failed') {
+                Write-Error "Activation failed with output:"
+                Write-Output $output
+                throw "Virtual environment activation failed"
+            }
+
+            Write-Output "=== Activation Results ==="
+            Write-Output $output
+            Write-Output "========================="
+
+            # Verify activation by checking Python path
+            $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
+            if (-not $pythonPath.StartsWith($venvPath)) {
+                Write-Error "Python is not using the virtual environment"
+                Write-Output "=== Python Path Debug ==="
+                Write-Output "Expected Python path to start with: $venvPath"
+                Write-Output "Actual Python path: $pythonPath"
+                Write-Output "Current PATH: $env:Path"
+                Write-Output "========================="
+                exit 1
+            }
+
+            # Ensure Neovim is in PATH and verify it
+            Write-Output "=== Neovim Setup ==="
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
+            Write-Output "Updated PATH: $env:Path"
+            Write-Output "===================="
+
+            # Verify Neovim is available
+            $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+            if (-not $nvimPath) {
+                Write-Error "Neovim not found in PATH"
+                Write-Output "=== Neovim Debug ==="
+                Write-Output "Current PATH: $env:Path"
+                Write-Output "Neovim expected path: C:\tools\neovim\nvim-win64\bin"
+                Write-Output "Directory exists: $(Test-Path 'C:\tools\neovim\nvim-win64\bin')"
+                Write-Output "Directory contents:"
+                Get-ChildItem 'C:\tools\neovim\nvim-win64\bin' -ErrorAction SilentlyContinue | Format-Table -AutoSize
+                Write-Output "===================="
+                exit 1
+            }
+            Write-Output "Using Neovim from: $($nvimPath.Source)"
+
+            # Set up Lua environment
+            Write-Output "=== Lua Environment Setup ==="
+            $env:LUA_PATH = "?.lua;?/init.lua;../lua/?.lua;../lua/?/init.lua"
+            $env:LUA_CPATH = "?.dll;?/init.dll;../lua/?.dll;../lua/?/init.dll"
+            Write-Output "LUA_PATH: $env:LUA_PATH"
+            Write-Output "LUA_CPATH: $env:LUA_CPATH"
+            Write-Output "============================"
+
+            # Run the test
+            Write-Output "=== Running Lua Test ==="
+            nvim --headless -c "lua require('test.lua.test_print_table')" -c "quit"
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Test failed with exit code $LASTEXITCODE"
+                Write-Output "=== Test Failure Debug ==="
+                Write-Output "Current directory: $(Get-Location)"
+                Write-Output "Directory contents:"
+                Get-ChildItem | Format-Table -AutoSize
+                Write-Output "Test file exists: $(Test-Path 'test/lua/test_print_table.lua')"
+                Write-Output "Test file contents:"
+                Get-Content 'test/lua/test_print_table.lua' -ErrorAction SilentlyContinue
+                Write-Output "=========================="
+                exit 1
+            }
+            Write-Output "Test completed successfully"
+            Write-Output "========================"
+
+          } catch {
+            Write-Error $_.Exception.Message
+            Write-Output "=== Final Error Debug ==="
+            Write-Output "Error message: $($_.Exception.Message)"
+            Write-Output "Error type: $($_.Exception.GetType().FullName)"
+            Write-Output "Script stack trace: $($_.ScriptStackTrace)"
+            Write-Output "Current location: $(Get-Location)"
+            Write-Output "Directory contents:"
+            Get-ChildItem | Format-Table -AutoSize
+            Write-Output "Environment variables:"
+            Get-ChildItem env: | Format-Table -AutoSize
+            Write-Output "PATH: $env:Path"
+            Write-Output "Python version: $(python --version 2>&1)"
+            Write-Output "Python path: $(Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
+            Write-Output "=========================="
             exit 1
           }
 
