@@ -165,18 +165,6 @@ The project uses GitHub Actions for CI/CD. All changes must:
    - Package manager caches
    - Language-specific package caches
 
-## Package Management
-
-### macOS
-
-- Use Homebrew for system packages
-- Follow the order in `infra/install.sh`
-
-### Windows
-
-- Prefer winget for system packages
-- Use Chocolatey as a fallback
-- Follow the order in `infra/install.ps1`
 
 ## Getting Help
 
