@@ -141,7 +141,12 @@ jobs:
           $ErrorActionPreference = 'Stop'
           Write-Output "Installing Python packages..."
           & "${{ steps.venv.outputs.virtual_env }}\Scripts\Activate.ps1"
-          pip install -r requirements.txt
+          chmod +x infra/packages/pip.ps1
+          ./infra/packages/pip.ps1 || {
+              Write-Output "Failed to install Python packages. Retrying..."
+              pip cache purge
+              ./infra/packages/pip.ps1
+          }
 
       - name: Install Python packages (Unix)
         if: inputs.setup_python && inputs.platform == 'macos'
