@@ -74,16 +74,16 @@ jobs:
         shell: bash
         run: |
           echo "=== Python venv Cache Info ==="
-          echo "Cache path: ${{ inputs.venv_path }}"
+          echo "Cache path: ${{ runner.tool_cache }}/venv"
           echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}"
-          echo "Cache size: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
+          echo "Cache size: $(du -sh ${{ runner.tool_cache }}/venv 2>/dev/null || echo 'Not found')"
           echo "==========================="
 
       - name: Restore Python venv from cache
         uses: actions/cache@v4
         id: python-venv-cache
         with:
-          path: ${{ inputs.venv_path }}
+          path: ${{ runner.tool_cache }}/venv
           key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-venv-
@@ -93,7 +93,7 @@ jobs:
         run: |
           echo "=== Python venv Cache Result ==="
           echo "Cache hit: ${{ steps.python-venv-cache.outputs.cache-hit }}"
-          echo "Cache size after restore: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
+          echo "Cache size after restore: $(du -sh ${{ runner.tool_cache }}/venv 2>/dev/null || echo 'Not found')"
           echo "=============================="
 
       - name: Verify virtual environment path
