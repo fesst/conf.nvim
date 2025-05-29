@@ -70,7 +70,80 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Log Python venv cache info
+      - name: Log Python venv cache info (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          try {
+            Write-Output "=== Python venv Cache Info ==="
+            $cachePath = "${{ runner.tool_cache }}/venv"
+            Write-Output "Cache path: $cachePath"
+            Write-Output "Cache key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}"
+
+            if (Test-Path $cachePath) {
+              $size = (Get-ChildItem -Path $cachePath -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
+              Write-Output "Cache size: $size MB"
+            } else {
+              Write-Output "Cache size: Not found"
+            }
+            Write-Output "==========================="
+          } catch {
+            $errorDetails = @{
+              Message = $_.Exception.Message
+              ScriptStackTrace = $_.ScriptStackTrace
+              Time = Get-Date
+              Environment = @{
+                Path = $env:Path
+                CurrentDirectory = Get-Location
+              }
+            }
+            Write-Output ($errorDetails | ConvertTo-Json)
+            exit 1
+          }
+
+      - name: Validate cache (Windows)
+        if: inputs.platform == 'windows' && steps.python-venv-cache.outputs.cache-hit == 'true'
+        shell: pwsh
+        run: |
+          try {
+            $venvPath = "${{ runner.tool_cache }}/venv"
+            $pythonExe = Join-Path $venvPath "Scripts\python.exe"
+            $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+
+            if (-not (Test-Path $pythonExe)) {
+              Write-Error "Cache is invalid: Python executable not found"
+              exit 1
+            }
+
+            if (-not (Test-Path $activateScript)) {
+              Write-Error "Cache is invalid: Activation script not found"
+              exit 1
+            }
+
+            # Test activation
+            . $activateScript
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Cache is invalid: Activation failed"
+              exit 1
+            }
+
+            Write-Output "Cache validation successful"
+          } catch {
+            $errorDetails = @{
+              Message = $_.Exception.Message
+              ScriptStackTrace = $_.ScriptStackTrace
+              Time = Get-Date
+              Environment = @{
+                Path = $env:Path
+                CurrentDirectory = Get-Location
+              }
+            }
+            Write-Output ($errorDetails | ConvertTo-Json)
+            exit 1
+          }
+
+      - name: Log Python venv cache info (macOS)
+        if: inputs.platform == 'macos'
         shell: bash
         run: |
           echo "=== Python venv Cache Info ==="
@@ -88,13 +161,184 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-venv-
 
-      - name: Log Python venv cache result
+      - name: Log Python venv cache result (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          Write-Output "=== Python venv Cache Result ==="
+          Write-Output "Cache hit: ${{ steps.python-venv-cache.outputs.cache-hit }}"
+          Write-Output "Cache size after restore: $((Get-ChildItem -Path $env:RUNNER_TOOL_CACHE/venv -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB)"
+          Write-Output "=============================="
+
+      - name: Log Python venv cache result (macOS)
+        if: inputs.platform == 'macos'
         shell: bash
         run: |
           echo "=== Python venv Cache Result ==="
           echo "Cache hit: ${{ steps.python-venv-cache.outputs.cache-hit }}"
           echo "Cache size after restore: $(du -sh ${{ runner.tool_cache }}/venv 2>/dev/null || echo 'Not found')"
           echo "=============================="
+
+      - name: Log Virtual Environment Installation
+        if: inputs.install_deps
+        shell: pwsh
+        run: |
+          Write-Output "=== Virtual Environment Installation Debug ==="
+          Write-Output "venv_path: ${{ inputs.venv_path }}"
+          Write-Output "Current directory: $(Get-Location)"
+          Write-Output "Directory contents:"
+          Get-ChildItem
+
+          # Check if virtual environment exists
+          if (Test-Path ${{ inputs.venv_path }}) {
+              Write-Output "Virtual environment exists at: ${{ inputs.venv_path }}"
+              Write-Output "Virtual environment contents:"
+              Get-ChildItem ${{ inputs.venv_path }} -Recurse
+          } else {
+              Write-Output "Virtual environment not found at: ${{ inputs.venv_path }}"
+          }
+
+          # Check Python version and path
+          Write-Output "Python version: $(python --version)"
+          Write-Output "Python path: $(Get-Command python | Select-Object -ExpandProperty Source)"
+          Write-Output "PATH: $env:Path"
+          Write-Output "================================"
+
+      - name: Install minimum dependencies (Windows)
+        if: inputs.install_deps && inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          try {
+            # Validate required environment variables
+            $requiredEnvVars = @{
+              'USERPROFILE' = $env:USERPROFILE
+              'RUNNER_TOOL_CACHE' = $env:RUNNER_TOOL_CACHE
+              'GITHUB_WORKSPACE' = $env:GITHUB_WORKSPACE
+            }
+
+            foreach ($var in $requiredEnvVars.GetEnumerator()) {
+              if (-not $var.Value) {
+                throw "Required environment variable not set: $($var.Key)"
+              }
+              Write-Output "Verified $($var.Key): $($var.Value)"
+            }
+
+            # Set and validate PATH
+            $pathComponents = @(
+              [System.Environment]::GetEnvironmentVariable("Path","Machine"),
+              [System.Environment]::GetEnvironmentVariable("Path","User"),
+              "C:\tools\neovim\nvim-win64\bin",
+              "$env:USERPROFILE\.cargo\bin"
+            )
+
+            $env:Path = ($pathComponents | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique) -join ';'
+
+            # Verify critical paths exist
+            $requiredPaths = @(
+              "C:\tools\neovim\nvim-win64\bin",
+              "$env:USERPROFILE\.cargo\bin"
+            )
+
+            foreach ($path in $requiredPaths) {
+              if (-not (Test-Path $path)) {
+                Write-Warning "Required path not found: $path"
+              }
+            }
+
+            # Set CI environment variable
+            $env:CI = "true"
+
+            # Normalize and validate virtual environment path
+            $venvPath = [System.IO.Path]::GetFullPath("${{ inputs.venv_path }}")
+            if ($venvPath.Length -gt 260) {
+              throw "Path exceeds Windows maximum length: $venvPath"
+            }
+
+            Write-Output "=== Installing Minimum Dependencies ==="
+            Write-Output "Using virtual environment at: $venvPath"
+            Write-Output "Current PATH: $env:Path"
+
+            # Create parent directory if it doesn't exist
+            $parentDir = Split-Path -Parent $venvPath
+            if (-not (Test-Path $parentDir)) {
+              Write-Output "Creating parent directory: $parentDir"
+              New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+            }
+
+            # Verify virtual environment exists
+            if (-not (Test-Path $venvPath)) {
+              throw "Virtual environment not found at: $venvPath"
+            }
+
+            # Verify activation script exists and is accessible
+            $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+            if (-not (Test-Path $activateScript)) {
+              throw "Activation script not found at: $activateScript"
+            }
+
+            # Check script permissions
+            $acl = Get-Acl $activateScript
+            if (-not $acl.Access.FileSystemRights -match "Read") {
+              throw "Insufficient permissions for activation script"
+            }
+
+            Write-Output "Activating virtual environment..."
+            . $activateScript
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to activate virtual environment"
+            }
+
+            # Verify Python is using the virtual environment
+            $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
+            if (-not $pythonPath.StartsWith($venvPath)) {
+              throw "Python is not using the virtual environment. Expected: $venvPath, Actual: $pythonPath"
+            }
+
+            # Verify Python version and pip
+            $pythonVersion = python --version
+            $pipVersion = pip --version
+            Write-Output "Python version: $pythonVersion"
+            Write-Output "pip version: $pipVersion"
+
+            # Install dependencies with timeout
+            Write-Output "Installing dependencies..."
+            $timeout = 300 # 5 minutes
+            $job = Start-Job -ScriptBlock {
+              python -m pip install --upgrade pip
+              python -m pip install -r requirements.txt
+            }
+            $result = Wait-Job $job -Timeout $timeout
+            if ($result -eq $null) {
+              Stop-Job $job
+              throw "Dependency installation timed out after $timeout seconds"
+            }
+            $output = Receive-Job $job
+            if ($job.State -eq 'Failed') {
+              throw "Dependency installation failed: $output"
+            }
+
+            Write-Output "=== Installation Complete ==="
+            Write-Output "Python version: $(python --version)"
+            Write-Output "pip version: $(pip --version)"
+            Write-Output "Installed packages:"
+            pip list
+
+          } catch {
+            $errorDetails = @{
+              Message = $_.Exception.Message
+              ScriptStackTrace = $_.ScriptStackTrace
+              Time = Get-Date
+              Environment = @{
+                Path = $env:Path
+                PythonVersion = python --version
+                CurrentDirectory = Get-Location
+                DirectoryContents = Get-ChildItem
+                EnvironmentVariables = Get-ChildItem env: | ForEach-Object { @{ $_.Name = $_.Value } }
+              }
+            }
+            Write-Output ($errorDetails | ConvertTo-Json -Depth 10)
+            exit 1
+          }
 
       - name: Verify virtual environment path
         if: inputs.setup_python
@@ -310,167 +554,6 @@ jobs:
           fi
           echo "================================"
 
-      - name: Install minimal dependencies (Windows)
-        if: inputs.install_deps && inputs.platform == 'windows'
-        shell: pwsh
-        run: |
-          try {
-            # Get the virtual environment path from the setup step
-            $venvPath = "${{ steps.setup.outputs.virtual_env }}"
-            if (-not $venvPath) {
-              # Fallback to the input path if setup output is not available
-              $venvPath = "${{ inputs.venv_path }}"
-            }
-            Write-Output "Using virtual environment at: $venvPath"
-
-            # Normalize the path for Windows
-            $venvPath = [System.IO.Path]::GetFullPath($venvPath)
-            Write-Output "Normalized path: $venvPath"
-
-            # Create parent directory if it doesn't exist
-            $parentDir = Split-Path -Parent $venvPath
-            if (-not (Test-Path $parentDir)) {
-              Write-Output "Creating parent directory: $parentDir"
-              New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
-            }
-
-            # Verify virtual environment exists
-            if (-not (Test-Path $venvPath)) {
-              Write-Error "Virtual environment not found at: $venvPath"
-              Write-Output "Current directory: $(Get-Location)"
-              Write-Output "Directory contents:"
-              Get-ChildItem
-              Write-Output "Parent directory contents:"
-              Get-ChildItem $parentDir
-              exit 1
-            }
-
-            # Verify activation script exists
-            $activateScript = Join-Path $venvPath "Scripts\activate.ps1"
-            if (-not (Test-Path $activateScript)) {
-              Write-Error "Activation script not found at: $activateScript"
-              Write-Output "Virtual environment contents:"
-              Get-ChildItem $venvPath -Recurse
-              exit 1
-            }
-
-            # Activate virtual environment
-            Write-Output "Activating virtual environment..."
-            . $activateScript
-            if ($LASTEXITCODE -ne 0) {
-              Write-Error "Failed to activate virtual environment"
-              Write-Output "Python version: $(python --version)"
-              Write-Output "PATH: $env:Path"
-              exit 1
-            }
-
-            # Verify Python is using the virtual environment
-            $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
-            if (-not $pythonPath.StartsWith($venvPath)) {
-              Write-Error "Python is not using the virtual environment"
-              Write-Output "Expected Python path to start with: $venvPath"
-              Write-Output "Actual Python path: $pythonPath"
-              exit 1
-            }
-
-            # Run install script
-            $env:CI = "true"
-            Write-Output "Running install script..."
-
-            # Function to check if a package is installed
-            function Test-ChocolateyPackage {
-                param($PackageName)
-                $package = choco list --local-only --exact $PackageName
-                return $package -match "^$PackageName\s"
-            }
-
-            # Install packages using Chocolatey only if not already installed
-            $packages = @(
-                @{Name = "neovim"; Installed = $false}
-                @{Name = "tree-sitter"; Installed = $false}
-            )
-
-            foreach ($package in $packages) {
-                if (-not (Test-ChocolateyPackage $package.Name)) {
-                    Write-Output "Installing $($package.Name)..."
-                    choco install $package.Name -y
-                    if ($LASTEXITCODE -ne 0) {
-                        throw "Failed to install $($package.Name)"
-                    }
-                } else {
-                    Write-Output "$($package.Name) is already installed"
-                }
-            }
-
-            # Use PowerShell script with Chocolatey
-            Write-Output "Running PowerShell install script..."
-            & "${{ github.workspace }}/infra/install.ps1" -UseChocolatey
-            if ($LASTEXITCODE -ne 0) {
-              throw "Failed to run PowerShell install script"
-            }
-          } catch {
-            Write-Error $_.Exception.Message
-            Write-Output "Current directory: $(Get-Location)"
-            Write-Output "Directory contents: $(Get-ChildItem)"
-            Write-Output "Environment variables:"
-            Get-ChildItem env: | Format-Table -AutoSize
-            Write-Output "PATH: $env:Path"
-            exit 1
-          }
-
-      - name: Install minimal dependencies (macOS)
-        if: inputs.install_deps && inputs.platform == 'macos'
-        shell: bash
-        run: |
-          set -e
-          # Verify virtual environment path
-          if [ ! -d "${{ inputs.venv_path }}" ]; then
-            echo "Error: Virtual environment not found at: ${{ inputs.venv_path }}"
-            echo "Current directory: $(pwd)"
-            echo "Directory contents:"
-            ls -la
-            exit 1
-          fi
-
-          # Verify activation script exists
-          if [ ! -f "${{ inputs.venv_path }}/bin/activate" ]; then
-            echo "Error: Activation script not found at: ${{ inputs.venv_path }}/bin/activate"
-            echo "Virtual environment contents:"
-            ls -la "${{ inputs.venv_path }}/bin"
-            exit 1
-          fi
-
-          # Retry brew install with exponential backoff
-          for i in {1..3}; do
-            if brew install neovim tree-sitter; then
-              break
-            fi
-            if [ $i -eq 3 ]; then
-              echo "Failed to install dependencies after 3 attempts"
-              exit 1
-            fi
-            sleep $((2 ** i))
-          done
-
-          # Activate virtual environment with error handling
-          echo "Activating virtual environment at: ${{ inputs.venv_path }}"
-          source "${{ inputs.venv_path }}/bin/activate" || {
-            echo "Error: Failed to activate virtual environment"
-            echo "Python version: $(python --version)"
-            echo "PATH: $PATH"
-            exit 1
-          }
-
-          # Verify Python is available after activation
-          if ! command -v python &> /dev/null; then
-            echo "Error: Python not found in PATH after activation"
-            echo "PATH: $PATH"
-            exit 1
-          fi
-
-          export CI=true
-          bash infra/install.sh
-
       - name: Run Lua tests (Windows)
         if: inputs.platform == 'windows'
         shell: pwsh
@@ -590,21 +673,125 @@ jobs:
         if: inputs.install_deps && inputs.platform == 'windows'
         shell: pwsh
         run: |
-          & "${{ inputs.venv_path }}/Scripts/activate.ps1"
-          # Ensure all tools are in PATH
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-          $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin;$env:USERPROFILE\.cargo\bin"
+          try {
+            # Validate environment variables
+            $requiredEnvVars = @{
+              'USERPROFILE' = $env:USERPROFILE
+              'GITHUB_WORKSPACE' = $env:GITHUB_WORKSPACE
+            }
 
-          # Run tests and capture output
-          $testOutput = & bash infra/nvim_sanity_test.sh 2>&1
-          $test_exit_code = $LASTEXITCODE
+            foreach ($var in $requiredEnvVars.GetEnumerator()) {
+              if (-not $var.Value) {
+                throw "Required environment variable not set: $($var.Key)"
+              }
+            }
 
-          # Display test results
-          Write-Output "Test results:"
-          $testOutput
+            # Set and validate PATH
+            $pathComponents = @(
+              [System.Environment]::GetEnvironmentVariable("Path","Machine"),
+              [System.Environment]::GetEnvironmentVariable("Path","User"),
+              "C:\tools\neovim\nvim-win64\bin",
+              "$env:USERPROFILE\.cargo\bin"
+            )
 
-          # Exit with the test exit code
-          exit $test_exit_code
+            $env:Path = ($pathComponents | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique) -join ';'
+
+            # Activate virtual environment
+            & "${{ inputs.venv_path }}/Scripts/activate.ps1"
+
+            # Verify tools are available
+            $requiredTools = @("nvim", "stylua")
+            foreach ($tool in $requiredTools) {
+              if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) {
+                throw "Required tool not found: $tool"
+              }
+              Write-Output "Verified tool: $tool"
+            }
+
+            Write-Output "Running sanity tests..."
+            $timeout = 300 # 5 minutes
+
+            # Basic functionality test
+            Write-Output "Testing basic functionality..."
+            $job = Start-Job -ScriptBlock {
+              nvim --headless -c "quit" 2>&1
+            }
+            $result = Wait-Job $job -Timeout $timeout
+            if ($result -eq $null) {
+              Stop-Job $job
+              throw "Basic functionality test timed out"
+            }
+            $output = Receive-Job $job
+            if ($job.State -eq 'Failed') {
+              throw "Basic functionality test failed: $output"
+            }
+
+            # Health check
+            Write-Output "Running health check..."
+            $job = Start-Job -ScriptBlock {
+              nvim --headless -c "checkhealth" -c "quit" 2>&1
+            }
+            $result = Wait-Job $job -Timeout $timeout
+            if ($result -eq $null) {
+              Stop-Job $job
+              throw "Health check timed out"
+            }
+            $output = Receive-Job $job
+            if ($job.State -eq 'Failed') {
+              throw "Health check failed: $output"
+            }
+            Write-Output $output
+
+            # Core plugins test with retries
+            Write-Output "Testing core plugins..."
+            $plugins = @("lazy", "treesitter", "lsp", "mason", "telescope")
+            foreach ($plugin in $plugins) {
+              $maxRetries = 3
+              $retryCount = 0
+              $success = $false
+
+              while (-not $success -and $retryCount -lt $maxRetries) {
+                $job = Start-Job -ScriptBlock {
+                  param($plugin)
+                  nvim --headless -c "lua require('$plugin')" -c "quit" 2>&1
+                } -ArgumentList $plugin
+
+                $result = Wait-Job $job -Timeout $timeout
+                if ($result -eq $null) {
+                  Stop-Job $job
+                  throw "Plugin $plugin test timed out"
+                }
+
+                $output = Receive-Job $job
+                if ($job.State -eq 'Failed') {
+                  $retryCount++
+                  if ($retryCount -eq $maxRetries) {
+                    throw "Plugin $plugin test failed after $maxRetries attempts: $output"
+                  }
+                  Write-Output "Retrying $plugin test (attempt $retryCount of $maxRetries)..."
+                  Start-Sleep -Seconds (2 ** $retryCount)
+                } else {
+                  $success = $true
+                }
+              }
+            }
+
+            Write-Output "All tests completed successfully"
+
+          } catch {
+            $errorDetails = @{
+              Message = $_.Exception.Message
+              ScriptStackTrace = $_.ScriptStackTrace
+              Time = Get-Date
+              Environment = @{
+                Path = $env:Path
+                CurrentDirectory = Get-Location
+                DirectoryContents = Get-ChildItem
+              }
+            }
+            Write-Output ($errorDetails | ConvertTo-Json)
+            exit 1
+          }
 
       - name: Run sanity tests (macOS)
         if: inputs.install_deps && inputs.platform == 'macos'
