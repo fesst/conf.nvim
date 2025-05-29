@@ -48,16 +48,8 @@ jobs:
             C:\ProgramData\chocolatey\bin
             C:\tools
             C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-            C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools
-            C:\Program Files (x86)\Microsoft Visual Studio\2019\Community
-            C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise
-            C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional
-            C:\ProgramData\Microsoft\VisualStudio\Packages
-            C:\ProgramData\Microsoft\VisualStudio\Setup
-            C:\ProgramData\Microsoft\VisualStudio\Packages_vs_bootstrapper_d15
-          key: ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}-vs2019-${{ hashFiles('infra/packages/vs-setup.ps1') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}
           restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}-vs2019-
             ${{ runner.os }}-${{ runner.arch }}-choco-
 
       - name: Set up Node.js
@@ -79,269 +71,83 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Cache Visual Studio Build Tools
-        uses: actions/cache@v4
-        id: vs-cache
-        with:
-          path: |
-            C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools
-            C:\ProgramData\Microsoft\VisualStudio\Packages
-            C:\ProgramData\Microsoft\VisualStudio\Setup
-            C:\ProgramData\Microsoft\VisualStudio\Packages_vs_bootstrapper_d15
-            C:\Users\runneradmin\AppData\Local\Temp\chocolatey\visualstudio2019buildtools
-          key: ${{ runner.os }}-vs2019-buildtools-16.11.47
-          restore-keys: |
-            ${{ runner.os }}-vs2019-buildtools-
-
       - name: Install Visual Studio Build Tools
-        if: steps.vs-cache.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           Write-Output "Starting Visual Studio Build Tools installation process..."
 
-          # Create a temporary directory for logs
-          $logDir = Join-Path $env:TEMP "vs_buildtools_logs"
-          if (-not (Test-Path $logDir)) {
-              New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+          # Create installation directory
+          $vsInstallPath = Join-Path $env:USERPROFILE "vs_buildtools"
+          if (-not (Test-Path $vsInstallPath)) {
+              New-Item -ItemType Directory -Path $vsInstallPath -Force | Out-Null
           }
-          $logFile = Join-Path $logDir "vs_buildtools_install.log"
 
-          try {
-              # Download the specific version of VS Build Tools
-              $vsInstallerUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe"
-              $vsInstallerPath = "$env:TEMP\vs_buildtools.exe"
+          # Download VS Build Tools installer
+          $vsInstallerUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe"
+          $vsInstallerPath = "$env:TEMP\vs_buildtools.exe"
 
-              Write-Output "Downloading VS Build Tools installer from $vsInstallerUrl..."
-              $downloadStart = Get-Date
-              Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath -UseBasicParsing
-              $downloadTime = (Get-Date) - $downloadStart
-              Write-Output "Download completed in $($downloadTime.TotalSeconds) seconds"
+          Write-Output "Downloading VS Build Tools installer..."
+          Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath -UseBasicParsing
 
-              # Verify the downloaded file
-              if (-not (Test-Path $vsInstallerPath)) {
-                  throw "Failed to download VS Build Tools installer"
-              }
-              $fileSize = (Get-Item $vsInstallerPath).Length
-              Write-Output "Downloaded file size: $($fileSize / 1MB) MB"
+          # Install VS Build Tools
+          Write-Output "Installing VS Build Tools..."
+          $process = Start-Process -FilePath $vsInstallerPath -ArgumentList @(
+              "--quiet",
+              "--wait",
+              "--norestart",
+              "--nocache",
+              "--installPath", $vsInstallPath,
+              "--add", "Microsoft.VisualStudio.Workload.VCTools",
+              "--includeRecommended"
+          ) -Wait -PassThru
 
-              # Install VS Build Tools with specific components
-              Write-Output "Running VS Build Tools installer with required components..."
-              $installStart = Get-Date
+          if ($process.ExitCode -ne 0) {
+              throw "Failed to install Visual Studio Build Tools. Exit code: $($process.ExitCode)"
+          }
 
-              # Create a temporary directory for the installer
-              $installerTempDir = Join-Path $env:TEMP "vs_buildtools_installer"
-              if (-not (Test-Path $installerTempDir)) {
-                  New-Item -ItemType Directory -Path $installerTempDir -Force | Out-Null
-              }
+          # Verify installation
+          $vsDevCmd = Join-Path $vsInstallPath "Common7\Tools\VsDevCmd.bat"
+          if (-not (Test-Path $vsDevCmd)) {
+              throw "VsDevCmd.bat not found after installation"
+          }
 
-              # Use a path that doesn't require elevated permissions
-              $vsInstallPath = Join-Path $env:USERPROFILE "vs_buildtools"
-              Write-Output "Using installation path: $vsInstallPath"
+          Write-Output "Visual Studio Build Tools installed successfully"
 
-              # Create installation directory if it doesn't exist
-              if (-not (Test-Path $vsInstallPath)) {
-                  Write-Output "Creating installation directory..."
-                  New-Item -ItemType Directory -Path $vsInstallPath -Force | Out-Null
-              }
+      - name: Set up Visual Studio environment
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vsPath = Join-Path $env:USERPROFILE "vs_buildtools"
+          $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
 
-              # Run the installer with explicit paths
-              Write-Output "Starting installation process..."
-              $process = Start-Process -FilePath $vsInstallerPath -ArgumentList @(
-                  "--quiet",
-                  "--wait",
-                  "--norestart",
-                  "--nocache",
-                  "--installPath", $vsInstallPath,
-                  "--add", "Microsoft.VisualStudio.Workload.VCTools",
-                  "--includeRecommended"
-              ) -Wait -PassThru
+          if (-not (Test-Path $vsDevCmd)) {
+              throw "VsDevCmd.bat not found at: $vsDevCmd"
+          }
 
-              $installTime = (Get-Date) - $installStart
-              Write-Output "Installation completed in $($installTime.TotalSeconds) seconds"
-
-              if ($process.ExitCode -ne 0) {
-                  Write-Output "Installation failed with exit code: $($process.ExitCode)"
-                  # Check for any log files in the temp directory
-                  Get-ChildItem -Path $env:TEMP -Filter "dd_*_*.log" -Recurse | ForEach-Object {
-                      Write-Output "Found log file: $($_.FullName)"
-                      Get-Content $_.FullName
-                  }
-                  throw "Failed to install Visual Studio Build Tools"
-              }
-
-              # Verify installation with detailed checks
-              Write-Output "Verifying installation..."
-
-              # Check if the directory exists
-              if (-not (Test-Path $vsInstallPath)) {
-                  Write-Output "Installation directory not found at: $vsInstallPath"
-                  Write-Output "Checking parent directory..."
-                  $parentDir = Split-Path $vsInstallPath -Parent
-                  if (Test-Path $parentDir) {
-                      Write-Output "Parent directory exists. Contents:"
-                      Get-ChildItem $parentDir
-                  } else {
-                      Write-Output "Parent directory does not exist: $parentDir"
-                  }
-                  throw "Visual Studio Build Tools installation directory not found"
-              }
-
-              # Check for key files and directories
-              $requiredPaths = @(
-                  "Common7\Tools\VsDevCmd.bat",
-                  "VC\Auxiliary\Build\vcvarsall.bat",
-                  "MSBuild\Current\Bin\MSBuild.exe"
-              )
-
-              foreach ($path in $requiredPaths) {
-                  $fullPath = Join-Path $vsInstallPath $path
-                  if (-not (Test-Path $fullPath)) {
-                      Write-Output "Required file not found: $fullPath"
-                      Write-Output "Checking parent directory contents:"
-                      $parentDir = Split-Path $fullPath -Parent
-                      if (Test-Path $parentDir) {
-                          Get-ChildItem $parentDir
-                      }
-                  } else {
-                      Write-Output "Found required file: $fullPath"
-                  }
-              }
-
-              # Check for Visual Studio installer
-              $vsInstallerPath = Join-Path $vsInstallPath "Installer\vs_installer.exe"
-              if (-not (Test-Path $vsInstallerPath)) {
-                  Write-Output "Visual Studio Installer not found at: $vsInstallerPath"
-              } else {
-                  Write-Output "Found Visual Studio Installer at: $vsInstallerPath"
-                  # Try to get installed products
-                  $vsInstaller = Start-Process -FilePath $vsInstallerPath -ArgumentList "list" -Wait -PassThru -NoNewWindow -RedirectStandardOutput "vs_installer_output.txt"
-                  if (Test-Path "vs_installer_output.txt") {
-                      Write-Output "Installed products:"
-                      Get-Content "vs_installer_output.txt"
-                      Remove-Item "vs_installer_output.txt"
-                  }
-              }
-
-              Write-Output "Visual Studio Build Tools installation verification completed"
-
-              # Add the installation path to the environment
-              $env:Path = "$vsInstallPath\Common7\Tools;$vsInstallPath\VC\Auxiliary\Build;$vsInstallPath\MSBuild\Current\Bin;$env:Path"
-
-          } catch {
-              Write-Error "An error occurred during Visual Studio Build Tools installation: $_"
-              if (Test-Path $logFile) {
-                  Write-Output "Installation log contents:"
-                  Get-Content $logFile
-              }
-              # Check for any log files in the temp directory
-              Get-ChildItem -Path $env:TEMP -Filter "dd_*_*.log" -Recurse | ForEach-Object {
-                  Write-Output "Found log file: $($_.FullName)"
-                  Get-Content $_.FullName
-              }
-              throw
-          } finally {
-              # Clean up
-              if (Test-Path $vsInstallerPath) {
-                  Remove-Item $vsInstallerPath -Force
-              }
-              if (Test-Path $installerTempDir) {
-                  Remove-Item $installerTempDir -Recurse -Force
+          Write-Output "Setting up Visual Studio environment..."
+          cmd /c "`"$vsDevCmd`" && set" | ForEach-Object {
+              if ($_ -match "^(.*?)=(.*)$") {
+                  $name = $matches[1]
+                  $value = $matches[2]
+                  [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::Process)
               }
           }
+
+          # Verify setup
+          $clPath = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
+          if (-not $clPath) {
+              throw "Failed to set up Visual Studio environment. cl.exe not found."
+          }
+          Write-Output "Visual Studio environment set up successfully"
 
       - name: Install system packages
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          Write-Output "Installing system packages using Chocolatey..."
-
-          # Ensure Chocolatey is installed
-          if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
-            Write-Output "Installing Chocolatey..."
-            Set-ExecutionPolicy Bypass -Scope Process -Force
-            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-            Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-          }
-
-          # Function to check if a package is installed
-          function Test-ChocolateyPackage {
-            param($PackageName)
-            $package = choco list --local-only --exact $PackageName
-            return $package -match "^$PackageName\s"
-          }
-
-          # Install required packages only if not already installed
-          $packages = @(
-            @{Name = "neovim"; Installed = $false}
-            @{Name = "tree-sitter"; Installed = $false}
-          )
-
-          foreach ($package in $packages) {
-            if (-not (Test-ChocolateyPackage $package.Name)) {
-              Write-Output "Installing $($package.Name)..."
-              choco install $package.Name -y
-              if ($LASTEXITCODE -ne 0) {
-                throw "Failed to install $($package.Name)"
-              }
-            } else {
-              Write-Output "$($package.Name) is already installed"
-            }
-          }
-
-          # Install LuaRocks if not already installed
-          if (-not (Test-ChocolateyPackage "luarocks")) {
-            Write-Output "Installing LuaRocks..."
-            choco install luarocks -y
-            if ($LASTEXITCODE -ne 0) {
-              throw "Failed to install LuaRocks"
-            }
-          } else {
-            Write-Output "LuaRocks is already installed"
-          }
-
-          # Add Neovim to PATH
-          $nvimPath = "C:\tools\neovim\nvim-win64\bin"
-          if (-not $env:Path.Contains($nvimPath)) {
-            $env:Path = "$nvimPath;$env:Path"
-          }
-
-          # Set up Visual Studio environment
-          & "${{ github.workspace }}/infra/packages/vs-setup.ps1"
-
-          # Refresh environment variables
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
-
-          # Verify installations
-          Write-Output "Verifying installations..."
-          Write-Output "Current PATH: $env:Path"
-
-          # Verify Neovim
-          if (-not (Get-Command nvim -ErrorAction SilentlyContinue)) {
-            throw "Neovim not found in PATH after installation"
-          }
-          nvim --version
-
-          # Verify Tree-sitter
-          if (-not (Get-Command tree-sitter -ErrorAction SilentlyContinue)) {
-            throw "Tree-sitter not found in PATH after installation"
-          }
-          tree-sitter --version
-
-          # Verify LuaRocks
-          if (-not (Get-Command luarocks -ErrorAction SilentlyContinue)) {
-            throw "LuaRocks not found in PATH after installation"
-          }
-          luarocks --version
-
-      - name: Cache virtual environment
-        if: inputs.setup_python
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.tool_cache }}/venv
-          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-venv-
+          Write-Output "Installing system packages..."
+          choco install neovim -y
+          choco install luarocks -y
 
       - name: Set up Python virtual environment
         if: inputs.setup_python
@@ -349,53 +155,45 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $VENV_PATH = "${{ runner.tool_cache }}/venv"
-          Write-Output "Setting up virtual environment at: $VENV_PATH"
+          $venvPath = Join-Path $env:RUNNER_TOOL_CACHE "venv"
 
           # Remove existing virtual environment if it exists
-          if (Test-Path $VENV_PATH) {
-            Write-Output "Removing existing virtual environment..."
-            Remove-Item -Recurse -Force $VENV_PATH
-            # Wait for filesystem to sync
-            Start-Sleep -Seconds 2
-            if (Test-Path $VENV_PATH) {
-              throw "Failed to remove existing virtual environment"
-            }
+          if (Test-Path $venvPath) {
+              Write-Output "Removing existing virtual environment..."
+              Remove-Item -Path $venvPath -Recurse -Force
+              Start-Sleep -Seconds 2
           }
 
           # Create virtual environment
-          Write-Output "Creating virtual environment..."
-          python -m venv $VENV_PATH
+          Write-Output "Creating virtual environment at: $venvPath"
+          python -m venv $venvPath
           if ($LASTEXITCODE -ne 0) {
-            throw "Failed to create virtual environment"
+              throw "Failed to create virtual environment"
           }
 
-          # Verify virtual environment was created
-          if (-not (Test-Path $VENV_PATH)) {
-            throw "Virtual environment directory not found after creation"
-          }
-
-          # Verify activation script exists
-          $activateScript = Join-Path $VENV_PATH "Scripts\activate.ps1"
-          if (-not (Test-Path $activateScript)) {
-            throw "Activation script not found at: $activateScript"
+          # Verify virtual environment
+          if (-not (Test-Path $venvPath)) {
+              throw "Virtual environment directory not found after creation"
           }
 
           # Set output variable
-          "virtual_env=$VENV_PATH" >> $env:GITHUB_OUTPUT
+          Write-Output "virtual_env=$venvPath" >> $env:GITHUB_OUTPUT
 
           # Activate virtual environment
-          Write-Output "Activating virtual environment..."
-          & $activateScript
+          $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+          if (-not (Test-Path $activateScript)) {
+              throw "Activation script not found at: $activateScript"
+          }
+
+          . $activateScript
           if ($LASTEXITCODE -ne 0) {
-            throw "Failed to activate virtual environment"
+              throw "Failed to activate virtual environment"
           }
 
           # Upgrade pip
-          Write-Output "Upgrading pip..."
           python -m pip install --upgrade pip
           if ($LASTEXITCODE -ne 0) {
-            throw "Failed to upgrade pip"
+              throw "Failed to upgrade pip"
           }
 
           # Verify installation
@@ -403,103 +201,22 @@ jobs:
           python --version
           pip list
 
-          # Verify output variable was set
-          Write-Output "Virtual environment path: $VENV_PATH"
-          Write-Output "Output variable set: $env:GITHUB_OUTPUT"
-
-      - name: Install system packages
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          # Skip brew installation on Windows
-          Write-Output "Skipping brew installation on Windows"
-
       - name: Install Node.js packages
         if: inputs.setup_node
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          & "${{ github.workspace }}/infra/packages/npm.ps1"
+          Write-Output "Installing Node.js packages..."
+          npm install -g neovim
 
-      - name: Cache Cargo packages
-        if: inputs.setup_rust
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock', 'infra/packages/cargo.ps1') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cargo-
-
-      - name: Install Rust packages
+      - name: Install Rust
         if: inputs.setup_rust
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          & "${{ github.workspace }}/infra/packages/cargo.ps1"
-
-      - name: Install Python packages
-        if: inputs.setup_python
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          & (Join-Path ${{ steps.venv-win.outputs.virtual_env }} "Scripts\activate.ps1")
-          & "${{ github.workspace }}/infra/packages/pip.ps1"
-
-      - name: Install LuaRocks packages
-        if: inputs.setup_lua
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          & "${{ github.workspace }}/infra/packages/luarocks.ps1"
-
-      - name: Install Neovim configuration
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Write-Output "Installing Neovim configuration..."
-
-          # Ensure Neovim is in PATH
-          $nvimPath = "C:\tools\neovim\nvim-win64\bin"
-          if (-not $env:Path.Contains($nvimPath)) {
-            $env:Path = "${nvimPath};${env:Path}"
-          }
-
-          # Refresh environment variables
+          Write-Output "Installing Rust..."
+          Invoke-WebRequest -Uri https://win.rustup.rs -OutFile rustup-init.exe
+          .\rustup-init.exe -y
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-
-          # Verify Neovim is in PATH
-          if (-not (Get-Command nvim -ErrorAction SilentlyContinue)) {
-            throw "Neovim not found in PATH. Current PATH: ${env:Path}"
-          }
-
-          # Create Neovim directories if they don't exist
-          $nvimDirs = @(
-            "${env:USERPROFILE}\.config\nvim",
-            "${env:USERPROFILE}\.local\share\nvim",
-            "${env:USERPROFILE}\.cache\nvim"
-          )
-
-          foreach ($dir in $nvimDirs) {
-            if (-not (Test-Path $dir)) {
-              New-Item -ItemType Directory -Path $dir -Force | Out-Null
-            }
-          }
-
-          # Copy configuration files
-          Copy-Item -Path "${env:GITHUB_WORKSPACE}\*" -Destination "${env:USERPROFILE}\.config\nvim" -Recurse -Force
-
-          # Verify installation
-          if (-not (Test-Path "${env:USERPROFILE}\.config\nvim\init.lua")) {
-            throw "Failed to copy Neovim configuration files"
-          }
-
-          Write-Output "Neovim configuration installed successfully"
-
-      - name: Full environment setup
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          & "${{ github.workspace }}/infra/ci-setup-windows.ps1"
+          rustup default stable
+          cargo install stylua
