@@ -208,6 +208,9 @@ jobs:
 
           Write-Output "Virtual environment activated successfully"
 
+          # Set output for downstream jobs
+          echo "virtual_env=$venvPath" >> $env:GITHUB_OUTPUT
+
       - name: Install Visual Studio Build Tools
         shell: pwsh
         run: |
