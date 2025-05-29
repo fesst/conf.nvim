@@ -256,10 +256,61 @@ jobs:
               throw "VsDevCmd.bat not found after installation"
           }
 
+          # Set up environment variables
+          Write-Output "Setting up Visual Studio environment variables..."
+          cmd /c "`"$vsDevCmd`" && set" | ForEach-Object {
+              if ($_ -match "^(.*?)=(.*)$") {
+                  $name = $matches[1]
+                  $value = $matches[2]
+                  [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::Process)
+              }
+          }
+
+          # Add Visual Studio paths to PATH
+          $vcvarsPath = Join-Path $vsPath "VC\Auxiliary\Build"
+          if (Test-Path $vcvarsPath) {
+              $vcvarsBat = Join-Path $vcvarsPath "vcvars64.bat"
+              if (Test-Path $vcvarsBat) {
+                  Write-Output "Setting up Visual Studio environment using vcvars64.bat..."
+                  cmd /c "`"$vcvarsBat`" && set" | ForEach-Object {
+                      if ($_ -match "^(.*?)=(.*)$") {
+                          $name = $matches[1]
+                          $value = $matches[2]
+                          [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::Process)
+                      }
+                  }
+              }
+          }
+
           # Verify cl.exe is available
           $clPath = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
           if (-not $clPath) {
-              throw "cl.exe not found in PATH after installation"
+              Write-Output "cl.exe not found in PATH, attempting to locate it..."
+              $possiblePaths = @(
+                  (Join-Path $vsPath "VC\Tools\MSVC\*\bin\Hostx64\x64"),
+                  (Join-Path $vsPath "VC\Tools\MSVC\*\bin\Hostx86\x64")
+              )
+
+              foreach ($path in $possiblePaths) {
+                  $expandedPath = Resolve-Path $path -ErrorAction SilentlyContinue
+                  if ($expandedPath) {
+                      $clPath = Join-Path $expandedPath "cl.exe"
+                      if (Test-Path $clPath) {
+                          Write-Output "Found cl.exe at: $clPath"
+                          $env:Path = "$expandedPath;$env:Path"
+                          break
+                      }
+                  }
+              }
+          }
+
+          if (-not $clPath) {
+              Write-Output "Current PATH: $env:Path"
+              Write-Output "Visual Studio installation directory contents:"
+              Get-ChildItem $vsPath -Recurse -Depth 2 | Where-Object { $_.Name -eq "cl.exe" } | ForEach-Object {
+                  Write-Output "Found cl.exe at: $($_.FullName)"
+              }
+              throw "cl.exe not found in PATH after installation and path setup"
           }
 
           Write-Output "Visual Studio Build Tools installed successfully"
