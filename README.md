@@ -180,3 +180,4 @@ For detailed information about dependencies and tools, see [Shared Tools](wiki/s
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on how to contribute to this project.
 
 Note: When contributing, please ensure your changes work on both macOS and Windows environments. The CI pipeline includes automated tests for both platforms, using Homebrew for macOS and winget/Chocolatey for Windows package management.
+# dumb commit to test workflow
