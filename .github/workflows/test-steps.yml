@@ -798,24 +798,65 @@ jobs:
           Write-Output "Tests completed successfully"
           Write-Output "==========================="
 
-      - name: Run Lua tests (macOS)
+      - name: Run tests
         if: inputs.platform == 'macos'
         shell: bash
         run: |
-          set -e
-          source "${{ inputs.venv_path }}/bin/activate"
+          set -euo pipefail
+          VENV_PATH="${{ inputs.venv_path }}"
+
+          # Verify virtual environment exists
+          if [ ! -d "$VENV_PATH" ]; then
+            echo "Error: Virtual environment directory not found"
+            echo "VENV_PATH: $VENV_PATH"
+            exit 1
+          fi
+
+          # Create activation script if it doesn't exist
+          if [ ! -f "$VENV_PATH/bin/activate" ]; then
+            echo "Creating activation script..."
+            # Ensure bin directory exists
+            if [ ! -d "$VENV_PATH/bin" ]; then
+              echo "Creating bin directory..."
+              mkdir -p "$VENV_PATH/bin"
+              if [ ! -d "$VENV_PATH/bin" ]; then
+                echo "Error: Failed to create bin directory"
+                exit 1
+              fi
+            fi
+            # Create activation script with proper permissions
+            echo 'export VIRTUAL_ENV="'"$VENV_PATH"'"' > "$VENV_PATH/bin/activate"
+            echo 'export PATH="$VIRTUAL_ENV/bin:$PATH"' >> "$VENV_PATH/bin/activate"
+            chmod +x "$VENV_PATH/bin/activate"
+            # Verify activation script was created
+            if [ ! -f "$VENV_PATH/bin/activate" ]; then
+              echo "Error: Failed to create activation script"
+              exit 1
+            fi
+          fi
+
+          # Activate virtual environment
+          source "$VENV_PATH/bin/activate"
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to activate virtual environment"
+            echo "Python version: $(python --version)"
+            echo "PATH: $PATH"
+            exit 1
+          fi
+
+          # Verify Python path after activation
+          PYTHON_PATH=$(which python)
+          if [[ ! "$PYTHON_PATH" == "$VENV_PATH"* ]]; then
+            echo "Error: Python not using virtual environment"
+            echo "Expected path to start with: $VENV_PATH"
+            echo "Actual path: $PYTHON_PATH"
+            exit 1
+          fi
 
           # Install Neovim if not present
           if ! command -v nvim &> /dev/null; then
             echo "Installing Neovim..."
             brew install neovim
-            # Verify Homebrew installation
-            if [ ! -f "/opt/homebrew/bin/nvim" ]; then
-              echo "Error: Neovim not found in Homebrew path after installation"
-              echo "Checking Homebrew paths:"
-              ls -la /opt/homebrew/bin/
-              exit 1
-            fi
           fi
 
           # Verify Neovim is available and show its location
