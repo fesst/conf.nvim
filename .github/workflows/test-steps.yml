@@ -770,13 +770,16 @@ jobs:
           Write-Output "=== Running Lua Tests ==="
 
           # Set up Lua path
-          $luaPath = "C:\Program Files\Lua\5.4"
-          $env:Path = "$luaPath;$env:Path"
+          $env:Path = "C:\ProgramData\chocolatey\bin;$env:Path"
           [Environment]::SetEnvironmentVariable("Path", $env:Path, [System.EnvironmentVariableTarget]::Process)
 
           # Verify Lua installation
           Write-Output "Verifying Lua installation..."
-          lua -v
+          Write-Output "Current PATH: $env:Path"
+          Write-Output "Checking for Lua executables:"
+          Get-Command lua* -ErrorAction SilentlyContinue | Format-Table -AutoSize
+
+          lua5.1 -v
           if ($LASTEXITCODE -ne 0) {
               Write-Error "Lua not found in PATH"
               Write-Output "Current PATH: $env:Path"
@@ -789,7 +792,7 @@ jobs:
 
           # Run tests
           Write-Output "Running tests..."
-          lua test/test.lua
+          lua5.1 test/test.lua
           if ($LASTEXITCODE -ne 0) {
               Write-Error "Tests failed"
               exit 1
