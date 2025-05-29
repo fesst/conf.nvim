@@ -727,6 +727,54 @@ jobs:
             exit 1
           fi
 
+      - name: Install stylua (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          try {
+            # Add cargo bin to PATH
+            $env:Path = "$env:Path;$env:USERPROFILE\.cargo\bin"
+
+            # Install stylua
+            Write-Output "Installing stylua..."
+            cargo install stylua || {
+              Write-Output "Failed to install stylua. Retrying..."
+              cargo install stylua --force
+            }
+
+            # Verify installation
+            if (-not (Get-Command stylua -ErrorAction SilentlyContinue)) {
+              throw "stylua installation failed or not found in PATH"
+            }
+            Write-Output "stylua installed successfully at $(Get-Command stylua).Source"
+          } catch {
+            Write-Error $_.Exception.Message
+            exit 1
+          }
+
+      - name: Install stylua (macOS)
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -e
+          # Add cargo bin to PATH
+          export PATH="$HOME/.cargo/bin:$PATH"
+
+          # Install stylua
+          echo "Installing stylua..."
+          cargo install stylua || {
+            echo "Failed to install stylua. Retrying..."
+            cargo install stylua --force
+          }
+
+          # Verify installation
+          if ! command -v stylua &> /dev/null; then
+            echo "Error: stylua installation failed or not found in PATH"
+            echo "Current PATH: $PATH"
+            exit 1
+          fi
+          echo "stylua installed successfully at $(which stylua)"
+
       - name: Check formatting (Windows)
         if: inputs.platform == 'windows'
         shell: pwsh
