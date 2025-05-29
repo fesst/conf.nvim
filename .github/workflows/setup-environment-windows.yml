@@ -152,15 +152,21 @@ jobs:
           # Test activation
           Write-Output "Testing virtual environment activation..."
           try {
-              # Source the activation script
-              & $activateScript
+              # Source the activation script with proper error handling
+              $activationOutput = & $activateScript 2>&1
               if ($LASTEXITCODE -ne 0) {
+                  Write-Error "Activation script output: $activationOutput"
                   throw "Activation script failed with exit code $LASTEXITCODE"
               }
 
               # Verify Python is using the virtual environment
               $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
+              Write-Output "Python path after activation: $pythonPath"
+              Write-Output "Expected venv path: $venvPath"
+
               if (-not $pythonPath.StartsWith($venvPath)) {
+                  Write-Error "Current PATH: $env:Path"
+                  Write-Error "VIRTUAL_ENV: $env:VIRTUAL_ENV"
                   throw "Python is not using the virtual environment. Expected path to start with: $venvPath, got: $pythonPath"
               }
 
@@ -169,8 +175,9 @@ jobs:
               Write-Output "Python version: $(python --version)"
           } catch {
               Write-Error "Failed to activate virtual environment: $_"
-              Write-Output "Current PATH: $env:Path"
-              Write-Output "Virtual environment contents:"
+              Write-Error "Current PATH: $env:Path"
+              Write-Error "VIRTUAL_ENV: $env:VIRTUAL_ENV"
+              Write-Error "Virtual environment contents:"
               Get-ChildItem $venvPath -Recurse
               exit 1
           }
