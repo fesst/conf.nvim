@@ -199,10 +199,10 @@ jobs:
         run: |
           set -e
           chmod +x infra/packages/cargo.sh
-          ./infra/packages/cargo.sh || {
+          INSTALL_STYLUA=false ./infra/packages/cargo.sh || {
             echo "Failed to install Rust packages. Retrying..."
             cargo clean
-            ./infra/packages/cargo.sh
+            INSTALL_STYLUA=false ./infra/packages/cargo.sh
           }
 
       - name: Install Python packages
