@@ -38,6 +38,34 @@ jobs:
   run-tests:
     runs-on: ${{ inputs.platform }}-latest
     steps:
+      - name: Debug environment
+        shell: bash
+        run: |
+          echo "=== Environment Debug Info ==="
+          echo "Platform: ${{ inputs.platform }}"
+          echo "venv_path: ${{ inputs.venv_path }}"
+          echo "use_cache: ${{ inputs.use_cache }}"
+          echo "install_deps: ${{ inputs.install_deps }}"
+          echo "setup_python: ${{ inputs.setup_python }}"
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+          echo "==========================="
+
+      - name: Debug Windows environment
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          Write-Output "=== Windows Environment Debug Info ==="
+          Write-Output "Current directory: $(Get-Location)"
+          Write-Output "Directory contents:"
+          Get-ChildItem
+          Write-Output "Environment variables:"
+          Get-ChildItem env: | Format-Table -AutoSize
+          Write-Output "PATH: $env:Path"
+          Write-Output "Python version: $(python --version)"
+          Write-Output "================================"
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
@@ -78,10 +106,27 @@ jobs:
           $venvPath = "${{ steps.setup.outputs.virtual_env }}"
           Write-Output "Virtual environment path from setup: $venvPath"
 
+          # Debug path information
+          Write-Output "=== Virtual Environment Path Debug ==="
+          Write-Output "Raw venv_path: ${{ inputs.venv_path }}"
+          Write-Output "Setup output venv_path: $venvPath"
+          Write-Output "Current directory: $(Get-Location)"
+          Write-Output "Directory contents:"
+          Get-ChildItem
+          Write-Output "================================"
+
           # Normalize path for Windows
           if ($IsWindows) {
-              $venvPath = $venvPath.Replace('\', '/')
+              $venvPath = [System.IO.Path]::GetFullPath($venvPath)
               Write-Output "Normalized path for Windows: $venvPath"
+
+              # Debug normalized path
+              Write-Output "=== Normalized Path Debug ==="
+              Write-Output "Full path: $venvPath"
+              Write-Output "Parent directory exists: $(Test-Path (Split-Path -Parent $venvPath))"
+              Write-Output "Parent directory contents:"
+              Get-ChildItem (Split-Path -Parent $venvPath)
+              Write-Output "=========================="
           }
 
           # Verify virtual environment exists
@@ -100,6 +145,15 @@ jobs:
               Join-Path $venvPath "bin/activate"
           }
 
+          Write-Output "=== Activation Script Debug ==="
+          Write-Output "Activation script path: $activateScript"
+          Write-Output "Script exists: $(Test-Path $activateScript)"
+          if (Test-Path $activateScript) {
+              Write-Output "Script contents:"
+              Get-Content $activateScript
+          }
+          Write-Output "============================"
+
           if (-not (Test-Path $activateScript)) {
               Write-Error "Activation script not found at: $activateScript"
               Write-Output "Virtual environment contents:"
@@ -108,6 +162,11 @@ jobs:
           }
 
           # Activate virtual environment
+          Write-Output "=== Activation Debug ==="
+          Write-Output "Current PATH: $env:Path"
+          Write-Output "Current Python: $(Get-Command python | Select-Object -ExpandProperty Source)"
+          Write-Output "========================="
+
           . $activateScript
           if ($LASTEXITCODE -ne 0) {
               Write-Error "Failed to activate virtual environment"
@@ -115,6 +174,11 @@ jobs:
               Write-Output "PATH: $env:Path"
               exit 1
           }
+
+          Write-Output "=== Post-Activation Debug ==="
+          Write-Output "Updated PATH: $env:Path"
+          Write-Output "Updated Python: $(Get-Command python | Select-Object -ExpandProperty Source)"
+          Write-Output "============================"
 
           # Verify Python is using the virtual environment
           $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
