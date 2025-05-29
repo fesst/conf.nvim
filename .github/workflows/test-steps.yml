@@ -1,8 +1,5 @@
 name: Test Steps
 
-permissions:
-  contents: read
-
 on:
   workflow_call:
     inputs:
