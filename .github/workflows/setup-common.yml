@@ -77,7 +77,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          VENV_PATH="${{ env.RUNNER_TOOL_CACHE }}/venv"
+          VENV_PATH="${{ github.workspace }}/.venv"
 
           if [ ! -d "$VENV_PATH" ]; then
               echo "Creating virtual environment at: $VENV_PATH"
@@ -166,8 +166,76 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          Write-Output "Installing Lua packages..."
+          Write-Output "Checking Lua and LuaRocks installation..."
+
+          # Check if Lua is already installed
+          $luaInstalled = $false
+          try {
+              $luaVersion = lua -v 2>&1
+              if ($LASTEXITCODE -eq 0) {
+                  Write-Output "Lua is already installed: $luaVersion"
+                  $luaInstalled = $true
+              }
+          } catch {
+              Write-Output "Lua not found, will install..."
+          }
+
+          # Check if LuaRocks is already installed
+          $luarocksInstalled = $false
+          try {
+              $luarocksVersion = luarocks --version 2>&1
+              if ($LASTEXITCODE -eq 0) {
+                  Write-Output "LuaRocks is already installed: $luarocksVersion"
+                  $luarocksInstalled = $true
+              }
+          } catch {
+              Write-Output "LuaRocks not found, will install..."
+          }
+
+          # Install Lua and LuaRocks if needed
+          if (-not $luaInstalled) {
+              Write-Output "Installing Lua..."
+              winget install -e --id Lua.Lua
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Failed to install Lua"
+              }
+          }
+
+          if (-not $luarocksInstalled) {
+              Write-Output "Installing LuaRocks..."
+              winget install -e --id Lua.LuaRocks
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Failed to install LuaRocks"
+              }
+          }
+
+          # Add Lua and LuaRocks to PATH
+          $luaPath = "C:\Program Files\Lua\5.4"
+          $luarocksPath = "C:\Program Files (x86)\LuaRocks"
+          $env:Path = "$luaPath;$luarocksPath;$env:Path"
+          [Environment]::SetEnvironmentVariable("Path", $env:Path, [System.EnvironmentVariableTarget]::Process)
+
+          # Verify Lua and LuaRocks installation
+          Write-Output "Verifying Lua installation..."
+          lua -v
+          if ($LASTEXITCODE -ne 0) {
+              throw "Lua not found in PATH after installation"
+          }
+
+          Write-Output "Verifying LuaRocks installation..."
+          luarocks --version
+          if ($LASTEXITCODE -ne 0) {
+              throw "LuaRocks not found in PATH after installation"
+          }
+
+          # Install luaformatter
+          Write-Output "Installing luaformatter..."
           luarocks install --local luaformatter
+          if ($LASTEXITCODE -ne 0) {
+              throw "Failed to install luaformatter"
+          }
+
+          Write-Output "Lua packages installed successfully"
 
       - name: Install Lua packages (Unix)
         if: inputs.setup_lua && inputs.platform == 'macos'

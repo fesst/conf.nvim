@@ -55,7 +55,7 @@ jobs:
         uses: actions/cache@v4
         id: python-cache
         with:
-          path: ${{ github.runner.tool_cache }}/venv
+          path: ${{ github.workspace }}/.venv
           key: ${{ github.runner.os }}-${{ github.runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
           restore-keys: |
             ${{ github.runner.os }}-${{ github.runner.arch }}-venv-
