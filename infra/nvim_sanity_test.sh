@@ -25,6 +25,12 @@ ensure_venv() {
             print_error "Failed to activate virtual environment"
             exit 1
         }
+    elif [ -n "${RUNNER_TOOL_CACHE:-}" ] && [ -d "$RUNNER_TOOL_CACHE/venv" ]; then
+        print_status "Using workflow virtual environment..."
+        source "$RUNNER_TOOL_CACHE/venv/bin/activate" || {
+            print_error "Failed to activate workflow virtual environment"
+            exit 1
+        }
     elif [ ! -d "$VENV_DIR" ]; then
         print_error "Virtual environment not found at $VENV_DIR"
         exit 1

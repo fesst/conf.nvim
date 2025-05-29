@@ -48,21 +48,138 @@ jobs:
     name: Setup Environment
     needs: check-changes
     if: needs.check-changes.outputs.run_tests == 'true'
-    uses: ./.github/workflows/setup-environment.yml
-    with:
-      setup_python: true
-      setup_rust: true
-      setup_node: true
-      setup_lua: true
-      runner: macos-latest
+    runs-on: macos-latest
+    outputs:
+      virtual_env: ${{ steps.setup-env.outputs.virtual_env }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Cache Python virtual environment
+        uses: actions/cache@v4
+        id: python-venv-cache
+        with:
+          path: ${{ runner.tool_cache }}/venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
+
+      - name: Set up virtual environment
+        id: setup-env
+        shell: bash
+        run: |
+          set -euo pipefail
+          VENV_PATH="$RUNNER_TOOL_CACHE/venv"
+
+          # Create virtual environment if it doesn't exist
+          if [ ! -d "$VENV_PATH" ]; then
+            echo "Creating virtual environment at: $VENV_PATH"
+            python3 -m venv "$VENV_PATH"
+          fi
+
+          # Ensure activation script exists
+          if [ ! -f "$VENV_PATH/bin/activate" ]; then
+            echo "Creating activation script..."
+            mkdir -p "$VENV_PATH/bin"
+            echo 'export VIRTUAL_ENV="'"$VENV_PATH"'"' > "$VENV_PATH/bin/activate"
+            echo 'export PATH="$VIRTUAL_ENV/bin:$PATH"' >> "$VENV_PATH/bin/activate"
+            chmod +x "$VENV_PATH/bin/activate"
+          fi
+
+          # Set output variable
+          echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
+
+          # Activate and verify
+          source "$VENV_PATH/bin/activate"
+          python -m pip install --upgrade pip
+          python --version
+          pip list
+
+      - name: Install system packages
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/brew.sh
+          ./infra/packages/brew.sh || {
+            echo "Failed to install system packages. Retrying..."
+            brew update
+            ./infra/packages/brew.sh
+          }
+
+      - name: Install Python packages
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/pip.sh
+          source "${{ steps.setup-env.outputs.virtual_env }}/bin/activate"
+          ./infra/packages/pip.sh || {
+            echo "Failed to install Python packages. Retrying..."
+            pip cache purge
+            ./infra/packages/pip.sh
+          }
+
+      - name: Install Lua packages
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/luarocks.sh
+          ./infra/packages/luarocks.sh || {
+            echo "Failed to install Lua packages. Retrying..."
+            luarocks config --local lua_version 5.4
+            ./infra/packages/luarocks.sh
+          }
 
   test:
     name: Run Tests
     needs: [check-changes, setup]
     if: needs.check-changes.outputs.run_tests == 'true'
-    uses: ./.github/workflows/test-steps.yml
-    with:
-      platform: macos
-      venv_path: ${{ needs.setup.outputs.virtual_env }}
-      use_cache: true
-      install_deps: true
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Cache Python virtual environment
+        uses: actions/cache@v4
+        id: python-venv-cache
+        with:
+          path: ${{ runner.tool_cache }}/venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
+
+      - name: Run tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          VENV_PATH="$RUNNER_TOOL_CACHE/venv"
+
+          # Verify virtual environment exists
+          if [ ! -d "$VENV_PATH" ]; then
+            echo "Error: Virtual environment not found at: $VENV_PATH"
+            exit 1
+          fi
+
+          # Activate virtual environment
+          source "$VENV_PATH/bin/activate"
+          if [ $? -ne 0 ]; then
+            echo "Error: Failed to activate virtual environment"
+            exit 1
+          fi
+
+          # Run tests
+          chmod +x infra/nvim_sanity_test.sh
+          ./infra/nvim_sanity_test.sh
