@@ -110,11 +110,6 @@ jobs:
             source "${{ inputs.venv_path }}/bin/activate"
           fi
 
-          # Check if tests directory exists
-          if [ ! -d "test" ]; then
-            echo "Error: test directory not found"
-            exit 1
-          fi
-
-          # Run pytest with verbose output
-          python -m pytest test/ -v
+          # Run Neovim tests
+          chmod +x infra/nvim_sanity_test.sh
+          ./infra/nvim_sanity_test.sh
