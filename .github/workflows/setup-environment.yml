@@ -98,8 +98,9 @@ jobs:
         id: venv
         shell: bash
         run: |
-          set -eo pipefail
-          PYTHONPATH="${PYTHONPATH:-}"
+          set -euo pipefail
+          # Initialize PYTHONPATH if not set
+          export PYTHONPATH="${PYTHONPATH:-}"
           VENV_PATH="$RUNNER_TOOL_CACHE/venv"
 
           # Remove existing virtual environment if it exists
