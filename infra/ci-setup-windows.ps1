@@ -23,7 +23,7 @@ refreshenv
 # Install Neovim and tree-sitter only if not already installed
 $packages = @(
     @{Name = "neovim"; Installed = $false}
-    @{Name = "tree-sitter"; Installed = $false}
+    @{Name = "tree-sitter-cli"; Installed = $false}
 )
 
 foreach ($package in $packages) {
@@ -63,9 +63,10 @@ if (-not $nvimFound) {
 
 # Add tree-sitter to PATH - try multiple possible locations
 $treeSitterPaths = @(
-    "C:\Program Files\tree-sitter\bin",
-    "C:\tools\tree-sitter\bin",
-    "C:\ProgramData\chocolatey\lib\tree-sitter\tools\bin"
+    "C:\Program Files\tree-sitter-cli\bin",
+    "C:\tools\tree-sitter-cli\bin",
+    "C:\ProgramData\chocolatey\lib\tree-sitter-cli\tools\bin",
+    "C:\ProgramData\chocolatey\bin"
 )
 
 $treeSitterFound = $false
@@ -82,7 +83,7 @@ foreach ($path in $treeSitterPaths) {
 
 if (-not $treeSitterFound) {
     Write-Host "Warning: tree-sitter not found in expected locations. Checking Chocolatey installation directory..."
-    $chocoPath = "C:\ProgramData\chocolatey\lib\tree-sitter"
+    $chocoPath = "C:\ProgramData\chocolatey\lib\tree-sitter-cli"
     if (Test-Path $chocoPath) {
         Get-ChildItem -Path $chocoPath -Recurse -Filter "tree-sitter.exe" | ForEach-Object {
             $binPath = Split-Path $_.FullName -Parent
@@ -95,10 +96,16 @@ if (-not $treeSitterFound) {
     }
 }
 
-if (-not $treeSitterFound) {
-    Write-Host "Warning: tree-sitter not found in PATH. Some functionality may be limited."
+# Install tree-sitter parsers
+if ($treeSitterFound) {
+    Write-Host "Installing tree-sitter parsers..."
+    $parsers = @("lua", "python", "vim", "vimdoc")
+    foreach ($parser in $parsers) {
+        Write-Host "Installing $parser parser..."
+        tree-sitter init $parser
+    }
 } else {
-    Write-Host "tree-sitter version: $(tree-sitter --version)"
+    Write-Host "Warning: tree-sitter not found in PATH. Some functionality may be limited."
 }
 
 # Verify Neovim installation
