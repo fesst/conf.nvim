@@ -144,10 +144,10 @@ jobs:
           & "${{ inputs.venv_path }}/Scripts/Activate.ps1"
 
           # Run Neovim tests
-          if (Test-Path "infra/nvim_sanity_test.sh") {
-              bash infra/nvim_sanity_test.sh
+          if (Test-Path "infra/nvim_sanity_test.ps1") {
+              & "infra/nvim_sanity_test.ps1"
           } else {
-              Write-Error "Test script not found at infra/nvim_sanity_test.sh"
+              Write-Error "Test script not found at infra/nvim_sanity_test.ps1"
               exit 1
           }
 
