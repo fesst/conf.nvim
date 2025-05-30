@@ -58,61 +58,54 @@ jobs:
           ls -la
           echo "==========================="
 
-      - name: Debug Windows environment
-        if: inputs.platform == 'windows'
-        shell: pwsh
-        run: |
-          Write-Output "=== Windows Environment Debug Info ==="
-          Write-Output "Current directory: $(Get-Location)"
-          Write-Output "Directory contents:"
-          Get-ChildItem
-          Write-Output "Environment variables:"
-          Get-ChildItem env: | Format-Table -AutoSize
-          Write-Output "PATH: $env:Path"
-          Write-Output "Python version: $(python --version)"
-          Write-Output "================================"
-
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      - name: Log Python venv cache info
-        shell: bash
-        run: |
-          echo "=== Python venv Cache Info ==="
-          echo "Cache path: ${{ inputs.venv_path }}"
-          echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}"
-          echo "Cache size: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
-          echo "Cache hit: ${{ needs.cache.outputs.python_cache_hit }}"
-          echo "==========================="
+      - name: Set up Python
+        if: inputs.setup_python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
 
-      - name: Activate virtual environment
+      - name: Set up virtual environment
+        if: inputs.setup_python
         shell: bash
         run: |
-          # Verify virtual environment exists
-          if [ ! -d "${{ inputs.venv_path }}" ]; then
-            echo "Error: Virtual environment directory not found at ${{ inputs.venv_path }}"
-            echo "Creating virtual environment..."
-            python3 -m venv "${{ inputs.venv_path }}"
+          set -euo pipefail
+          VENV_PATH="${{ inputs.venv_path }}"
+
+          # Create virtual environment if it doesn't exist
+          if [ ! -d "$VENV_PATH" ]; then
+            echo "Creating virtual environment at: $VENV_PATH"
+            python3 -m venv "$VENV_PATH"
             if [ $? -ne 0 ]; then
               echo "Error: Failed to create virtual environment"
+              echo "Python version: $(python3 --version)"
+              echo "Python path: $(which python3)"
               exit 1
             fi
           fi
 
+          # Verify virtual environment exists
+          if [ ! -d "$VENV_PATH" ]; then
+            echo "Error: Virtual environment directory not found"
+            exit 1
+          fi
+
           # Activate virtual environment based on platform
           if [ "${{ inputs.platform }}" == "windows" ]; then
-            if [ ! -f "${{ inputs.venv_path }}/Scripts/activate" ]; then
+            if [ ! -f "$VENV_PATH/Scripts/activate" ]; then
               echo "Error: Windows activation script not found"
               exit 1
             fi
-            source "${{ inputs.venv_path }}/Scripts/activate"
+            source "$VENV_PATH/Scripts/activate"
           else
-            if [ ! -f "${{ inputs.venv_path }}/bin/activate" ]; then
+            if [ ! -f "$VENV_PATH/bin/activate" ]; then
               echo "Error: Unix activation script not found"
               exit 1
             fi
-            source "${{ inputs.venv_path }}/bin/activate"
+            source "$VENV_PATH/bin/activate"
           fi
 
           # Verify activation
@@ -129,19 +122,18 @@ jobs:
         if: inputs.install_deps
         shell: bash
         run: |
+          set -euo pipefail
           if [ "${{ inputs.platform }}" == "windows" ]; then
             source "${{ inputs.venv_path }}/Scripts/activate"
-            # Install packages from pip.ps1
-            pip install pynvim black flake8 isort --no-cache-dir
           else
             source "${{ inputs.venv_path }}/bin/activate"
-            # Install packages from pip.sh
-            pip install pynvim black flake8 isort --no-cache-dir
           fi
+          pip install pynvim black flake8 isort pytest --no-cache-dir
 
       - name: Run tests
         shell: bash
         run: |
+          set -euo pipefail
           if [ "${{ inputs.platform }}" == "windows" ]; then
             source "${{ inputs.venv_path }}/Scripts/activate"
           else

@@ -76,15 +76,6 @@ jobs:
           nvim --version
           tree-sitter --version
 
-      - name: Cache virtual environment
-        if: inputs.setup_python
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.tool_cache }}/venv
-          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-venv-
-
       - name: Set up Python virtual environment
         if: inputs.setup_python
         id: venv
@@ -142,7 +133,7 @@ jobs:
       - name: Install system packages
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           chmod +x infra/packages/brew.sh
           ./infra/packages/brew.sh || {
             echo "Failed to install system packages. Retrying..."
@@ -154,7 +145,7 @@ jobs:
         if: inputs.setup_node
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           chmod +x infra/packages/npm.sh
           ./infra/packages/npm.sh || {
             echo "Failed to install Node.js packages. Retrying..."
@@ -166,7 +157,7 @@ jobs:
         if: inputs.setup_rust
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           chmod +x infra/packages/cargo.sh
           ./infra/packages/cargo.sh || {
             echo "Failed to install Rust packages. Retrying..."
@@ -178,7 +169,7 @@ jobs:
         if: inputs.setup_python
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           chmod +x infra/packages/pip.sh
           source "${{ steps.venv.outputs.virtual_env }}/bin/activate"
           ./infra/packages/pip.sh || {
@@ -191,7 +182,7 @@ jobs:
         if: inputs.setup_lua
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           chmod +x infra/packages/luarocks.sh
           ./infra/packages/luarocks.sh || {
             echo "Failed to install Lua packages. Retrying..."
@@ -202,7 +193,7 @@ jobs:
       - name: Install Neovim configuration
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           chmod +x infra/packages/nvim.sh
           ./infra/packages/nvim.sh || {
             echo "Failed to install Neovim configuration. Retrying..."
@@ -213,6 +204,6 @@ jobs:
       - name: Full environment setup
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           chmod +x infra/ci-setup-macos.sh
           ./infra/ci-setup-macos.sh
