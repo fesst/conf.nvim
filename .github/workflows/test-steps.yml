@@ -166,6 +166,26 @@ jobs:
           fi
           pip install pynvim black flake8 isort pytest --no-cache-dir
 
+      - name: Restore Python venv from cache
+        uses: actions/cache@v4
+        id: python-venv-cache
+        with:
+          path: ${{ runner.tool_cache }}/venv
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-venv-
+
+      - name: Create Python virtual environment if not cached
+        if: steps.python-venv-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $venvPath = "${{ runner.tool_cache }}/venv"
+          python -m venv $venvPath
+          & "$venvPath/Scripts/Activate.ps1"
+          python -m pip install --upgrade pip
+          pip install pynvim black flake8 isort pytest pytest-cov --no-cache-dir
+
       - name: Run tests (Windows)
         if: inputs.platform == 'windows'
         shell: pwsh
