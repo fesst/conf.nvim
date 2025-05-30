@@ -51,8 +51,6 @@ jobs:
         with:
           python-version: "3.13"
           check-latest: true
-          cache: "pip"
-          cache-dependency-path: ""
 
       - name: Set up Python virtual environment (Windows)
         if: inputs.setup_python && inputs.platform == 'windows'
