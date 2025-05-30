@@ -157,22 +157,35 @@ jobs:
             ./infra/packages/pip.sh
           }
 
-      - name: Verify Neovim installation
+      - name: Verify Neovim installation (Unix)
+        if: inputs.platform == 'macos'
         shell: bash
         run: |
           set -e
           echo "=== Verifying Neovim Installation ==="
           if ! command -v nvim &> /dev/null; then
             echo "Neovim not found. Installing..."
-            if [ "${{ inputs.platform }}" == "macos" ]; then
-              brew install neovim tree-sitter
-            else
-              choco install neovim -y
-            fi
+            brew install neovim tree-sitter
           fi
           echo "Neovim version:"
           nvim --version
           echo "================================"
+
+      - name: Verify Neovim installation (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "=== Verifying Neovim Installation ==="
+          if (-not (Get-Command nvim -ErrorAction SilentlyContinue)) {
+              Write-Output "Neovim not found. Installing..."
+              choco install neovim -y
+              # Update PATH for current session
+              $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          }
+          Write-Output "Neovim version:"
+          nvim --version
+          Write-Output "================================"
 
       - name: Run Neovim sanity tests (Windows)
         if: runner.os == 'Windows'
