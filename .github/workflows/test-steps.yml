@@ -39,10 +39,6 @@ jobs:
     runs-on: ${{ inputs.platform }}-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
       - name: Debug environment
         shell: bash
         run: |
@@ -56,6 +52,10 @@ jobs:
           echo "Directory contents:"
           ls -la
           echo "==========================="
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Debug Windows environment
         if: inputs.platform == 'windows'
@@ -89,7 +89,6 @@ jobs:
           echo "=============================="
 
       - name: Install dependencies
-        if: inputs.install_deps
         shell: bash
         run: |
           set -euo pipefail
@@ -103,9 +102,18 @@ jobs:
       - name: Run tests
         shell: bash
         run: |
+          set -euo pipefail
           if [ "${{ inputs.platform }}" == "windows" ]; then
             source "${{ inputs.venv_path }}/Scripts/activate"
           else
             source "${{ inputs.venv_path }}/bin/activate"
           fi
-          python -m pytest tests/
+
+          # Check if tests directory exists
+          if [ ! -d "test" ]; then
+            echo "Error: test directory not found"
+            exit 1
+          fi
+
+          # Run pytest with verbose output
+          python -m pytest test/ -v
