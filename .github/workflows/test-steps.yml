@@ -137,13 +137,8 @@ jobs:
       - name: Run tests
         shell: bash
         run: |
-          set -eo pipefail
-          PYTHONPATH="${PYTHONPATH:-}"
-          if [ "${{ inputs.setup_python }}" == "true" ]; then
-            if [ "${{ inputs.platform }}" == "windows" ]; then
-              source "${{ inputs.venv_path }}/Scripts/activate"
-            else
-              source "${{ inputs.venv_path }}/bin/activate"
-            fi
-          fi
-          python -m pytest test/
+          set -e
+          echo "=== Running Neovim Tests ==="
+          chmod +x infra/nvim_sanity_test.sh
+          ./infra/nvim_sanity_test.sh
+          echo "=== Tests Completed ==="
