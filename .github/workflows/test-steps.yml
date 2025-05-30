@@ -221,9 +221,24 @@ jobs:
           nvim --version
           echo "================================"
 
-      - name: Run tests
-        shell: bash
+      - name: Run Neovim sanity tests (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          VENV_DIR: ${{ inputs.venv_path }}
         run: |
-          set -e
-          chmod +x infra/nvim_sanity_test.sh
-          ./infra/nvim_sanity_test.sh
+          $venvPath = $env:VENV_DIR
+          Write-Host "Using activation script: $venvPath\Scripts\Activate.ps1"
+          & "$venvPath\Scripts\Activate.ps1"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Error: Failed to activate virtual environment: Activation script returned non-zero exit code"
+            exit 1
+          }
+          bash infra/nvim_sanity_test.sh
+
+      - name: Run Neovim sanity tests (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          VENV_DIR: ${{ inputs.venv_path }}
+        run: infra/nvim_sanity_test.sh
