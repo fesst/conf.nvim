@@ -1,6 +1,21 @@
 # PowerShell script for Neovim sanity tests
 $ErrorActionPreference = 'Stop'
 
+# Add Neovim to PATH if not already present
+$nvimPaths = @(
+    "C:\Program Files\Neovim\bin",
+    "C:\tools\neovim\nvim-win64\bin"
+)
+
+foreach ($path in $nvimPaths) {
+    if (Test-Path $path) {
+        if ($env:Path -notlike "*$path*") {
+            $env:Path = "$path;$env:Path"
+        }
+        break
+    }
+}
+
 # Test directory and log file
 $TEST_DIR = "infra/test_files"
 $LOG_FILE = if ($env:NVIM_LOG_FILE) { $env:NVIM_LOG_FILE } else { "infra/nvim.log" }
