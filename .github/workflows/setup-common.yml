@@ -1,0 +1,258 @@
+name: Common Setup
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        required: true
+        type: string
+        description: "Platform (macos/windows)"
+      setup_python:
+        required: true
+        type: boolean
+        default: true
+      setup_rust:
+        required: true
+        type: boolean
+        default: true
+      setup_node:
+        required: true
+        type: boolean
+        default: true
+      setup_lua:
+        required: true
+        type: boolean
+        default: true
+    outputs:
+      virtual_env:
+        description: "Path to virtual environment"
+        value: ${{ jobs.setup-common.outputs.virtual_env }}
+
+jobs:
+  setup-common:
+    runs-on: ${{ inputs.platform }}-latest
+    outputs:
+      virtual_env: ${{ steps.venv.outputs.virtual_env }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        if: inputs.setup_node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.19.0"
+
+      - name: Set up Python
+        if: inputs.setup_python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          check-latest: true
+          cache: "pip"
+          cache-dependency-path: ""
+
+      - name: Set up Python virtual environment (Windows)
+        if: inputs.setup_python && inputs.platform == 'windows'
+        id: venv
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $venvPath = Join-Path $env:RUNNER_TOOL_CACHE "venv"
+          Write-Output "Setting up virtual environment at: $venvPath"
+
+          if (-not (Test-Path $venvPath)) {
+              Write-Output "Creating new virtual environment..."
+              python -m venv $venvPath
+              if ($LASTEXITCODE -ne 0) {
+                  Write-Error "Failed to create virtual environment"
+                  exit 1
+              }
+          }
+
+          Write-Output "virtual_env=$venvPath" >> $env:GITHUB_OUTPUT
+
+      - name: Set up Python virtual environment (Unix)
+        if: inputs.setup_python && inputs.platform == 'macos'
+        id: venv-unix
+        shell: bash
+        run: |
+          set -euo pipefail
+          VENV_PATH="${{ github.workspace }}/.venv"
+
+          if [ ! -d "$VENV_PATH" ]; then
+              echo "Creating virtual environment at: $VENV_PATH"
+              python3 -m venv "$VENV_PATH"
+              if [ $? -ne 0 ]; then
+                  echo "Error: Failed to create virtual environment"
+                  exit 1
+              fi
+          fi
+
+          echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
+
+      - name: Install Node.js packages (Windows)
+        if: inputs.setup_node && inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Installing Node.js packages..."
+          npm install -g neovim
+
+      - name: Install Node.js packages (Unix)
+        if: inputs.setup_node && inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/npm.sh
+          ./infra/packages/npm.sh || {
+              echo "Failed to install Node.js packages. Retrying..."
+              npm cache clean --force
+              ./infra/packages/npm.sh
+          }
+
+      - name: Install Rust packages (Windows)
+        if: inputs.setup_rust && inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Installing Rust..."
+          Invoke-WebRequest -Uri https://win.rustup.rs -OutFile rustup-init.exe
+          .\rustup-init.exe -y
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          rustup default stable
+          Write-Output "Installing stylua..."
+          cargo install stylua
+          Write-Output "Verifying stylua installation..."
+          stylua --version
+
+      - name: Install Rust packages (Unix)
+        if: inputs.setup_rust && inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/cargo.sh
+          ./infra/packages/cargo.sh || {
+              echo "Failed to install Rust packages. Retrying..."
+              cargo clean
+              ./infra/packages/cargo.sh
+          }
+          echo "Verifying stylua installation..."
+          stylua --version
+
+      - name: Install Python packages (Windows)
+        if: inputs.setup_python && inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Installing Python packages..."
+          & "${{ steps.venv.outputs.virtual_env }}\Scripts\Activate.ps1"
+          chmod +x infra/packages/pip.ps1
+          ./infra/packages/pip.ps1 || {
+              Write-Output "Failed to install Python packages. Retrying..."
+              pip cache purge
+              ./infra/packages/pip.ps1
+          }
+
+      - name: Install Python packages (Unix)
+        if: inputs.setup_python && inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/pip.sh
+          source "${{ steps.venv-unix.outputs.virtual_env }}/bin/activate"
+          ./infra/packages/pip.sh || {
+              echo "Failed to install Python packages. Retrying..."
+              pip cache purge
+              ./infra/packages/pip.sh
+          }
+
+      - name: Install Lua packages (Windows)
+        if: inputs.setup_lua && inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Checking Lua and LuaRocks installation..."
+
+          # Check if Lua is already installed
+          $luaInstalled = $false
+          try {
+              $luaVersion = lua -v 2>&1
+              if ($LASTEXITCODE -eq 0) {
+                  Write-Output "Lua is already installed: $luaVersion"
+                  $luaInstalled = $true
+              }
+          } catch {
+              Write-Output "Lua not found, will install..."
+          }
+
+          # Check if LuaRocks is already installed
+          $luarocksInstalled = $false
+          try {
+              $luarocksVersion = luarocks --version 2>&1
+              if ($LASTEXITCODE -eq 0) {
+                  Write-Output "LuaRocks is already installed: $luarocksVersion"
+                  $luarocksInstalled = $true
+              }
+          } catch {
+              Write-Output "LuaRocks not found, will install..."
+          }
+
+          # Install Lua and LuaRocks if needed
+          if (-not $luaInstalled) {
+              Write-Output "Installing Lua..."
+              choco install lua -y
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Failed to install Lua"
+              }
+          }
+
+          if (-not $luarocksInstalled) {
+              Write-Output "Installing LuaRocks..."
+              choco install luarocks -y
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Failed to install LuaRocks"
+              }
+          }
+
+          # Add Lua and LuaRocks to PATH
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          $env:Path = "C:\ProgramData\chocolatey\bin;$env:Path"
+          [Environment]::SetEnvironmentVariable("Path", $env:Path, [System.EnvironmentVariableTarget]::Process)
+
+          # Set up Lua environment variables
+          $env:LUA_PATH = "?.lua;?/init.lua;../lua/?.lua;../lua/?/init.lua"
+          $env:LUA_CPATH = "?.dll;?/init.dll;../lua/?.dll;../lua/?/init.dll"
+
+          # Verify Lua and LuaRocks installation
+          Write-Output "Verifying Lua installation..."
+          Write-Output "Current PATH: $env:Path"
+          Write-Output "Checking for Lua executables:"
+          Get-Command lua* -ErrorAction SilentlyContinue | Format-Table -AutoSize
+
+          lua5.1 -v
+          if ($LASTEXITCODE -ne 0) {
+              throw "Lua not found in PATH after installation"
+          }
+
+          Write-Output "Verifying LuaRocks installation..."
+          luarocks --version
+          if ($LASTEXITCODE -ne 0) {
+              throw "LuaRocks not found in PATH after installation"
+          }
+
+          Write-Output "Lua packages installed successfully"
+
+      - name: Install Lua packages (Unix)
+        if: inputs.setup_lua && inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -e
+          chmod +x infra/packages/luarocks.sh
+          ./infra/packages/luarocks.sh || {
+              echo "Failed to install Lua packages. Retrying..."
+              luarocks config --local lua_version 5.4
+              ./infra/packages/luarocks.sh
+          }
