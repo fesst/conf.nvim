@@ -1,0 +1,31 @@
+name: "PR macOS Tests"
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+  pull_request:
+    branches: ["master"]
+
+concurrency:
+  group: pr-macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup:
+    uses: ./.github/workflows/setup-environment-macos.yml
+    with:
+      setup_python: true
+      setup_rust: true
+      setup_node: true
+      setup_lua: true
+
+  test:
+    needs: setup
+    uses: ./.github/workflows/test-steps.yml
+    with:
+      platform: macos
+      venv_path: ${{ needs.setup.outputs.virtual_env }}
+      use_cache: true
+      install_deps: true

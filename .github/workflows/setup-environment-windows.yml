@@ -1,0 +1,330 @@
+name: Setup Windows Environment
+
+on:
+  workflow_call:
+    inputs:
+      setup_python:
+        required: true
+        type: boolean
+        default: true
+      setup_rust:
+        required: true
+        type: boolean
+        default: true
+      setup_node:
+        required: true
+        type: boolean
+        default: true
+      setup_lua:
+        required: true
+        type: boolean
+        default: true
+    outputs:
+      virtual_env:
+        description: "Path to virtual environment"
+        value: ${{ jobs.setup-environment.outputs.virtual_env }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup-environment:
+    name: Setup Environment
+    runs-on: windows-latest
+    outputs:
+      virtual_env: ${{ steps.venv-win.outputs.virtual_env }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache Chocolatey packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\ProgramData\chocolatey\lib\neovim
+            C:\ProgramData\chocolatey\lib\python312
+            C:\ProgramData\chocolatey\lib\nodejs
+            C:\ProgramData\chocolatey\lib\rust
+            C:\ProgramData\chocolatey\lib\luarocks
+            C:\tools\neovim
+            C:\tools\python312
+            C:\tools\nodejs
+            C:\tools\rust
+            C:\tools\luarocks
+          key: ${{ runner.os }}-${{ runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-choco-
+          enableCrossOsArchive: true
+
+      - name: Set up Node.js
+        if: inputs.setup_node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.19.0"
+
+      - name: Cache npm packages
+        if: inputs.setup_node
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Set up Python
+        if: inputs.setup_python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache virtual environment
+        if: inputs.setup_python
+        uses: actions/cache@v4
+        id: venv-cache
+        with:
+          path: ${{ runner.tool_cache }}/venv
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-venv-
+
+      - name: Set up Python virtual environment
+        if: inputs.setup_python
+        id: venv-win
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          # Set execution policy to bypass for this process
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+          Write-Output "Current execution policy: $(Get-ExecutionPolicy)"
+
+          # Use tool cache path for better reliability
+          $venvPath = Join-Path $env:RUNNER_TOOL_CACHE "venv"
+          Write-Output "Setting up virtual environment at: $venvPath"
+
+          # Clean up any existing virtual environment
+          if (Test-Path $venvPath) {
+              Write-Output "Removing existing virtual environment..."
+              Remove-Item -Recurse -Force $venvPath
+              Start-Sleep -Seconds 2  # Give filesystem time to settle
+          }
+
+          # Create virtual environment
+          Write-Output "Creating new virtual environment..."
+          python -m venv $venvPath
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to create virtual environment"
+              Write-Output "Python version: $(python --version)"
+              Write-Output "Python path: $(Get-Command python | Select-Object -ExpandProperty Source)"
+              Write-Output "Current directory: $(Get-Location)"
+              Write-Output "Directory contents:"
+              Get-ChildItem
+              exit 1
+          }
+
+          # Verify virtual environment creation
+          if (-not (Test-Path $venvPath)) {
+              Write-Error "Virtual environment directory not created"
+              Write-Output "Current directory: $(Get-Location)"
+              Write-Output "Directory contents:"
+              Get-ChildItem
+              exit 1
+          }
+
+          # Set outputs and environment variables
+          Write-Output "virtual_env=$venvPath" >> $env:GITHUB_OUTPUT
+          Write-Output "VIRTUAL_ENV=$venvPath" >> $env:GITHUB_ENV
+          Write-Output "$venvPath\Scripts" >> $env:GITHUB_PATH
+          Write-Output "PYTHONPATH=$venvPath\Lib\site-packages;$env:PYTHONPATH" >> $env:GITHUB_ENV
+          Write-Output "PIP_PREFIX=$venvPath" >> $env:GITHUB_ENV
+          Write-Output "PIP_TARGET=$venvPath\Lib\site-packages" >> $env:GITHUB_ENV
+
+          # Verify activation script exists and is accessible
+          $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+          if (-not (Test-Path $activateScript)) {
+              Write-Error "Activation script not found at: $activateScript"
+              Write-Output "Virtual environment contents:"
+              Get-ChildItem $venvPath -Recurse
+              exit 1
+          }
+
+          # Test activation
+          Write-Output "Testing virtual environment activation..."
+          try {
+              # Source the activation script with proper error handling
+              $activationOutput = & $activateScript 2>&1
+              if ($LASTEXITCODE -ne 0) {
+                  Write-Error "Activation script output: $activationOutput"
+                  throw "Activation script failed with exit code $LASTEXITCODE"
+              }
+
+              # Verify Python is using the virtual environment
+              $pythonPath = (Get-Command python | Select-Object -ExpandProperty Source)
+              Write-Output "Python path after activation: $pythonPath"
+              Write-Output "Expected venv path: $venvPath"
+
+              if (-not $pythonPath.StartsWith($venvPath)) {
+                  Write-Error "Current PATH: $env:Path"
+                  Write-Error "VIRTUAL_ENV: $env:VIRTUAL_ENV"
+                  throw "Python is not using the virtual environment. Expected path to start with: $venvPath, got: $pythonPath"
+              }
+
+              Write-Output "Virtual environment activated successfully"
+              Write-Output "Python path: $pythonPath"
+              Write-Output "Python version: $(python --version)"
+          } catch {
+              Write-Error "Failed to activate virtual environment: $_"
+              Write-Error "Current PATH: $env:Path"
+              Write-Error "VIRTUAL_ENV: $env:VIRTUAL_ENV"
+              Write-Error "Virtual environment contents:"
+              Get-ChildItem $venvPath -Recurse
+              exit 1
+          }
+
+          # Upgrade pip
+          Write-Output "Upgrading pip..."
+          python -m pip install --upgrade pip
+
+      - name: Install Visual Studio Build Tools
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Starting Visual Studio Build Tools installation process..."
+
+          # Create installation directory
+          $vsInstallPath = Join-Path $env:USERPROFILE "vs_buildtools"
+          if (-not (Test-Path $vsInstallPath)) {
+              New-Item -ItemType Directory -Path $vsInstallPath -Force | Out-Null
+          }
+
+          # Download VS Build Tools installer
+          $vsInstallerUrl = "https://aka.ms/vs/16/release/vs_buildtools.exe"
+          $vsInstallerPath = "$env:TEMP\vs_buildtools.exe"
+
+          Write-Output "Downloading VS Build Tools installer..."
+          Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath -UseBasicParsing
+
+          # Install VS Build Tools
+          Write-Output "Installing VS Build Tools..."
+          $process = Start-Process -FilePath $vsInstallerPath -ArgumentList @(
+              "--quiet",
+              "--wait",
+              "--norestart",
+              "--nocache",
+              "--installPath", $vsInstallPath,
+              "--add", "Microsoft.VisualStudio.Workload.VCTools",
+              "--includeRecommended"
+          ) -Wait -PassThru
+
+          if ($process.ExitCode -ne 0) {
+              throw "Failed to install Visual Studio Build Tools. Exit code: $($process.ExitCode)"
+          }
+
+          # Verify installation
+          $vsDevCmd = Join-Path $vsInstallPath "Common7\Tools\VsDevCmd.bat"
+          if (-not (Test-Path $vsDevCmd)) {
+              throw "VsDevCmd.bat not found after installation"
+          }
+
+          Write-Output "Visual Studio Build Tools installed successfully"
+
+      - name: Set up Visual Studio environment
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vsPath = Join-Path $env:USERPROFILE "vs_buildtools"
+          $vsDevCmd = Join-Path $vsPath "Common7\Tools\VsDevCmd.bat"
+
+          if (-not (Test-Path $vsDevCmd)) {
+              throw "VsDevCmd.bat not found at: $vsDevCmd"
+          }
+
+          Write-Output "Setting up Visual Studio environment..."
+          cmd /c "`"$vsDevCmd`" && set" | ForEach-Object {
+              if ($_ -match "^(.*?)=(.*)$") {
+                  $name = $matches[1]
+                  $value = $matches[2]
+                  [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::Process)
+              }
+          }
+
+          # Verify setup
+          $clPath = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
+          if (-not $clPath) {
+              throw "Failed to set up Visual Studio environment. cl.exe not found."
+          }
+          Write-Output "Visual Studio environment set up successfully"
+
+      - name: Install system packages
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Installing system packages..."
+
+          # Install Chocolatey if not present
+          if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+              Write-Output "Installing Chocolatey..."
+              Set-ExecutionPolicy Bypass -Scope Process -Force
+              [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+              Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+              refreshenv
+          }
+
+          # Import Chocolatey profile module
+          Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
+
+          # Install Lua and LuaRocks using Chocolatey
+          Write-Output "Installing Lua and LuaRocks..."
+          choco install lua -y
+          choco install luarocks -y
+
+          # Update PATH with Lua installation directory
+          $luaPath = "C:\Program Files (x86)\Lua\5.1"
+          $env:Path = "$env:Path;$luaPath"
+          [System.Environment]::SetEnvironmentVariable("Path", $env:Path, [System.EnvironmentVariableTarget]::Process)
+
+          # Refresh environment variables
+          refreshenv
+
+          # Verify installations with full path
+          Write-Output "Verifying installations..."
+          $luaExe = Join-Path $luaPath "lua.exe"
+          if (Test-Path $luaExe) {
+              & $luaExe -v
+          } else {
+              Write-Error "Lua executable not found at: $luaExe"
+              Write-Output "Current PATH: $env:Path"
+              Write-Output "Directory contents of Lua path:"
+              Get-ChildItem $luaPath -ErrorAction SilentlyContinue
+              exit 1
+          }
+
+          # Verify LuaRocks
+          if (Get-Command luarocks -ErrorAction SilentlyContinue) {
+              luarocks --version
+          } else {
+              Write-Error "LuaRocks not found in PATH"
+              Write-Output "Current PATH: $env:Path"
+              exit 1
+          }
+
+      - name: Install Node.js packages
+        if: inputs.setup_node
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Installing Node.js packages..."
+          npm install -g neovim
+
+      - name: Install Rust
+        if: inputs.setup_rust
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Installing Rust..."
+          Invoke-WebRequest -Uri https://win.rustup.rs -OutFile rustup-init.exe
+          .\rustup-init.exe -y
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          rustup default stable
+          cargo install stylua

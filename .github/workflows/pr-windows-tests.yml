@@ -1,0 +1,33 @@
+name: "PR Windows Tests"
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: ["master"]
+  push:
+    branches: ["master"]
+  workflow_dispatch: # Allow manual triggering
+
+concurrency:
+  group: pr-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup:
+    uses: ./.github/workflows/setup-environment-windows.yml
+    with:
+      setup_python: true
+      setup_rust: true
+      setup_node: true
+      setup_lua: true
+
+  test:
+    needs: setup
+    uses: ./.github/workflows/test-steps.yml
+    with:
+      platform: windows
+      venv_path: ${{ needs.setup.outputs.virtual_env }}
+      use_cache: true
+      install_deps: true

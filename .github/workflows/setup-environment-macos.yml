@@ -1,4 +1,4 @@
-name: Setup Environment
+name: Setup macOS Environment
 
 on:
   workflow_call:
@@ -19,39 +19,41 @@ on:
         required: true
         type: boolean
         default: true
-      runner:
-        required: true
-        type: string
-        default: "macos-latest"
     outputs:
       virtual_env:
         description: "Path to virtual environment"
         value: ${{ jobs.setup-environment.outputs.virtual_env }}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.job }}-${{ github.run_id }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   setup-environment:
     name: Setup Environment
-    runs-on: ${{ inputs.runner }}
+    runs-on: macos-latest
     outputs:
-      virtual_env: ${{ steps.venv.outputs.virtual_env }}
+      virtual_env: ${{ steps.venv-mac.outputs.virtual_env }}
     steps:
-      - name: Configure Git
-        shell: bash
-        run: |
-          set -eo pipefail
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache Homebrew packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Homebrew
+            /opt/homebrew
+            ~/Library/Logs/Homebrew
+            /opt/homebrew/Library/Caches
+            /opt/homebrew/Library/Logs
+          key: ${{ runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}-${{ runner.arch }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-${{ runner.arch }}-
+            ${{ runner.os }}-homebrew-
 
       - name: Set up Node.js
         if: inputs.setup_node
@@ -71,37 +73,27 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+          check-latest: true
 
-      - name: Install core dependencies
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          set -eo pipefail
-          PYTHONPATH="${PYTHONPATH:-}"
-          echo "Installing core dependencies..."
-          brew install neovim tree-sitter
-          echo "Verifying installations..."
-          nvim --version
-          tree-sitter --version
-
-      - name: Cache virtual environment
+      - name: Cache Python virtual environment
         if: inputs.setup_python
         uses: actions/cache@v4
+        id: venv-cache
         with:
           path: ${{ runner.tool_cache }}/venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
           restore-keys: |
-            ${{ runner.os }}-venv-
+            ${{ runner.os }}-${{ runner.arch }}-venv-
 
       - name: Set up Python virtual environment
         if: inputs.setup_python
-        id: venv
+        id: venv-mac
         shell: bash
         run: |
           set -euo pipefail
           # Initialize PYTHONPATH if not set
           export PYTHONPATH="${PYTHONPATH:-}"
-          VENV_PATH="$RUNNER_TOOL_CACHE/venv"
+          VENV_PATH="${{ runner.tool_cache }}/venv"
 
           # Remove existing virtual environment if it exists
           if [ -d "$VENV_PATH" ]; then
@@ -156,6 +148,11 @@ jobs:
 
           # Set output variable
           echo "virtual_env=$VENV_PATH" >> $GITHUB_OUTPUT
+          echo "VIRTUAL_ENV=$VENV_PATH" >> $GITHUB_ENV
+          echo "$VENV_PATH/bin" >> $GITHUB_PATH
+          echo "PYTHONPATH=$VENV_PATH/lib/python3.13/site-packages:$PYTHONPATH" >> $GITHUB_ENV
+          echo "PIP_PREFIX=$VENV_PATH" >> $GITHUB_ENV
+          echo "PIP_TARGET=$VENV_PATH/lib/python3.13/site-packages" >> $GITHUB_ENV
 
           # Activate virtual environment
           source "$VENV_PATH/bin/activate"
@@ -185,8 +182,7 @@ jobs:
       - name: Install system packages
         shell: bash
         run: |
-          set -eo pipefail
-          PYTHONPATH="${PYTHONPATH:-}"
+          set -e
           chmod +x infra/packages/brew.sh
           ./infra/packages/brew.sh || {
             echo "Failed to install system packages. Retrying..."
@@ -198,8 +194,7 @@ jobs:
         if: inputs.setup_node
         shell: bash
         run: |
-          set -eo pipefail
-          PYTHONPATH="${PYTHONPATH:-}"
+          set -e
           chmod +x infra/packages/npm.sh
           ./infra/packages/npm.sh || {
             echo "Failed to install Node.js packages. Retrying..."
@@ -207,14 +202,66 @@ jobs:
             ./infra/packages/npm.sh
           }
 
+      - name: Set up Rust
+        if: inputs.setup_rust
+        shell: bash
+        run: |
+          set -e
+          # Install Rust if not already installed
+          if ! command -v rustc &> /dev/null; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --default-toolchain stable --profile minimal
+            source "$HOME/.cargo/env"
+          fi
+
+          # Verify Rust installation
+          rustc --version
+          cargo --version
+
+          # Add cargo bin to PATH
+          export PATH="$HOME/.cargo/bin:$PATH"
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Cache Cargo packages
+        if: inputs.setup_rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock', 'infra/packages/cargo.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-
+
+      - name: Install Rust packages
+        if: inputs.setup_rust
+        shell: bash
+        run: |
+          set -e
+          # Ensure cargo is in PATH
+          source "$HOME/.cargo/env"
+          export PATH="$HOME/.cargo/bin:$PATH"
+
+          # Install stylua
+          echo "Installing stylua..."
+          cargo install stylua --verbose
+
+          # Verify stylua installation
+          if ! command -v stylua &> /dev/null; then
+            echo "Error: stylua not found in PATH after installation"
+            echo "Current PATH: $PATH"
+            exit 1
+          fi
+
+          echo "stylua installed successfully at $(which stylua)"
+
       - name: Install Python packages
         if: inputs.setup_python
         shell: bash
         run: |
-          set -eo pipefail
-          PYTHONPATH="${PYTHONPATH:-}"
+          set -e
           chmod +x infra/packages/pip.sh
-          source "${{ steps.venv.outputs.virtual_env }}/bin/activate"
+          source "${{ steps.venv-mac.outputs.virtual_env }}/bin/activate"
           ./infra/packages/pip.sh || {
             echo "Failed to install Python packages. Retrying..."
             pip cache purge
@@ -225,8 +272,7 @@ jobs:
         if: inputs.setup_lua
         shell: bash
         run: |
-          set -eo pipefail
-          PYTHONPATH="${PYTHONPATH:-}"
+          set -e
           chmod +x infra/packages/luarocks.sh
           ./infra/packages/luarocks.sh || {
             echo "Failed to install Lua packages. Retrying..."
@@ -237,8 +283,7 @@ jobs:
       - name: Install Neovim configuration
         shell: bash
         run: |
-          set -eo pipefail
-          PYTHONPATH="${PYTHONPATH:-}"
+          set -e
           chmod +x infra/packages/nvim.sh
           ./infra/packages/nvim.sh || {
             echo "Failed to install Neovim configuration. Retrying..."
@@ -249,56 +294,6 @@ jobs:
       - name: Full environment setup
         shell: bash
         run: |
-          set -eo pipefail
-          PYTHONPATH="${PYTHONPATH:-}"
+          set -e
           chmod +x infra/ci-setup-macos.sh
           ./infra/ci-setup-macos.sh
-
-      - name: Cache Cargo packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.cargo/bin
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cargo-
-
-      - name: Setup Rust
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # Install Rust if not present
-          if ! command -v rustc &> /dev/null; then
-            echo "Installing Rust..."
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-            source "$HOME/.cargo/env"
-          fi
-
-          # Verify Rust installation
-          rustc --version
-          cargo --version
-
-          # Install stylua if not already installed
-          if ! command -v stylua &> /dev/null; then
-            echo "Installing stylua..."
-            cargo install stylua
-          fi
-
-          # Verify stylua installation
-          if ! command -v stylua &> /dev/null; then
-            echo "Error: stylua not found in PATH"
-            echo "Current PATH: $PATH"
-            echo "Cargo bin: $HOME/.cargo/bin"
-            echo "Checking Cargo bin contents:"
-            ls -la "$HOME/.cargo/bin"
-            exit 1
-          fi
-
-          echo "stylua version: $(stylua --version)"
-
-          # Update PATH to ensure Cargo bin is first
-          export PATH="$HOME/.cargo/bin:$PATH"
-          echo "Updated PATH: $PATH"

@@ -1,6 +1,6 @@
 # Neovim Configuration
 
-A modern Neovim configuration with a focus on development productivity and debugging capabilities with MacOS-specific installation script.
+A modern Neovim configuration with a focus on development productivity and debugging capabilities, supporting both macOS and Windows platforms.
 
 ## Quick Start
 
@@ -27,44 +27,66 @@ To list the GitHub repositories of the installed plugins, run:
 grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g' | sort | uniq
 ```
 
-### Setttings and CI
+### Settings and CI
 
 - Autofolding for multiple languages (using LSP and treesitter, except indent for python).
 - Various custom settings and mappings (with focus on preservation compatibility with help).
 - Installation script for MacOS ([brew](https://brew.sh/)).
 - GitHub Actions CI with:
-  - Automated environment setup
+  - Automated environment setup with cross-platform support (macOS and Windows)
+  - Virtual environment management for Python dependencies
   - Sanity check tests
   - Lua code analysis
-  - Security scanning
+  - Security scanning (CodeQL, secret scanning)
   - Docker image building
   - Automated cleanup of old workflow runs
   - Manual check still required for all features
+  - Efficient caching strategy for:
+    - Python virtual environments
+    - Homebrew packages (macOS)
+    - Chocolatey packages (Windows)
+    - Node.js packages
+    - Rust packages
+    - LuaRocks packages
+    - Neovim plugins
+  - Compressed artifacts for faster downloads
 
 ## Installation
 
 1. Clone this repository:
 
    ```bash
-   git clone https://github.com/yourusername/conf.nvim.git ~/.config/nvim
+   git clone https://github.com/fesst/conf.nvim.git ~/.config/nvim
    ```
 
 2. Run the installation script:
+
+   For macOS:
 
    ```zsh
    ./infra/install.sh
    ```
 
-   Note, now it is mac-specific, consider to create issue or PR, see [how to contribute](#contributing).
+   For Windows:
+
+   ```powershell
+   # Using winget (default)
+   .\infra\install.ps1
+
+   # Using Chocolatey
+   .\infra\install.ps1 -UseChocolatey
+   ```
+
+   Note: The installation script supports both macOS and Windows environments. On macOS, it uses Homebrew for package management, while on Windows it uses winget by default with Chocolatey as an optional alternative.
 
 The installation script will:
 
-- Install required system dependencies via Homebrew.
-- Set up Python packages.
-- Install Node.js and npm packages.
-- Install Rust and related tools.
-- Install CodeLLDB for Rust/C++ debugging.
-- Configure tmux.
+- Install required system dependencies via Homebrew (macOS) or winget/Chocolatey (Windows)
+- Set up Python packages
+- Install Node.js and npm packages
+- Install Rust and related tools
+- Install CodeLLDB for Rust/C++ debugging
+- Configure tmux
 
 ## Debugging Setup
 
@@ -139,8 +161,8 @@ To clean up the installation:
 
 ### System Requirements
 
-- macOS (tested on 24.5.0)
-- Homebrew
+- macOS (tested on 24.5.0) or Windows
+- Homebrew (macOS) or Chocolatey (Windows)
 - Git
 
 ### Required Packages
@@ -155,8 +177,6 @@ For detailed information about dependencies and tools, see [Shared Tools](wiki/s
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on how to contribute to this project.
+
+Note: When contributing, please ensure your changes work on both macOS and Windows environments. The CI pipeline includes automated tests for both platforms, using Homebrew for macOS and winget/Chocolatey for Windows package management.

@@ -1,13 +1,21 @@
 # Infrastructure Scripts
 
-This document describes the infrastructure scripts used in the Neovim configuration.
+This document describes the infrastructure scripts used in the Neovim configuration. For contribution guidelines, please refer to [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ## Core Scripts
 
 ### Installation and Setup
 
-- `install.sh`: Main installation script that sets up the Neovim environment
+- `install.sh`: Main installation script for macOS that sets up the Neovim environment
   - Installs system dependencies via Homebrew
+  - Sets up Python packages
+  - Installs Node.js and npm packages
+  - Installs Rust and related tools
+  - Configures tmux
+
+- `install.ps1`: Main installation script for Windows that sets up the Neovim environment
+  - Supports both winget (default) and Chocolatey package managers
+  - Installs system dependencies via selected package manager
   - Sets up Python packages
   - Installs Node.js and npm packages
   - Installs Rust and related tools
@@ -16,12 +24,16 @@ This document describes the infrastructure scripts used in the Neovim configurat
 ### Package Management
 
 - `packages/`: Directory containing package installation scripts
-  - `brew.sh`: Homebrew package installation
+  - `brew.sh`: Homebrew package installation (macOS)
   - `npm.sh`: Node.js package installation
   - `cargo.sh`: Rust package installation
   - `pip.sh`: Python package installation
   - `luarocks.sh`: Lua package installation
   - `nvim.sh`: Neovim configuration installation
+
+- `packages.sh`: Main package management script that orchestrates the installation of all packages
+- `should_run_tests.sh`: Determines if tests should run based on changed files
+- `codelldb.sh`: Sets up CodeLLDB for debugging support
 
 ### Docker Support
 
@@ -64,33 +76,28 @@ This document describes the infrastructure scripts used in the Neovim configurat
 
 ## Usage
 
-### Installation
-
 ```bash
+### Installation
 ./infra/install.sh
 ```
 
-### Docker Setup
-
 ```bash
+### Docker Setup
 ./infra/docker.sh [--local]
 ```
 
-### Cleanup
-
 ```bash
+### Cleanup
 ./infra/cleanup.sh
 ```
 
-### Formatting
-
 ```bash
+### Formatting
 ./infra/format_lua.sh
 ```
 
-### Testing
-
 ```bash
+### Testing
 ./infra/nvim_sanity_test.sh
 ```
 
@@ -113,6 +120,12 @@ The infrastructure scripts are integrated with the CI/CD pipeline:
    - Cross-platform compatibility
    - Architecture-specific paths (Intel/Apple Silicon)
 
+4. Security:
+   - CodeQL analysis for security vulnerabilities
+   - Secret scanning for sensitive information
+   - Weekly automated security checks
+   - Compressed security scan artifacts
+
 ## Error Handling
 
 All scripts use the error handling utilities from `lib.sh`:
@@ -122,24 +135,19 @@ All scripts use the error handling utilities from `lib.sh`:
 - Logging to appropriate channels
 - Automatic retry mechanisms for package installation
 
-## Contributing
-
-When adding new infrastructure scripts:
-
-1. Place package-specific scripts in `packages/` directory
-2. Use functions from `lib.sh`
-3. Include proper error handling
-4. Add documentation to this file
-5. Update CI workflow if necessary
-
 ## Cache Management
 
 The CI workflow uses caching for:
 
-1. Homebrew packages:
-   - Supports both Intel and Apple Silicon paths
-   - Architecture-specific cache keys
-   - Automatic cache restoration
+1. Package Manager:
+   - Homebrew packages (macOS)
+     - Supports both Intel and Apple Silicon paths
+     - Architecture-specific cache keys
+     - Automatic cache restoration
+   - Chocolatey packages (Windows)
+     - System-wide package cache
+     - Automatic cache restoration
+     - Version-specific caching
 
 2. Language-specific packages:
    - npm packages
@@ -147,9 +155,20 @@ The CI workflow uses caching for:
    - pip packages
    - LuaRocks packages
 
+3. Artifacts:
+   - Compressed test results
+   - Compressed security scan results
+   - Compressed build artifacts
+
 ## Platform Support
 
 Currently supported platforms:
 
 - macOS (Intel and Apple Silicon)
+  - Uses Homebrew for package management
+  - Native system integration
+- Windows
+  - Uses winget by default for package management
+  - Chocolatey support integrated into install.ps1
+  - PowerShell-based automation
 - Docker container for cross-platform development

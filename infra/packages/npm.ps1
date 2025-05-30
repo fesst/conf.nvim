@@ -1,8 +1,9 @@
-#!/bin/bash
-set -e
+# PowerShell script for installing npm packages
 
-# npm packages
-NPM_PACKAGES=(
+$ErrorActionPreference = 'Stop'
+
+# NPM packages
+$NPM_PACKAGES = @(
     "typescript@latest"     # Required for TypeScript language server
     "typescript-language-server@latest"
     "prettier@latest"      # Required for formatting
@@ -13,7 +14,7 @@ NPM_PACKAGES=(
 )
 
 # Add npm configuration to optimize caching and installation
-NPM_CONFIG=(
+$NPM_CONFIG = @(
     "--no-fund"           # Disable funding messages
     "--no-audit"          # Disable audit (we handle this separately)
     "--no-package-lock"   # Don't create package-lock.json for global installs
@@ -23,5 +24,14 @@ NPM_CONFIG=(
 )
 
 # Export variables
-export NPM_PACKAGES
-export NPM_CONFIG
+$env:NPM_PACKAGES = $NPM_PACKAGES
+$env:NPM_CONFIG = $NPM_CONFIG
+
+# Install packages
+foreach ($package in $NPM_PACKAGES) {
+    Write-Output "Installing $package..."
+    npm install -g $package $NPM_CONFIG
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to install $package"
+    }
+}

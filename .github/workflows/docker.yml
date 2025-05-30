@@ -1,6 +1,7 @@
 name: Build and Publish Docker Images
 
 on:
+  workflow_call:
   push:
     branches: [master]
     paths:
@@ -19,6 +20,10 @@ on:
       - "after/**"
   workflow_dispatch: # Allow manual triggering
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -31,7 +36,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
     timeout-minutes: 45
 
     steps:
@@ -124,7 +128,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
     timeout-minutes: 45
 
     steps:

@@ -1,0 +1,293 @@
+name: Test Steps
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        required: true
+        type: string
+        description: "Platform (macos/windows)"
+      venv_path:
+        required: true
+        type: string
+        description: "Path to virtual environment"
+      use_cache:
+        required: false
+        type: boolean
+        default: false
+        description: "Whether to use caching for packages"
+      install_deps:
+        required: false
+        type: boolean
+        default: false
+        description: "Whether to install minimal dependencies"
+      setup_python:
+        required: false
+        type: boolean
+        default: false
+        description: "Whether to use the setup file for virtual environment"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.job }}-${{ github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  run-tests:
+    runs-on: ${{ inputs.platform }}-latest
+    timeout-minutes: 10
+    steps:
+      - name: Debug environment (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          Write-Output "=== Environment Debug Info ==="
+          Write-Output "Platform: ${{ inputs.platform }}"
+          Write-Output "venv_path: ${{ inputs.venv_path }}"
+          Write-Output "use_cache: ${{ inputs.use_cache }}"
+          Write-Output "install_deps: ${{ inputs.install_deps }}"
+          Write-Output "setup_python: ${{ inputs.setup_python }}"
+          Write-Output "Current directory: $(Get-Location)"
+          Write-Output "Directory contents:"
+          Get-ChildItem
+          Write-Output "==========================="
+
+      - name: Debug environment (macOS)
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          echo "=== Environment Debug Info ==="
+          echo "Platform: ${{ inputs.platform }}"
+          echo "venv_path: ${{ inputs.venv_path }}"
+          echo "use_cache: ${{ inputs.use_cache }}"
+          echo "install_deps: ${{ inputs.install_deps }}"
+          echo "setup_python: ${{ inputs.setup_python }}"
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+          echo "==========================="
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Debug Windows environment
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          Write-Output "=== Windows Environment Debug Info ==="
+          Write-Output "Current directory: $(Get-Location)"
+          Write-Output "Directory contents:"
+          Get-ChildItem
+          Write-Output "Environment variables:"
+          Get-ChildItem env: | Format-Table -AutoSize
+          Write-Output "PATH: $env:Path"
+          Write-Output "Python version: $(python --version)"
+          Write-Output "================================"
+
+      - name: Setup Homebrew (macOS)
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== Setting up Homebrew ==="
+
+          # Check if Homebrew is installed
+          if ! command -v brew &> /dev/null; then
+            echo "Installing Homebrew..."
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+            # Add Homebrew to PATH
+            echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+            eval "$(/opt/homebrew/bin/brew shellenv)"
+          fi
+
+          # Update Homebrew
+          brew update
+
+          # Verify Homebrew installation
+          brew --version
+          echo "Homebrew location: $(which brew)"
+          echo "==========================="
+
+      - name: Install Neovim (macOS)
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== Installing Neovim ==="
+
+          # Ensure Homebrew is in PATH
+          eval "$(/opt/homebrew/bin/brew shellenv)"
+
+          # Install Neovim
+          brew install neovim
+
+          # Verify Neovim installation
+          nvim --version
+          echo "Neovim location: $(which nvim)"
+          echo "==========================="
+
+      - name: Restore Python venv from cache
+        uses: actions/cache@v4
+        id: python-venv-cache
+        with:
+          path: ${{ runner.tool_cache }}/venv
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-venv-
+
+      - name: Log Python venv cache result
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          echo "=== Python venv Cache Result ==="
+          echo "Cache hit: ${{ steps.python-venv-cache.outputs.cache-hit }}"
+          echo "Cache size after restore: $(du -sh ${{ runner.tool_cache }}/venv 2>/dev/null || echo 'Not found')"
+          echo "=============================="
+
+      - name: Log Python venv cache result (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          Write-Output "=== Python venv Cache Result ==="
+          Write-Output "Cache hit: ${{ steps.python-venv-cache.outputs.cache-hit }}"
+          $venvPath = "${{ runner.tool_cache }}/venv"
+          if (Test-Path $venvPath) {
+              $size = (Get-ChildItem -Path $venvPath -Recurse | Measure-Object -Property Length -Sum).Sum
+              Write-Output "Cache size after restore: $($size/1MB) MB"
+          } else {
+              Write-Output "Cache size after restore: Not found"
+          }
+          Write-Output "=============================="
+
+      - name: Install dependencies (Windows)
+        if: inputs.install_deps && inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & "${{ inputs.venv_path }}/Scripts/Activate.ps1"
+          pip install pynvim black flake8 isort pytest pytest-cov --no-cache-dir
+
+      - name: Install dependencies (macOS)
+        if: inputs.install_deps && inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source "${{ inputs.venv_path }}/bin/activate"
+          pip install pynvim black flake8 isort pytest pytest-cov --no-cache-dir
+
+      - name: Cache Chocolatey packages
+        if: inputs.platform == 'windows'
+        uses: actions/cache@v4
+        with:
+          path: C:\ProgramData\chocolatey\lib
+          key: ${{ runner.os }}-choco-${{ hashFiles('infra/packages/choco.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-choco-
+
+      - name: Install Neovim (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Host "=== Neovim Installation Debug ==="
+          Write-Host "Chocolatey cache hit: ${{ steps.choco-cache.outputs.cache-hit }}"
+          Write-Host "Current PATH: $env:Path"
+
+          # Check Chocolatey installation
+          $chocoPath = "C:\ProgramData\chocolatey\bin"
+          Write-Host "Chocolatey bin path: $chocoPath"
+          if (-not (Test-Path $chocoPath)) {
+            Write-Error "Chocolatey bin directory not found at $chocoPath"
+            exit 1
+          }
+
+          # Check if Neovim is installed
+          $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+          if ($nvimPath) {
+            Write-Host "Neovim found at: $($nvimPath.Source)"
+          } else {
+            Write-Host "Neovim not found, installing..."
+            choco install neovim -y --no-progress
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to install Neovim"
+              exit 1
+            }
+
+            # Refresh environment variables
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+            # Ensure Chocolatey's bin directory is in PATH
+            if ($env:Path -notlike "*$chocoPath*") {
+              $env:Path = "$chocoPath;$env:Path"
+            }
+
+            Write-Host "Updated PATH: $env:Path"
+
+            # Verify installation
+            $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+            if (-not $nvimPath) {
+              Write-Error "Neovim still not found after installation"
+              Write-Host "Checking Neovim installation directory..."
+              $nvimInstallPath = "C:\ProgramData\chocolatey\lib\neovim\tools\nvim-win64"
+              if (Test-Path $nvimInstallPath) {
+                Write-Host "Neovim found in installation directory: $nvimInstallPath"
+                Write-Host "Adding to PATH..."
+                $env:Path = "$nvimInstallPath;$env:Path"
+              } else {
+                Write-Error "Neovim installation directory not found at $nvimInstallPath"
+                exit 1
+              }
+            }
+            Write-Host "Neovim installed at: $($nvimPath.Source)"
+          }
+          Write-Host "=============================="
+
+      - name: Run tests (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        env:
+          VIRTUAL_ENV: ${{ inputs.venv_path }}
+          PATH: ${{ inputs.venv_path }}\Scripts;${{ env.PATH }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          # Debug information
+          Write-Output "Current directory: $(Get-Location)"
+          Write-Output "Directory contents:"
+          Get-ChildItem -Recurse infra/
+          Write-Output "Script exists: $(Test-Path 'infra/nvim_sanity_test.ps1')"
+          Write-Output "Script permissions:"
+          Get-Acl 'infra/nvim_sanity_test.ps1' | Format-List
+
+          # Verify virtual environment
+          if (-not (Test-Path "$env:VIRTUAL_ENV\Scripts\Activate.ps1")) {
+              Write-Error "Virtual environment activation script not found at $env:VIRTUAL_ENV\Scripts\Activate.ps1"
+              exit 1
+          }
+
+          # Set execution policy for the script
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+          Write-Output "Current execution policy: $(Get-ExecutionPolicy)"
+
+          # Run Neovim tests
+          if (Test-Path "infra/nvim_sanity_test.ps1") {
+              & "infra/nvim_sanity_test.ps1"
+          } else {
+              Write-Error "Test script not found at infra/nvim_sanity_test.ps1"
+              exit 1
+          }
+
+      - name: Run tests (macOS)
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source "${{ inputs.venv_path }}/bin/activate"
+
+          # Run Neovim tests
+          chmod +x infra/nvim_sanity_test.sh
+          ./infra/nvim_sanity_test.sh

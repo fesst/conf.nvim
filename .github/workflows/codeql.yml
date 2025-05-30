@@ -12,6 +12,7 @@
 name: "CodeQL Analysis"
 
 on:
+  workflow_call:
   push:
     branches: ["master"]
   pull_request:
@@ -47,10 +48,18 @@ jobs:
         with:
           category: "/language:actions"
 
+      - name: Secret scanning
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:secrets"
+
       - name: Upload CodeQL results
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: codeql-results
-          path: codeql-results/
+          path: |
+            ${{ github.workspace }}/results
+            ${{ github.workspace }}/codeql-results
           if-no-files-found: warn
+          compression-level: 9

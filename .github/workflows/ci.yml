@@ -1,9 +1,8 @@
 name: "Master CI"
 
 on:
+  workflow_call:
   push:
-    branches: ["master"]
-  pull_request:
     branches: ["master"]
   schedule:
     - cron: "33 12 * * 1"
@@ -14,9 +13,13 @@ permissions:
   packages: read
   security-events: write
 
+concurrency:
+  group: master-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   setup:
-    uses: ./.github/workflows/setup-environment.yml
+    uses: ./.github/workflows/setup-environment-macos.yml
     with:
       setup_python: true
       setup_rust: true
@@ -25,4 +28,5 @@ jobs:
 
   neovim-tests:
     needs: setup
-    uses: ./.github/workflows/neovim-tests.yml
+    uses: ./.github/workflows/macos-neovim-tests.yml
+    with: {}

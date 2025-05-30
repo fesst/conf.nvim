@@ -2,7 +2,8 @@
 set -euo pipefail
 
 # Source lib.sh for common functions
-source "$(dirname "$0")/lib.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib.sh"
 
 TEST_DIR="infra/test_files"
 LOG_FILE="${NVIM_LOG_FILE:-infra/nvim.log}"

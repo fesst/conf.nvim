@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Colors for output (CI-aware)
+CI="${CI:-false}"
 if [ "$CI" != "true" ]; then
     RED='\033[0;31m'
     GREEN='\033[0;32m'

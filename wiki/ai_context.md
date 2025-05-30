@@ -6,6 +6,35 @@ Lazy is package manager.
 
 ### File structure
 
+#### Root level files
+
+Documentation:
+
+- `README.md`: Main project documentation and quick start guide
+- `CONTRIBUTING.md`: Detailed contribution guidelines and development setup
+- `LICENSE`: Project license (MIT)
+
+Configuration:
+
+- `.github/`: GitHub-specific configurations and workflows
+- `infra/`: Installation and infrastructure scripts
+- `test/`: Test files and applications
+- `wiki/`: Detailed documentation
+- `Dockerfile.arm64`: Container definition for ARM64 architecture
+- `Dockerfile.amd64`: Container definition for AMD64 architecture
+- `.dockerignore`: Docker build exclusions
+- `.gitignore`: Git exclusions
+- `.stylua.toml`: Lua code formatting rules
+- `.luacheckrc`: Lua code linting rules
+- `.luarc.json`: Lua language server configuration
+- `.cursorrc`: Cursor IDE configuration
+- `.cursorignore`: Cursor IDE exclusions
+- `lazy-lock.json`: Lazy.nvim plugin lock file
+- `init.lua`: Neovim initialization file
+- `after/`: Plugin configurations
+- `lua/`: Lua configurations
+- `.venv/`: Python virtual environment (gitignored)
+
 #### Lua files structure
 
 - Plugins setup should be in after/plugin (that is important path!)
@@ -21,7 +50,7 @@ Lazy is package manager.
 
 - We have to document groupped information about all mappings we set up in wiki/mappings.md.
 - Especially document all overridden (but only non-default!) mappings in wiki/mappings.md.
-- Highlight which defaults are overriden and propose solutions immediately as soon as conflicts should be avoided with the exception of more sophisticated functionality with similar usage.
+- Highlight which defaults are overridden and propose solutions immediately as soon as conflicts should be avoided with the exception of more sophisticated functionality with similar usage.
 
 #### Test apps
 
@@ -61,13 +90,27 @@ Lazy is package manager.
   - Python packages (pip)
   - Neovim configuration
   - Language servers and tools
+  - Lua tools (stylua)
+  - Neovim Mason packages
 
 - `cleanup.sh`: Removes all installed components in reverse order:
+  - Neovim Mason packages
+  - Lua tools (stylua)
+  - CodeLLDB
+  - LuaRocks packages
   - Python packages
-  - Rust packages
-  - Node.js packages
-  - System packages
-  - Neovim configuration
+  - Rust and Cargo packages
+  - Node.js and npm packages
+  - Homebrew casks
+  - Homebrew packages
+  - Configuration files cleanup
+
+- `docker.sh`: Docker container management script that:
+  - Supports both ARM64 and AMD64 architectures
+  - Uses Dockerfile.arm64 or Dockerfile.amd64 based on architecture
+  - Creates persistent volumes for data storage
+  - Handles local builds and GitHub Container Registry pulls
+  - Container packages are managed through Dockerfiles and cleaned up automatically on container removal
 
 - `format.sh`: Code quality script that:
   - Installs and runs `stylua` for Lua formatting
@@ -79,6 +122,67 @@ Lazy is package manager.
   - Version checks
   - Error handling
   - Platform detection
+  - Package management utilities
+
+##### Package Management
+
+- Package installation and cleanup are handled symmetrically:
+  - `install.sh` and `cleanup.sh` use the same package collections from `packages.sh`
+  - Both scripts use shared utility functions from `lib.sh`
+  - Package removal follows the reverse order of installation
+  - Each package type has corresponding install/uninstall functions
+
+- Package Management Structure:
+  - `packages/`: Directory containing package installation scripts
+    - `brew.sh`: Homebrew package installation (macOS)
+    - `npm.sh`: Node.js package installation
+    - `cargo.sh`: Rust package installation
+    - `pip.sh`: Python package installation
+    - `luarocks.sh`: Lua package installation
+    - `nvim.sh`: Neovim configuration installation
+  - `packages.sh`: Main package management script that orchestrates all installations
+  - `should_run_tests.sh`: Determines if tests should run based on changed files
+  - `codelldb.sh`: Sets up CodeLLDB for debugging support
+
+- Error Handling:
+  - All scripts use error handling utilities from `lib.sh`
+  - Proper exit code handling
+  - Error message formatting
+  - Logging to appropriate channels
+  - Automatic retry mechanisms for package installation
+
+- Cache Management:
+  - Package Manager:
+    - Homebrew packages (macOS)
+      - Supports both Intel and Apple Silicon paths
+      - Architecture-specific cache keys
+      - Automatic cache restoration
+  - Language-specific packages:
+    - npm packages
+    - Cargo packages
+    - pip packages
+    - LuaRocks packages
+
+- Docker Integration:
+  - Docker containers use the same package management system
+  - Packages are installed during container build via Dockerfiles
+  - Package cleanup is handled automatically on container removal
+  - Persistent data is stored in Docker volumes
+  - Container images are available for both ARM64 and AMD64 architectures
+
+##### Platform Support
+
+Currently supported platforms:
+
+- macOS (Intel and Apple Silicon)
+  - Uses Homebrew for package management
+  - Native system integration
+- Windows
+  - Uses Chocolatey for package management
+  - Combined installation of Neovim and tree-sitter
+  - Automatic PATH updates and environment verification
+  - Parallel package installation for better performance
+- Docker container for cross-platform development
 
 ##### CI
 
@@ -95,7 +199,7 @@ Lazy is package manager.
     - Weekly (Mondays at 12:33 UTC)
   - Uses reusable workflow for environment setup
   - Runs Neovim tests and analysis
-  - Uploads test logs as artifacts
+  - Uploads test logs as artifacts with compression
 
 - Setup Environment (`.github/workflows/setup-environment.yml`):
   - Reusable workflow for environment setup
@@ -106,6 +210,23 @@ Lazy is package manager.
     - Lua
   - Creates and configures virtual environment with consistent paths
   - Sets up environment variables for Python packages
+  - Implements caching strategy for:
+    - Python virtual environments
+    - Homebrew packages (macOS)
+    - Chocolatey packages (Windows)
+    - Node.js packages
+    - Rust packages
+    - LuaRocks packages
+    - Neovim plugins
+  - Platform-specific optimizations:
+    - Windows:
+      - Combined Neovim and tree-sitter installation
+      - Automatic PATH management
+      - Installation verification
+      - Parallel package installation
+    - macOS:
+      - Homebrew package management
+      - Native system integration
 
 - Neovim Tests (`.github/workflows/neovim-tests.yml`):
   - Optimized workflow that combines Lua analysis and Neovim testing
@@ -134,20 +255,103 @@ Lazy is package manager.
     - --ranges: Shows line and column ranges
     - --formatter plain: Uses plain text output
     - --no-doc: Faster LuaRocks installation
+  - Cross-platform support:
+    - Uses PowerShell Core (pwsh) for Windows compatibility
+    - Handles virtual environment activation for both Windows and macOS
+    - Uses platform-specific paths and commands
+
+- Security Scanning (`.github/workflows/codeql.yml`):
+  - CodeQL analysis for security vulnerabilities
+  - Secret scanning for sensitive information
+  - Runs on:
+    - Push to master
+    - Pull requests to master
+    - Weekly (Mondays at 12:33 UTC)
+  - Uploads results as compressed artifacts
+  - Uses security-extended query suite for comprehensive analysis
 
 ###### Environment Setup
 
 - Virtual Environment:
-  - Created in `$GITHUB_WORKSPACE/.venv`
+  - Created in `$GITHUB_WORKSPACE/.venv` or `$RUNNER_TOOL_CACHE/venv`
   - Environment variables set consistently:
-    - VIRTUAL_ENV
-    - PYTHONPATH
-    - PIP_TARGET
-    - PIP_PREFIX
-  - Activated in all Python-dependent jobs
-  - Used for package installation and testing
-  - Cached between workflow runs
-  - Fallback mechanism for environment creation
+    - VIRTUAL_ENV: Set via GITHUB_ENV
+    - PYTHONPATH: Platform-specific paths
+    - PIP_TARGET: Platform-specific paths
+    - PIP_PREFIX: Platform-specific paths
+  - Platform-specific handling:
+    - Windows:
+      - Uses PowerShell Core (pwsh)
+      - Virtual environment in `$RUNNER_TOOL_CACHE\venv`
+      - Activation via `Scripts\activate.ps1`
+    - macOS:
+      - Uses bash
+      - Virtual environment in `$RUNNER_TOOL_CACHE/venv`
+      - Activation via `bin/activate`
+  - Robust error handling:
+    - Verification of virtual environment creation
+    - Verification of activation scripts
+    - Fallback mechanisms for common locations
+    - Detailed error reporting
+  - Caching strategy:
+    - Cached between workflow runs
+    - Platform-specific cache keys
+    - Automatic cache restoration
+  - Output handling:
+    - Uses GITHUB_OUTPUT for workflow outputs:
+      - Virtual environment path for workflow steps
+      - Test execution status
+      - Change detection results
+    - Uses GITHUB_ENV for environment variables:
+      - VIRTUAL_ENV for Python environment
+      - PYTHONPATH for Python module resolution
+      - PIP_TARGET and PIP_PREFIX for package installation
+    - Consistent path handling across platforms:
+      - Windows: Uses PowerShell path format
+      - macOS: Uses Unix path format
+      - Automatic path normalization
+    - Error handling:
+      - Verification of output variables
+      - Fallback mechanisms for missing outputs
+      - Detailed error messages for debugging
+
+###### Workflow Structure
+
+- Main workflows:
+  - `setup-environment.yml`: Core environment setup
+  - `setup-environment-windows.yml`: Windows-specific setup
+  - `setup-environment-macos.yml`: macOS-specific setup
+  - `test-steps.yml`: Common test execution
+  - `pr-windows-tests.yml`: Windows PR testing
+  - `pr-macos-tests.yml`: macOS PR testing
+  - `macos-neovim-tests.yml`: Neovim-specific tests
+  - `codeql.yml`: Security scanning
+
+- Workflow features:
+  - Early change detection
+  - Conditional test execution
+  - Cross-platform support
+  - Efficient caching
+  - Robust error handling
+  - Detailed logging
+  - Automatic cleanup
+  - Compressed artifacts
+  - Security scanning
+
+###### Lua Module Loading
+
+- Module Structure:
+  - Modules are located in `lua/` directory
+  - Each module should be in its own subdirectory (e.g., `lua/motleyfesst/`)
+  - Module files can be either direct Lua files or init.lua files
+  - Package path must be set correctly in tests:
+
+    ```lua
+    package.path = package.path .. ";../lua/?.lua;../lua/?/init.lua"
+    ```
+
+  - Error handling should use pcall for module loading
+  - Tests should provide clear error messages for debugging
 
 ###### Branch Protection
 
