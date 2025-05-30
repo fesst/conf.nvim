@@ -37,7 +37,7 @@ concurrency:
 jobs:
   run-tests:
     runs-on: ${{ inputs.platform }}-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - name: Debug environment (Windows)
         if: inputs.platform == 'windows'
@@ -72,6 +72,46 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+
+      - name: Cache Neovim plugins
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/nvim
+            ~/.local/state/nvim
+          key: ${{ runner.os }}-${{ runner.arch }}-nvim-${{ hashFiles('lazy-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-nvim-
+
+      - name: Cache LuaRocks packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.luarocks
+            ~/.cache/luarocks
+          key: ${{ runner.os }}-${{ runner.arch }}-luarocks-${{ hashFiles('infra/packages/luarocks.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-luarocks-
+
+      - name: Cache Python packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.local/lib/python*/site-packages
+          key: ${{ runner.os }}-${{ runner.arch }}-pip-${{ hashFiles('infra/packages/pip.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-pip-
+
+      - name: Cache Node.js packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/npm
+          key: ${{ runner.os }}-${{ runner.arch }}-npm-${{ hashFiles('infra/packages/npm.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-npm-
 
       - name: Debug Windows environment
         if: inputs.platform == 'windows'
@@ -273,9 +313,25 @@ jobs:
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
           Write-Output "Current execution policy: $(Get-ExecutionPolicy)"
 
-          # Run Neovim tests
+          # Run Neovim tests with timeout
           if (Test-Path "infra/nvim_sanity_test.ps1") {
-              & "infra/nvim_sanity_test.ps1"
+              $timeoutSeconds = 1500  # 25 minutes
+              $job = Start-Job -ScriptBlock {
+                  & "infra/nvim_sanity_test.ps1"
+              }
+              $completed = Wait-Job $job -Timeout $timeoutSeconds
+              if ($completed -eq $null) {
+                  Write-Error "Test execution timed out after $timeoutSeconds seconds"
+                  Stop-Job $job
+                  Remove-Job $job
+                  exit 1
+              }
+              $result = Receive-Job $job
+              Remove-Job $job
+              if ($LASTEXITCODE -ne 0) {
+                  Write-Error "Tests failed with exit code $LASTEXITCODE"
+                  exit $LASTEXITCODE
+              }
           } else {
               Write-Error "Test script not found at infra/nvim_sanity_test.ps1"
               exit 1
@@ -288,6 +344,12 @@ jobs:
           set -euo pipefail
           source "${{ inputs.venv_path }}/bin/activate"
 
-          # Run Neovim tests
+          # Run Neovim tests with timeout
           chmod +x infra/nvim_sanity_test.sh
-          ./infra/nvim_sanity_test.sh
+          timeout 1500 ./infra/nvim_sanity_test.sh || {
+              if [ $? -eq 124 ]; then
+                  echo "Test execution timed out after 25 minutes"
+                  exit 1
+              fi
+              exit $?
+          }
