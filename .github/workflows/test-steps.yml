@@ -68,6 +68,24 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+          cache: "pip"
+
+      - name: Cache Homebrew
+        if: inputs.platform == 'macos'
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /usr/local/Homebrew
+          key: ${{ runner.os }}-homebrew-${{ hashFiles('**/Brewfile') }}
+          restore-keys: |
+            ${{ runner.os }}-homebrew-
+
+      - name: Install Neovim (macOS)
+        if: inputs.platform == 'macos'
+        run: |
+          brew update
+          brew install neovim
 
       - name: Set up virtual environment
         if: inputs.setup_python
@@ -85,10 +103,10 @@ jobs:
           ls -la
           echo "=============================="
 
-          # Verify virtual environment exists
+          # Create virtual environment if it doesn't exist
           if [ ! -d "$VENV_PATH" ]; then
-            echo "Error: Virtual environment directory not found"
-            exit 1
+            echo "Creating new virtual environment..."
+            python -m venv "$VENV_PATH"
           fi
 
           # Activate virtual environment based on platform
