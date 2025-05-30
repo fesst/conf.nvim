@@ -45,11 +45,32 @@ jobs:
         with:
           node-version: "20.19.0"
 
+      - name: Cache npm packages
+        if: inputs.setup_node
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('infra/packages/npm.sh') }}
+          restore-keys: |
+            npm-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Set up Python
         if: inputs.setup_python
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+          check-latest: true
+          cache: "pip"
+          cache-dependency-path: ""
+
+      - name: Cache virtual environment
+        if: inputs.setup_python
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.tool_cache }}/venv
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-venv-
 
       - name: Set up Python virtual environment (Windows)
         if: inputs.setup_python && inputs.platform == 'windows'
