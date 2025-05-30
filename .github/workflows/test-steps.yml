@@ -186,6 +186,51 @@ jobs:
           python -m pip install --upgrade pip
           pip install pynvim black flake8 isort pytest pytest-cov --no-cache-dir
 
+      - name: Cache Chocolatey packages
+        if: inputs.platform == 'windows'
+        uses: actions/cache@v4
+        id: choco-cache
+        with:
+          path: C:\ProgramData\chocolatey\lib
+          key: ${{ runner.os }}-choco-${{ hashFiles('infra/packages/choco.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-choco-
+
+      - name: Install Neovim (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Host "=== Neovim Installation Debug ==="
+          Write-Host "Chocolatey cache hit: ${{ steps.choco-cache.outputs.cache-hit }}"
+          Write-Host "Current PATH: $env:Path"
+
+          # Check if Neovim is installed
+          $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+          if ($nvimPath) {
+            Write-Host "Neovim found at: $($nvimPath.Source)"
+          } else {
+            Write-Host "Neovim not found, installing..."
+            choco install neovim -y --no-progress
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to install Neovim"
+              exit 1
+            }
+
+            # Refresh environment variables
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+            Write-Host "Updated PATH: $env:Path"
+
+            # Verify installation
+            $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+            if (-not $nvimPath) {
+              Write-Error "Neovim still not found after installation"
+              exit 1
+            }
+            Write-Host "Neovim installed at: $($nvimPath.Source)"
+          }
+          Write-Host "=============================="
+
       - name: Run tests (Windows)
         if: inputs.platform == 'windows'
         shell: pwsh
