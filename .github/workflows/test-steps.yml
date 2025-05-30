@@ -179,6 +179,25 @@ jobs:
           source "${{ inputs.venv_path }}/bin/activate"
           pip install pynvim black flake8 isort pytest pytest-cov --no-cache-dir
 
+      - name: Cache Chocolatey packages
+        if: inputs.platform == 'windows'
+        uses: actions/cache@v4
+        with:
+          path: C:\ProgramData\chocolatey\lib
+          key: ${{ runner.os }}-choco-${{ hashFiles('infra/packages/choco.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-choco-
+
+      - name: Install Neovim (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Get-Command nvim -ErrorAction SilentlyContinue)) {
+            choco install neovim -y
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          }
+
       - name: Run tests (Windows)
         if: inputs.platform == 'windows'
         shell: pwsh
