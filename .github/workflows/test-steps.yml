@@ -173,5 +173,5 @@ jobs:
         shell: bash
         run: |
           set -e
-          chmod +x infra/run-tests.sh
-          ./infra/run-tests.sh
+          chmod +x infra/nvim_sanity_test.sh
+          ./infra/nvim_sanity_test.sh
