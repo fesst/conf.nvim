@@ -135,6 +135,21 @@ jobs:
           fi
           pip install pynvim black flake8 isort pytest --no-cache-dir
 
+      - name: Run tests (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        env:
+          VENV_DIR: ${{ inputs.venv_path }}
+          VIRTUAL_ENV: ${{ inputs.venv_path }}
+          PYTHONPATH: ${{ inputs.venv_path }}\Lib\site-packages:${{ env.PYTHONPATH }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Test-Path "infra/nvim_sanity_test.ps1")) {
+              Write-Error "Test script not found at infra/nvim_sanity_test.ps1"
+              exit 1
+          }
+          & "infra/nvim_sanity_test.ps1"
+
       - name: Run Neovim sanity tests
         shell: bash
         env:
