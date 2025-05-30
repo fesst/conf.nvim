@@ -193,10 +193,58 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          if (-not (Get-Command nvim -ErrorAction SilentlyContinue)) {
-            choco install neovim -y
-            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          Write-Host "=== Neovim Installation Debug ==="
+          Write-Host "Chocolatey cache hit: ${{ steps.choco-cache.outputs.cache-hit }}"
+          Write-Host "Current PATH: $env:Path"
+
+          # Check Chocolatey installation
+          $chocoPath = "C:\ProgramData\chocolatey\bin"
+          Write-Host "Chocolatey bin path: $chocoPath"
+          if (-not (Test-Path $chocoPath)) {
+            Write-Error "Chocolatey bin directory not found at $chocoPath"
+            exit 1
           }
+
+          # Check if Neovim is installed
+          $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+          if ($nvimPath) {
+            Write-Host "Neovim found at: $($nvimPath.Source)"
+          } else {
+            Write-Host "Neovim not found, installing..."
+            choco install neovim -y --no-progress
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to install Neovim"
+              exit 1
+            }
+
+            # Refresh environment variables
+            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+            # Ensure Chocolatey's bin directory is in PATH
+            if ($env:Path -notlike "*$chocoPath*") {
+              $env:Path = "$chocoPath;$env:Path"
+            }
+
+            Write-Host "Updated PATH: $env:Path"
+
+            # Verify installation
+            $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
+            if (-not $nvimPath) {
+              Write-Error "Neovim still not found after installation"
+              Write-Host "Checking Neovim installation directory..."
+              $nvimInstallPath = "C:\ProgramData\chocolatey\lib\neovim\tools\nvim-win64"
+              if (Test-Path $nvimInstallPath) {
+                Write-Host "Neovim found in installation directory: $nvimInstallPath"
+                Write-Host "Adding to PATH..."
+                $env:Path = "$nvimInstallPath;$env:Path"
+              } else {
+                Write-Error "Neovim installation directory not found at $nvimInstallPath"
+                exit 1
+              }
+            }
+            Write-Host "Neovim installed at: $($nvimPath.Source)"
+          }
+          Write-Host "=============================="
 
       - name: Run tests (Windows)
         if: inputs.platform == 'windows'
