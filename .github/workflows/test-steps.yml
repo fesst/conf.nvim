@@ -228,10 +228,41 @@ jobs:
 
             Write-Host "Updated PATH: $env:Path"
 
+            # Check Neovim installation directory
+            $nvimInstallPath = "C:\ProgramData\chocolatey\lib\neovim\tools\nvim-win64"
+            if (Test-Path $nvimInstallPath) {
+              Write-Host "Found Neovim installation at: $nvimInstallPath"
+              if ($env:Path -notlike "*$nvimInstallPath*") {
+                $env:Path = "$nvimInstallPath;$env:Path"
+                Write-Host "Added Neovim installation directory to PATH"
+              }
+            } else {
+              Write-Host "Checking alternative Neovim installation paths..."
+              $possiblePaths = @(
+                "C:\ProgramData\chocolatey\lib\neovim\tools",
+                "C:\ProgramData\chocolatey\lib\neovim",
+                "C:\tools\neovim"
+              )
+              foreach ($path in $possiblePaths) {
+                if (Test-Path $path) {
+                  Write-Host "Found Neovim at: $path"
+                  if ($env:Path -notlike "*$path*") {
+                    $env:Path = "$path;$env:Path"
+                    Write-Host "Added to PATH: $path"
+                  }
+                }
+              }
+            }
+
             # Verify installation
             $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
             if (-not $nvimPath) {
               Write-Error "Neovim still not found after installation"
+              Write-Host "Current PATH: $env:Path"
+              Write-Host "Checking for nvim.exe in common locations..."
+              Get-ChildItem -Path "C:\ProgramData\chocolatey\lib\neovim" -Recurse -Filter "nvim.exe" | ForEach-Object {
+                Write-Host "Found nvim.exe at: $($_.FullName)"
+              }
               exit 1
             }
             Write-Host "Neovim installed at: $($nvimPath.Source)"
