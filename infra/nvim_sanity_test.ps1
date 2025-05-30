@@ -22,23 +22,25 @@ function Write-Error {
 function Ensure-Venv {
     if ($env:VIRTUAL_ENV) {
         Write-Status "Using existing virtual environment: $env:VIRTUAL_ENV"
-        & "$env:VIRTUAL_ENV\Scripts\Activate.ps1"
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "Failed to activate virtual environment"
+
+        # Add virtual environment to PATH if not already there
+        $venvScriptsPath = Join-Path $env:VIRTUAL_ENV "Scripts"
+        if ($env:PATH -notlike "*$venvScriptsPath*") {
+            $env:PATH = "$venvScriptsPath;$env:PATH"
+        }
+
+        # Verify Python is available
+        if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
+            Write-Error "Python not found in PATH after virtual environment activation"
             exit 1
         }
-    }
-    elseif (-not (Test-Path $VENV_DIR)) {
-        Write-Error "Virtual environment not found at $VENV_DIR"
-        exit 1
+
+        Write-Status "Python version: $(python --version)"
+        Write-Status "Python path: $(Get-Command python | Select-Object -ExpandProperty Source)"
     }
     else {
-        Write-Status "Activating virtual environment..."
-        & "$VENV_DIR\Scripts\Activate.ps1"
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "Failed to activate virtual environment"
-            exit 1
-        }
+        Write-Error "VIRTUAL_ENV environment variable not set"
+        exit 1
     }
 }
 

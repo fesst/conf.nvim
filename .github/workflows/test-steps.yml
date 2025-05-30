@@ -182,9 +182,17 @@ jobs:
       - name: Run tests (Windows)
         if: inputs.platform == 'windows'
         shell: pwsh
+        env:
+          VIRTUAL_ENV: ${{ inputs.venv_path }}
+          PATH: ${{ inputs.venv_path }}\Scripts;${{ env.PATH }}
         run: |
           $ErrorActionPreference = 'Stop'
-          & "${{ inputs.venv_path }}/Scripts/Activate.ps1"
+
+          # Verify virtual environment
+          if (-not (Test-Path "$env:VIRTUAL_ENV\Scripts\Activate.ps1")) {
+              Write-Error "Virtual environment activation script not found at $env:VIRTUAL_ENV\Scripts\Activate.ps1"
+              exit 1
+          }
 
           # Run Neovim tests
           if (Test-Path "infra/nvim_sanity_test.ps1") {
