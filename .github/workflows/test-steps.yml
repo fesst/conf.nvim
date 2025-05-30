@@ -188,11 +188,23 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
 
+          # Debug information
+          Write-Output "Current directory: $(Get-Location)"
+          Write-Output "Directory contents:"
+          Get-ChildItem -Recurse infra/
+          Write-Output "Script exists: $(Test-Path 'infra/nvim_sanity_test.ps1')"
+          Write-Output "Script permissions:"
+          Get-Acl 'infra/nvim_sanity_test.ps1' | Format-List
+
           # Verify virtual environment
           if (-not (Test-Path "$env:VIRTUAL_ENV\Scripts\Activate.ps1")) {
               Write-Error "Virtual environment activation script not found at $env:VIRTUAL_ENV\Scripts\Activate.ps1"
               exit 1
           }
+
+          # Set execution policy for the script
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+          Write-Output "Current execution policy: $(Get-ExecutionPolicy)"
 
           # Run Neovim tests
           if (Test-Path "infra/nvim_sanity_test.ps1") {
