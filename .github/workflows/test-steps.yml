@@ -80,39 +80,68 @@ jobs:
         shell: bash
         run: |
           echo "=== Python venv Cache Info ==="
-          echo "Cache path: ${{ runner.tool_cache }}/venv"
+          echo "Cache path: ${{ inputs.venv_path }}"
           echo "Cache key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}"
-          echo "Cache size: $(du -sh ${{ runner.tool_cache }}/venv 2>/dev/null || echo 'Not found')"
+          echo "Cache size: $(du -sh ${{ inputs.venv_path }} 2>/dev/null || echo 'Not found')"
           echo "Cache hit: ${{ needs.cache.outputs.python_cache_hit }}"
           echo "==========================="
 
       - name: Activate virtual environment
         shell: bash
         run: |
+          # Verify virtual environment exists
           if [ ! -d "${{ inputs.venv_path }}" ]; then
             echo "Error: Virtual environment directory not found at ${{ inputs.venv_path }}"
-            exit 1
+            echo "Creating virtual environment..."
+            python3 -m venv "${{ inputs.venv_path }}"
+            if [ $? -ne 0 ]; then
+              echo "Error: Failed to create virtual environment"
+              exit 1
+            fi
           fi
 
+          # Activate virtual environment based on platform
           if [ "${{ inputs.platform }}" == "windows" ]; then
+            if [ ! -f "${{ inputs.venv_path }}/Scripts/activate" ]; then
+              echo "Error: Windows activation script not found"
+              exit 1
+            fi
             source "${{ inputs.venv_path }}/Scripts/activate"
           else
+            if [ ! -f "${{ inputs.venv_path }}/bin/activate" ]; then
+              echo "Error: Unix activation script not found"
+              exit 1
+            fi
             source "${{ inputs.venv_path }}/bin/activate"
           fi
 
           # Verify activation
-          python --version
-          which python
+          if ! command -v python &> /dev/null; then
+            echo "Error: Python not found in PATH after activation"
+            exit 1
+          fi
+
+          echo "Python version: $(python --version)"
+          echo "Python path: $(which python)"
+          echo "Virtual environment: $VIRTUAL_ENV"
 
       - name: Install dependencies
         if: inputs.install_deps
         shell: bash
         run: |
-          source "${{ inputs.venv_path }}/bin/activate"
+          if [ "${{ inputs.platform }}" == "windows" ]; then
+            source "${{ inputs.venv_path }}/Scripts/activate"
+          else
+            source "${{ inputs.venv_path }}/bin/activate"
+          fi
           pip install -r requirements.txt
 
       - name: Run tests
         shell: bash
         run: |
-          source "${{ inputs.venv_path }}/bin/activate"
+          if [ "${{ inputs.platform }}" == "windows" ]; then
+            source "${{ inputs.venv_path }}/Scripts/activate"
+          else
+            source "${{ inputs.venv_path }}/bin/activate"
+          fi
           python -m pytest tests/

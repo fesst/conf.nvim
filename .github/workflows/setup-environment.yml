@@ -55,7 +55,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: npm-${{ runner.os }}-${{ runner.arch }}
+          key: npm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package*.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Set up Python
         if: inputs.setup_python
@@ -79,9 +81,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.tool_cache }}/venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
           restore-keys: |
-            ${{ runner.os }}-venv-
+            ${{ runner.os }}-${{ runner.arch }}-venv-
 
       - name: Set up Python virtual environment
         if: inputs.setup_python
@@ -91,55 +93,22 @@ jobs:
           set -euo pipefail
           VENV_PATH="$RUNNER_TOOL_CACHE/venv"
 
-          # Remove existing virtual environment if it exists
-          if [ -d "$VENV_PATH" ]; then
-            echo "Removing existing virtual environment..."
-            rm -rf "$VENV_PATH"
-            # Wait for filesystem to sync
-            sleep 2
-            if [ -d "$VENV_PATH" ]; then
-              echo "Error: Failed to remove existing virtual environment"
-              exit 1
-            fi
-          fi
-
-          # Create virtual environment
-          echo "Creating virtual environment at: $VENV_PATH"
-          python3 -m venv "$VENV_PATH"
-          if [ $? -ne 0 ]; then
-            echo "Error: Failed to create virtual environment"
-            echo "Python version: $(python3 --version)"
-            echo "Python path: $(which python3)"
-            exit 1
-          fi
-
-          # Verify virtual environment was created
+          # Create virtual environment if it doesn't exist
           if [ ! -d "$VENV_PATH" ]; then
-            echo "Error: Virtual environment directory not found after creation"
-            exit 1
-          fi
-
-          # Create activation script if it doesn't exist
-          if [ ! -f "$VENV_PATH/bin/activate" ]; then
-            echo "Creating activation script..."
-            # Ensure bin directory exists
-            if [ ! -d "$VENV_PATH/bin" ]; then
-              echo "Creating bin directory..."
-              mkdir -p "$VENV_PATH/bin"
-              if [ ! -d "$VENV_PATH/bin" ]; then
-                echo "Error: Failed to create bin directory"
-                exit 1
-              fi
-            fi
-            # Create activation script with proper permissions
-            echo 'export VIRTUAL_ENV="'"$VENV_PATH"'"' > "$VENV_PATH/bin/activate"
-            echo 'export PATH="$VIRTUAL_ENV/bin:$PATH"' >> "$VENV_PATH/bin/activate"
-            chmod +x "$VENV_PATH/bin/activate"
-            # Verify activation script was created
-            if [ ! -f "$VENV_PATH/bin/activate" ]; then
-              echo "Error: Failed to create activation script"
+            echo "Creating virtual environment at: $VENV_PATH"
+            python3 -m venv "$VENV_PATH"
+            if [ $? -ne 0 ]; then
+              echo "Error: Failed to create virtual environment"
+              echo "Python version: $(python3 --version)"
+              echo "Python path: $(which python3)"
               exit 1
             fi
+          fi
+
+          # Verify virtual environment exists
+          if [ ! -d "$VENV_PATH" ]; then
+            echo "Error: Virtual environment directory not found"
+            exit 1
           fi
 
           # Set output variable
