@@ -41,8 +41,9 @@ jobs:
         id: python-cache
         with:
           path: ${{ runner.tool_cache }}/venv
-          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}-${{ github.ref }}
           restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}-
             ${{ runner.os }}-${{ runner.arch }}-venv-
 
       - name: Cache Node.js packages
@@ -51,6 +52,7 @@ jobs:
         id: node-cache
         with:
           path: ~/.npm
-          key: npm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('infra/packages/npm.sh') }}
+          key: npm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('infra/packages/npm.sh') }}-${{ github.ref }}
           restore-keys: |
+            npm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('infra/packages/npm.sh') }}-
             npm-${{ runner.os }}-${{ runner.arch }}-
