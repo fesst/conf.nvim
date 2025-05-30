@@ -203,3 +203,24 @@ jobs:
         env:
           VENV_DIR: ${{ inputs.venv_path }}
         run: infra/nvim_sanity_test.sh
+
+      - name: Install Python packages (Windows)
+        if: inputs.setup_python && inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          & "infra/packages/pip.ps1"
+
+      - name: Install Python packages (Unix)
+        if: inputs.setup_python && inputs.platform != 'windows'
+        shell: bash
+        run: |
+          bash infra/packages/pip.sh
+
+      - name: Cache Homebrew
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          echo "=== Caching Homebrew ==="
+          brew bundle dump
+          echo "Homebrew cache saved to: $(brew bundle dump)"
+          echo "==========================="
