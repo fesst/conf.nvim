@@ -60,8 +60,6 @@ jobs:
         with:
           python-version: "3.13"
           check-latest: true
-          cache: "pip"
-          cache-dependency-path: ""
 
       - name: Cache virtual environment
         if: inputs.setup_python
