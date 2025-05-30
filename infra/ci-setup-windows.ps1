@@ -39,14 +39,34 @@ foreach ($package in $packages) {
 }
 refreshenv
 
-# Add Neovim to PATH
-$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-$env:Path = "${env:Path};C:\tools\neovim\nvim-win64\bin"
+# Add Neovim to PATH - try multiple possible locations
+$nvimPaths = @(
+    "C:\Program Files\Neovim\bin",
+    "C:\tools\neovim\nvim-win64\bin"
+)
+
+$nvimFound = $false
+foreach ($path in $nvimPaths) {
+    if (Test-Path $path) {
+        if ($env:Path -notlike "*$path*") {
+            $env:Path = "$path;$env:Path"
+        }
+        $nvimFound = $true
+        Write-Host "Added Neovim to PATH: $path"
+        break
+    }
+}
+
+if (-not $nvimFound) {
+    throw "Neovim installation not found in expected locations"
+}
 
 # Verify Neovim installation
 if (-not (Get-Command nvim -ErrorAction SilentlyContinue)) {
     throw "Neovim not found in PATH after installation. Current PATH: ${env:Path}"
 }
+
+Write-Host "Neovim version: $(nvim --version)"
 
 # Install Python if not already installed
 if (-not (Test-ChocolateyPackage "python312")) {
