@@ -6,7 +6,12 @@ source "$(dirname "$0")/lib.sh"
 
 TEST_DIR="infra/test_files"
 LOG_FILE="${NVIM_LOG_FILE:-infra/nvim.log}"
-VENV_DIR=".venv"
+VENV_DIR="${VENV_DIR:-.venv}"
+
+# Allow override from first argument
+if [ $# -ge 1 ]; then
+  VENV_DIR="$1"
+fi
 
 # Function to print status messages
 print_status() {

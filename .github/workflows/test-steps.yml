@@ -134,11 +134,8 @@ jobs:
           fi
           pip install pynvim black flake8 isort pytest --no-cache-dir
 
-      - name: Run tests
+      - name: Run Neovim sanity tests
         shell: bash
-        run: |
-          set -e
-          echo "=== Running Neovim Tests ==="
-          chmod +x infra/nvim_sanity_test.sh
-          ./infra/nvim_sanity_test.sh
-          echo "=== Tests Completed ==="
+        env:
+          VENV_DIR: ${{ inputs.venv_path }}
+        run: infra/nvim_sanity_test.sh
