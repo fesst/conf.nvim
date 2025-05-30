@@ -113,28 +113,51 @@ jobs:
               exit 1
           }
 
-          # Check if activation script exists
-          $activateScript = Join-Path $VENV_PATH "Scripts\Activate.ps1"
-          if (-not (Test-Path $activateScript)) {
-              Write-Error "Error: Activation script not found at: $activateScript"
+          # Try different activation script paths
+          $activateScripts = @(
+              (Join-Path $VENV_PATH "Scripts\Activate.ps1"),
+              (Join-Path $VENV_PATH "Scripts\activate.ps1"),
+              (Join-Path $VENV_PATH "Scripts\Activate"),
+              (Join-Path $VENV_PATH "Scripts\activate")
+          )
+
+          $activateScript = $null
+          foreach ($script in $activateScripts) {
+              if (Test-Path $script) {
+                  $activateScript = $script
+                  break
+              }
+          }
+
+          if (-not $activateScript) {
+              Write-Error "Error: No activation script found in Scripts directory"
               Write-Output "Directory contents of Scripts folder:"
               Get-ChildItem (Join-Path $VENV_PATH "Scripts") -ErrorAction SilentlyContinue
               exit 1
           }
 
+          Write-Output "Using activation script: $activateScript"
+
           # Activate virtual environment
-          & $activateScript
-          if ($LASTEXITCODE -ne 0) {
-              Write-Error "Error: Failed to activate virtual environment"
-              Write-Output "Python version: $(python --version)"
-              Write-Output "Python path: $(Get-Command python | Select-Object -ExpandProperty Source)"
+          try {
+              & $activateScript
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Activation script returned non-zero exit code"
+              }
+          }
+          catch {
+              Write-Error "Error: Failed to activate virtual environment: $_"
+              Write-Output "Python version: $(python --version 2>&1)"
+              Write-Output "Python path: $(Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
+              Write-Output "Environment variables:"
+              Get-ChildItem env: | Format-Table -AutoSize
               exit 1
           }
 
           # Verify activation
-          Write-Output "Python executable: $(Get-Command python | Select-Object -ExpandProperty Source)"
-          Write-Output "Python version: $(python --version)"
-          Write-Output "pip version: $(pip --version)"
+          Write-Output "Python executable: $(Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)"
+          Write-Output "Python version: $(python --version 2>&1)"
+          Write-Output "pip version: $(pip --version 2>&1)"
           Write-Output "================================"
 
       - name: Activate virtual environment (Unix)
