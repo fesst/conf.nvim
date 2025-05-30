@@ -169,6 +169,23 @@ jobs:
             ./infra/packages/pip.sh
           }
 
+      - name: Verify Neovim installation
+        shell: bash
+        run: |
+          set -e
+          echo "=== Verifying Neovim Installation ==="
+          if ! command -v nvim &> /dev/null; then
+            echo "Neovim not found. Installing..."
+            if [ "${{ inputs.platform }}" == "macos" ]; then
+              brew install neovim tree-sitter
+            else
+              choco install neovim -y
+            fi
+          fi
+          echo "Neovim version:"
+          nvim --version
+          echo "================================"
+
       - name: Run tests
         shell: bash
         run: |
