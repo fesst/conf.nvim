@@ -77,6 +77,13 @@ jobs:
           VENV_PATH="${{ inputs.venv_path }}"
           PYTHONPATH="${PYTHONPATH:-}"
 
+          echo "=== Virtual Environment Setup ==="
+          echo "VENV_PATH: $VENV_PATH"
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+          echo "=============================="
+
           # Create virtual environment if it doesn't exist
           if [ ! -d "$VENV_PATH" ]; then
             echo "Creating virtual environment at: $VENV_PATH"

@@ -111,9 +111,9 @@ jobs:
           ls -la
           echo "=============================="
 
-          # Only create virtual environment if cache miss
-          if [ "${{ steps.venv-cache.outputs.cache-hit }}" != "true" ]; then
-            echo "Cache miss - creating new virtual environment"
+          # Create virtual environment if it doesn't exist or on cache miss
+          if [ "${{ steps.venv-cache.outputs.cache-hit }}" != "true" ] || [ ! -d "$VENV_PATH" ]; then
+            echo "Creating new virtual environment"
 
             # Remove existing virtual environment if it exists
             if [ -d "$VENV_PATH" ]; then
@@ -164,6 +164,13 @@ jobs:
             python -m pip install --upgrade pip
             if [ $? -ne 0 ]; then
               echo "Error: Failed to upgrade pip"
+              exit 1
+            fi
+
+            # Install required packages
+            pip install pynvim black flake8 isort pytest
+            if [ $? -ne 0 ]; then
+              echo "Error: Failed to install required packages"
               exit 1
             fi
           else

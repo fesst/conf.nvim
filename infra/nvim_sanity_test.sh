@@ -24,8 +24,20 @@ print_error() {
 
 # Function to ensure virtual environment is activated
 ensure_venv() {
+    echo "=== Virtual Environment Debug ==="
+    echo "VIRTUAL_ENV: ${VIRTUAL_ENV:-}"
+    echo "VENV_DIR: $VENV_DIR"
+    echo "Current directory: $(pwd)"
+    echo "Directory contents:"
+    ls -la
+    echo "=============================="
+
     if [ -n "${VIRTUAL_ENV:-}" ]; then
         print_status "Using existing virtual environment: $VIRTUAL_ENV"
+        if [ ! -f "$VIRTUAL_ENV/bin/activate" ]; then
+            print_error "Activation script not found at $VIRTUAL_ENV/bin/activate"
+            exit 1
+        fi
         source "$VIRTUAL_ENV/bin/activate" || {
             print_error "Failed to activate virtual environment"
             exit 1
@@ -35,11 +47,25 @@ ensure_venv() {
         exit 1
     else
         print_status "Activating virtual environment..."
+        if [ ! -f "$VENV_DIR/bin/activate" ]; then
+            print_error "Activation script not found at $VENV_DIR/bin/activate"
+            exit 1
+        fi
         source "$VENV_DIR/bin/activate" || {
             print_error "Failed to activate virtual environment"
             exit 1
         }
     fi
+
+    # Verify activation
+    if ! command -v python &> /dev/null; then
+        print_error "Python not found in PATH after activation"
+        exit 1
+    fi
+
+    echo "Python version: $(python --version)"
+    echo "Python path: $(which python)"
+    echo "Virtual environment: $VIRTUAL_ENV"
 }
 
 # Function to run nvim command with logging
