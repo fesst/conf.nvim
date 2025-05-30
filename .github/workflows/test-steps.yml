@@ -107,18 +107,6 @@ jobs:
           $venvPath = [System.IO.Path]::GetFullPath($venvPath)
           Write-Output "Normalized path: $venvPath"
 
-          # Create parent directory if it doesn't exist
-          $parentDir = Split-Path -Parent $venvPath
-          if (-not (Test-Path $parentDir)) {
-              Write-Output "Creating parent directory: $parentDir"
-              New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
-          }
-
-          # Set execution policy to Bypass for this process
-          Write-Output "Current execution policy: $(Get-ExecutionPolicy)"
-          Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
-          Write-Output "Set execution policy to Bypass for this process"
-
           # Verify virtual environment exists
           if (-not (Test-Path $venvPath)) {
               Write-Error "Virtual environment not found at: $venvPath"
@@ -134,13 +122,12 @@ jobs:
               exit 1
           }
 
+          # Set execution policy for the process
+          Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+
           # Activate virtual environment
           Write-Output "Current PATH before activation: $env:Path"
           Write-Output "Current Python before activation: $(Get-Command python).Source"
-
-          Write-Output "=== Virtual Environment Structure ==="
-          Get-ChildItem -Path $venvPath -Recurse -Depth 1 | Format-Table -AutoSize
-          Write-Output "==================================="
 
           try {
               & $activateScript
