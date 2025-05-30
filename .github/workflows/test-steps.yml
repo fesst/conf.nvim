@@ -88,47 +88,17 @@ jobs:
           echo "Cache size after restore: $(du -sh ${{ runner.tool_cache }}/venv 2>/dev/null || echo 'Not found')"
           echo "=============================="
 
-      - name: Install minimal dependencies (Windows)
-        if: inputs.install_deps && inputs.platform == 'windows'
-        shell: pwsh
-        run: |
-          try {
-            $ErrorActionPreference = 'Stop'
-            $env:PYTHONIOENCODING = 'utf-8'
-
-            # Ensure Neovim is in PATH and verify it
-            $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-            $env:Path = "$env:Path;C:\tools\neovim\nvim-win64\bin"
-
-            # Verify Neovim is available
-            $nvimPath = Get-Command nvim -ErrorAction SilentlyContinue
-            if (-not $nvimPath) {
-              throw "Neovim not found in PATH before running tests. Current PATH: $env:Path"
-            }
-            Write-Output "Using Neovim from: $($nvimPath.Source)"
-
-            # Set up Lua environment
-            $env:LUA_PATH = "?.lua;?/init.lua;../lua/?.lua;../lua/?/init.lua"
-            $env:LUA_CPATH = "?.dll;?/init.dll;../lua/?.dll;../lua/?/init.dll"
-
-            # Run the test
-            nvim --headless -c "lua require('test.lua.test_print_table')" -c "quit"
-            if ($LASTEXITCODE -ne 0) {
-              throw "Test failed with exit code $LASTEXITCODE"
-            }
-          } catch {
-            Write-Error $_.Exception.Message
-            Write-Error $_.ScriptStackTrace
-            exit 1
-          }
-
-      - name: Install minimal dependencies (macOS)
-        if: inputs.install_deps && inputs.platform == 'macos'
+      - name: Install dependencies
+        if: inputs.install_deps
         shell: bash
         run: |
-          set -e
-          # Install packages from pip.sh
-          pip install pynvim black flake8 isort --no-cache-dir
+          set -euo pipefail
+          if [ "${{ inputs.platform }}" == "windows" ]; then
+            source "${{ inputs.venv_path }}/Scripts/activate"
+          else
+            source "${{ inputs.venv_path }}/bin/activate"
+          fi
+          pip install pynvim black flake8 isort pytest pytest-cov --no-cache-dir
 
       - name: Run tests
         shell: bash
