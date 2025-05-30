@@ -89,6 +89,7 @@ jobs:
           echo "=============================="
 
       - name: Install dependencies
+        if: inputs.install_deps
         shell: bash
         run: |
           set -euo pipefail

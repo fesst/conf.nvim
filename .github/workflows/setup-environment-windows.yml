@@ -99,8 +99,8 @@ jobs:
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
           Write-Output "Current execution policy: $(Get-ExecutionPolicy)"
 
-          # Use workspace-local path for better reliability
-          $venvPath = Join-Path $env:GITHUB_WORKSPACE ".venv"
+          # Use tool cache path for better reliability
+          $venvPath = Join-Path $env:RUNNER_TOOL_CACHE "venv"
           Write-Output "Setting up virtual environment at: $venvPath"
 
           # Clean up any existing virtual environment
