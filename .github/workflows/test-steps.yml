@@ -87,6 +87,49 @@ jobs:
           Write-Output "Python version: $(python --version)"
           Write-Output "================================"
 
+      - name: Setup Homebrew (macOS)
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== Setting up Homebrew ==="
+
+          # Check if Homebrew is installed
+          if ! command -v brew &> /dev/null; then
+            echo "Installing Homebrew..."
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+            # Add Homebrew to PATH
+            echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+            eval "$(/opt/homebrew/bin/brew shellenv)"
+          fi
+
+          # Update Homebrew
+          brew update
+
+          # Verify Homebrew installation
+          brew --version
+          echo "Homebrew location: $(which brew)"
+          echo "==========================="
+
+      - name: Install Neovim (macOS)
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "=== Installing Neovim ==="
+
+          # Ensure Homebrew is in PATH
+          eval "$(/opt/homebrew/bin/brew shellenv)"
+
+          # Install Neovim
+          brew install neovim
+
+          # Verify Neovim installation
+          nvim --version
+          echo "Neovim location: $(which nvim)"
+          echo "==========================="
+
       - name: Restore Python venv from cache
         uses: actions/cache@v4
         id: python-venv-cache
