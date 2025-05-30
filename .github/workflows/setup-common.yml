@@ -120,7 +120,10 @@ jobs:
           .\rustup-init.exe -y
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           rustup default stable
+          Write-Output "Installing stylua..."
           cargo install stylua
+          Write-Output "Verifying stylua installation..."
+          stylua --version
 
       - name: Install Rust packages (Unix)
         if: inputs.setup_rust && inputs.platform == 'macos'
@@ -133,6 +136,8 @@ jobs:
               cargo clean
               ./infra/packages/cargo.sh
           }
+          echo "Verifying stylua installation..."
+          stylua --version
 
       - name: Install Python packages (Windows)
         if: inputs.setup_python && inputs.platform == 'windows'
