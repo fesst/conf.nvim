@@ -11,6 +11,10 @@ on:
         required: true
         type: boolean
         description: "Whether to set up Python"
+      setup_rust:
+        required: true
+        type: boolean
+        description: "Whether to set up Rust"
       setup_node:
         required: true
         type: boolean
@@ -22,6 +26,9 @@ on:
       node-cache-hit:
         description: "Whether Node.js cache was hit"
         value: ${{ jobs.cache.outputs.node-cache-hit }}
+      rust-cache-hit:
+        description: "Whether Rust cache was hit"
+        value: ${{ jobs.cache.outputs.rust-cache-hit }}
 
 jobs:
   cache:
@@ -29,6 +36,7 @@ jobs:
     outputs:
       python-venv-cache-hit: ${{ steps.python-venv-cache.outputs.cache-hit }}
       node-cache-hit: ${{ steps.node-cache.outputs.cache-hit }}
+      rust-cache-hit: ${{ steps.rust-cache.outputs.cache-hit }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,3 +61,15 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-npm-${{ hashFiles('infra/packages/npm.sh', 'infra/packages/npm.ps1') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-npm-
+
+      - name: Cache Rust packages
+        if: inputs.setup_rust
+        uses: actions/cache@v4
+        id: rust-cache
+        with:
+          path: |
+            ~/.cargo
+            ~/.rustup
+          key: ${{ runner.os }}-${{ runner.arch }}-rust-${{ hashFiles('infra/packages/cargo.sh', 'infra/packages/cargo.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-rust-

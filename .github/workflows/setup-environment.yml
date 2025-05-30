@@ -37,7 +37,7 @@ jobs:
     name: Setup Environment
     runs-on: ${{ inputs.runner }}
     outputs:
-      virtual_env: ${{ steps.venv.outputs.virtual_env }}
+      virtual_env: ${{ inputs.runner == 'windows-latest' && steps.venv-win.outputs.virtual_env || steps.venv-unix.outputs.virtual_env }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -79,13 +79,84 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.tool_cache }}/venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('infra/packages/pip.sh') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
           restore-keys: |
-            ${{ runner.os }}-venv-
+            ${{ runner.os }}-${{ runner.arch }}-venv-
 
-      - name: Set up Python virtual environment
-        if: inputs.setup_python
-        id: venv
+      - name: Set up Python virtual environment (Windows)
+        if: inputs.setup_python && inputs.runner == 'windows-latest'
+        id: venv-win
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $VENV_PATH = "$env:RUNNER_TOOL_CACHE\venv"
+
+          # Remove existing virtual environment if it exists
+          if (Test-Path $VENV_PATH) {
+              Write-Output "Removing existing virtual environment..."
+              Remove-Item -Recurse -Force $VENV_PATH
+              # Wait for filesystem to sync
+              Start-Sleep -Seconds 2
+              if (Test-Path $VENV_PATH) {
+                  Write-Error "Error: Failed to remove existing virtual environment"
+                  exit 1
+              }
+          }
+
+          # Create virtual environment
+          Write-Output "Creating virtual environment at: $VENV_PATH"
+          python -m venv $VENV_PATH
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Error: Failed to create virtual environment"
+              Write-Output "Python version: $(python --version)"
+              Write-Output "Python path: $(Get-Command python | Select-Object -ExpandProperty Source)"
+              exit 1
+          }
+
+          # Verify virtual environment was created
+          if (-not (Test-Path $VENV_PATH)) {
+              Write-Error "Error: Virtual environment directory not found after creation"
+              exit 1
+          }
+
+          # Verify activation script exists
+          $activateScript = Join-Path $VENV_PATH "Scripts\Activate.ps1"
+          if (-not (Test-Path $activateScript)) {
+              Write-Error "Error: Activation script not found at $activateScript"
+              exit 1
+          }
+
+          # Set output variable
+          Write-Output "virtual_env=$VENV_PATH" >> $env:GITHUB_OUTPUT
+
+          # Activate virtual environment
+          & $activateScript
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Error: Failed to activate virtual environment"
+              Write-Output "Python version: $(python --version)"
+              Write-Output "PATH: $env:Path"
+              exit 1
+          }
+
+          # Upgrade pip
+          python -m pip install --upgrade pip
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Error: Failed to upgrade pip"
+              exit 1
+          }
+
+          # Verify installation
+          Write-Output "Verifying Python installation..."
+          python --version
+          pip list
+
+          # Verify output variable was set
+          Write-Output "Virtual environment path: $VENV_PATH"
+          Write-Output "Output variable set: $env:GITHUB_OUTPUT"
+
+      - name: Set up Python virtual environment (Unix)
+        if: inputs.setup_python && inputs.runner == 'macos-latest'
+        id: venv-unix
         shell: bash
         run: |
           set -euo pipefail
@@ -188,13 +259,26 @@ jobs:
             ./infra/packages/cargo.sh
           }
 
-      - name: Install Python packages
-        if: inputs.setup_python
+      - name: Install Python packages (Windows)
+        if: inputs.setup_python && inputs.runner == 'windows-latest'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & "${{ steps.venv-win.outputs.virtual_env }}\Scripts\Activate.ps1"
+          chmod +x infra/packages/pip.ps1
+          ./infra/packages/pip.ps1 || {
+              Write-Output "Failed to install Python packages. Retrying..."
+              pip cache purge
+              ./infra/packages/pip.ps1
+          }
+
+      - name: Install Python packages (Unix)
+        if: inputs.setup_python && inputs.runner == 'macos-latest'
         shell: bash
         run: |
           set -e
+          source "${{ steps.venv-unix.outputs.virtual_env }}/bin/activate"
           chmod +x infra/packages/pip.sh
-          source "${{ steps.venv.outputs.virtual_env }}/bin/activate"
           ./infra/packages/pip.sh || {
             echo "Failed to install Python packages. Retrying..."
             pip cache purge
