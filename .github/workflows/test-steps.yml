@@ -39,7 +39,23 @@ jobs:
     runs-on: ${{ inputs.platform }}-latest
     timeout-minutes: 10
     steps:
-      - name: Debug environment
+      - name: Debug environment (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          Write-Output "=== Environment Debug Info ==="
+          Write-Output "Platform: ${{ inputs.platform }}"
+          Write-Output "venv_path: ${{ inputs.venv_path }}"
+          Write-Output "use_cache: ${{ inputs.use_cache }}"
+          Write-Output "install_deps: ${{ inputs.install_deps }}"
+          Write-Output "setup_python: ${{ inputs.setup_python }}"
+          Write-Output "Current directory: $(Get-Location)"
+          Write-Output "Directory contents:"
+          Get-ChildItem
+          Write-Output "==========================="
+
+      - name: Debug environment (macOS)
+        if: inputs.platform == 'macos'
         shell: bash
         run: |
           echo "=== Environment Debug Info ==="
@@ -81,6 +97,7 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-venv-
 
       - name: Log Python venv cache result
+        if: inputs.platform == 'macos'
         shell: bash
         run: |
           echo "=== Python venv Cache Result ==="
@@ -88,27 +105,58 @@ jobs:
           echo "Cache size after restore: $(du -sh ${{ runner.tool_cache }}/venv 2>/dev/null || echo 'Not found')"
           echo "=============================="
 
-      - name: Install dependencies
-        if: inputs.install_deps
-        shell: bash
+      - name: Log Python venv cache result (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
         run: |
-          set -euo pipefail
-          if [ "${{ inputs.platform }}" == "windows" ]; then
-            source "${{ inputs.venv_path }}/Scripts/activate"
-          else
-            source "${{ inputs.venv_path }}/bin/activate"
-          fi
+          Write-Output "=== Python venv Cache Result ==="
+          Write-Output "Cache hit: ${{ steps.python-venv-cache.outputs.cache-hit }}"
+          $venvPath = "${{ runner.tool_cache }}/venv"
+          if (Test-Path $venvPath) {
+              $size = (Get-ChildItem -Path $venvPath -Recurse | Measure-Object -Property Length -Sum).Sum
+              Write-Output "Cache size after restore: $($size/1MB) MB"
+          } else {
+              Write-Output "Cache size after restore: Not found"
+          }
+          Write-Output "=============================="
+
+      - name: Install dependencies (Windows)
+        if: inputs.install_deps && inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & "${{ inputs.venv_path }}/Scripts/Activate.ps1"
           pip install pynvim black flake8 isort pytest pytest-cov --no-cache-dir
 
-      - name: Run tests
+      - name: Install dependencies (macOS)
+        if: inputs.install_deps && inputs.platform == 'macos'
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${{ inputs.platform }}" == "windows" ]; then
-            source "${{ inputs.venv_path }}/Scripts/activate"
-          else
-            source "${{ inputs.venv_path }}/bin/activate"
-          fi
+          source "${{ inputs.venv_path }}/bin/activate"
+          pip install pynvim black flake8 isort pytest pytest-cov --no-cache-dir
+
+      - name: Run tests (Windows)
+        if: inputs.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & "${{ inputs.venv_path }}/Scripts/Activate.ps1"
+
+          # Run Neovim tests
+          if (Test-Path "infra/nvim_sanity_test.sh") {
+              bash infra/nvim_sanity_test.sh
+          } else {
+              Write-Error "Test script not found at infra/nvim_sanity_test.sh"
+              exit 1
+          }
+
+      - name: Run tests (macOS)
+        if: inputs.platform == 'macos'
+        shell: bash
+        run: |
+          set -euo pipefail
+          source "${{ inputs.venv_path }}/bin/activate"
 
           # Run Neovim tests
           chmod +x infra/nvim_sanity_test.sh
