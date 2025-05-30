@@ -195,7 +195,8 @@ jobs:
         run: |
           $venvPath = $env:VENV_DIR
           Write-Host "Using activation script: $venvPath\Scripts\Activate.ps1"
-          bash infra/nvim_sanity_test.ps1
+          & "$venvPath\Scripts\Activate.ps1"
+          & "infra/nvim_sanity_test.ps1"
 
       - name: Run Neovim sanity tests (Unix)
         if: runner.os != 'Windows'
