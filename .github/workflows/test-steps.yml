@@ -72,8 +72,9 @@ jobs:
         if: inputs.setup_python
         shell: bash
         run: |
-          set -euo pipefail
+          set -eo pipefail
           VENV_PATH="${{ inputs.venv_path }}"
+          PYTHONPATH="${PYTHONPATH:-}"
 
           # Create virtual environment if it doesn't exist
           if [ ! -d "$VENV_PATH" ]; then
@@ -122,21 +123,27 @@ jobs:
         if: inputs.install_deps
         shell: bash
         run: |
-          set -euo pipefail
-          if [ "${{ inputs.platform }}" == "windows" ]; then
-            source "${{ inputs.venv_path }}/Scripts/activate"
-          else
-            source "${{ inputs.venv_path }}/bin/activate"
+          set -eo pipefail
+          PYTHONPATH="${PYTHONPATH:-}"
+          if [ "${{ inputs.setup_python }}" == "true" ]; then
+            if [ "${{ inputs.platform }}" == "windows" ]; then
+              source "${{ inputs.venv_path }}/Scripts/activate"
+            else
+              source "${{ inputs.venv_path }}/bin/activate"
+            fi
           fi
           pip install pynvim black flake8 isort pytest --no-cache-dir
 
       - name: Run tests
         shell: bash
         run: |
-          set -euo pipefail
-          if [ "${{ inputs.platform }}" == "windows" ]; then
-            source "${{ inputs.venv_path }}/Scripts/activate"
-          else
-            source "${{ inputs.venv_path }}/bin/activate"
+          set -eo pipefail
+          PYTHONPATH="${PYTHONPATH:-}"
+          if [ "${{ inputs.setup_python }}" == "true" ]; then
+            if [ "${{ inputs.platform }}" == "windows" ]; then
+              source "${{ inputs.venv_path }}/Scripts/activate"
+            else
+              source "${{ inputs.venv_path }}/bin/activate"
+            fi
           fi
           python -m pytest tests/
