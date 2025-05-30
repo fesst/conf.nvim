@@ -10,97 +10,46 @@ on:
       setup_python:
         required: true
         type: boolean
-        default: true
-      setup_rust:
-        required: true
-        type: boolean
-        default: true
+        description: "Whether to set up Python"
       setup_node:
         required: true
         type: boolean
-        default: true
+        description: "Whether to set up Node.js"
     outputs:
-      python-cache-hit:
-        description: "Whether Python cache was hit"
-        value: ${{ jobs.cache-config.outputs.python-cache-hit }}
+      python-venv-cache-hit:
+        description: "Whether Python virtual environment cache was hit"
+        value: ${{ jobs.cache.outputs.python-venv-cache-hit }}
       node-cache-hit:
-        description: "Whether Node cache was hit"
-        value: ${{ jobs.cache-config.outputs.node-cache-hit }}
-      rust-cache-hit:
-        description: "Whether Rust cache was hit"
-        value: ${{ jobs.cache-config.outputs.rust-cache-hit }}
-      choco-cache-hit:
-        description: "Whether Chocolatey cache was hit"
-        value: ${{ jobs.cache-config.outputs.choco-cache-hit }}
+        description: "Whether Node.js cache was hit"
+        value: ${{ jobs.cache.outputs.node-cache-hit }}
 
 jobs:
-  cache-config:
+  cache:
     runs-on: ${{ inputs.platform }}-latest
     outputs:
-      python-cache-hit: ${{ steps.python-cache.outputs.cache-hit }}
+      python-venv-cache-hit: ${{ steps.python-venv-cache.outputs.cache-hit }}
       node-cache-hit: ${{ steps.node-cache.outputs.cache-hit }}
-      rust-cache-hit: ${{ steps.rust-cache.outputs.cache-hit }}
-      choco-cache-hit: ${{ steps.choco-cache-restore.outputs.cache-hit }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache Python virtual environment
+        if: inputs.setup_python
+        uses: actions/cache@v4
+        id: python-venv-cache
+        with:
+          path: ${{ runner.tool_cache }}/venv
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-venv-
+
       - name: Cache Node.js packages
         if: inputs.setup_node
         uses: actions/cache@v4
         id: node-cache
         with:
           path: ~/.npm
-          key: npm-${{ github.runner.os }}-${{ github.runner.arch }}
-
-      - name: Cache Python virtual environment
-        if: inputs.setup_python
-        uses: actions/cache@v4
-        id: python-cache
-        with:
-          path: ${{ github.workspace }}/.venv
-          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-npm-${{ hashFiles('infra/packages/npm.sh', 'infra/packages/npm.ps1') }}
           restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-venv-
-
-      - name: Cache Rust packages
-        if: inputs.setup_rust
-        uses: actions/cache@v4
-        id: rust-cache
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ github.runner.os }}-${{ github.runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock', 'infra/packages/cargo.sh') }}
-          restore-keys: |
-            ${{ github.runner.os }}-${{ github.runner.arch }}-cargo-
-
-      - name: Cache platform-specific packages
-        if: inputs.platform == 'macos'
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /usr/local/Homebrew
-            /opt/homebrew
-            ~/Library/Logs/Homebrew
-            /opt/homebrew/Library/Caches
-            /opt/homebrew/Library/Logs
-          key: ${{ github.runner.os }}-homebrew-${{ hashFiles('infra/packages/brew.sh') }}-${{ github.runner.arch }}
-          restore-keys: |
-            ${{ github.runner.os }}-homebrew-${{ github.runner.arch }}-
-            ${{ github.runner.os }}-homebrew-
-
-      - name: Cache platform-specific packages
-        if: inputs.platform == 'windows'
-        uses: actions/cache/restore@v4
-        id: choco-cache-restore
-        with:
-          path: |
-            C:\ProgramData\chocolatey\lib
-            C:\ProgramData\chocolatey\bin
-            C:\tools
-            C:\Users\runneradmin\AppData\Local\Temp\chocolatey
-          key: ${{ github.runner.os }}-${{ github.runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}
-          restore-keys: |
-            ${{ github.runner.os }}-${{ github.runner.arch }}-choco-${{ hashFiles('infra/packages/*.ps1', 'infra/packages/*.sh') }}
-            ${{ github.runner.os }}-${{ github.runner.arch }}-choco-
-          fail-on-cache-miss: false
+            ${{ runner.os }}-${{ runner.arch }}-npm-

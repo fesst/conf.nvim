@@ -93,109 +93,36 @@ jobs:
           echo "Cache size after restore: $(du -sh ${{ runner.tool_cache }}/venv 2>/dev/null || echo 'Not found')"
           echo "=============================="
 
-      - name: Verify virtual environment path
-        if: inputs.setup_python
-        shell: pwsh
+      - name: Activate virtual environment
+        shell: bash
         run: |
-          $ErrorActionPreference = 'Stop'
+          set -e
+          VENV_PATH="${{ inputs.venv_path }}"
 
-          # Get the virtual environment path
-          $venvPath = "C:\hostedtoolcache\windows\venv"
-          Write-Output "Using virtual environment at: $venvPath"
+          # Debug information
+          echo "=== Virtual Environment Activation ==="
+          echo "VENV_PATH: $VENV_PATH"
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
 
-          # Normalize the path for Windows
-          $venvPath = [System.IO.Path]::GetFullPath($venvPath)
-          Write-Output "Normalized path: $venvPath"
+          # Check if virtual environment exists
+          if [ ! -d "$VENV_PATH" ]; then
+            echo "Error: Virtual environment not found at: $VENV_PATH"
+            exit 1
+          fi
 
-          # Create parent directory if it doesn't exist
-          $parentDir = Split-Path -Parent $venvPath
-          if (-not (Test-Path $parentDir)) {
-              Write-Output "Creating parent directory: $parentDir"
-              New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
-          }
+          # Activate virtual environment
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            source "$VENV_PATH/Scripts/activate"
+          else
+            source "$VENV_PATH/bin/activate"
+          fi
 
-          # Try to set permissions, but continue if it fails
-          try {
-              Write-Output "Attempting to set permissions on parent directory..."
-              $acl = Get-Acl $parentDir
-              $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-              $acl.SetAccessRule($rule)
-              Set-Acl $parentDir $acl
-              Write-Output "Successfully set permissions on parent directory"
-          } catch {
-              Write-Output "Warning: Could not set permissions on parent directory: $_"
-              Write-Output "Continuing with default permissions..."
-          }
-
-          # Verify virtual environment exists
-          if (-not (Test-Path $venvPath)) {
-              Write-Error "Virtual environment not found at: $venvPath"
-              Write-Output "Current directory: $(Get-Location)"
-              Write-Output "Directory contents:"
-              Get-ChildItem | Format-Table -AutoSize
-              Write-Output "Parent directory contents:"
-              Get-ChildItem $parentDir | Format-Table -AutoSize
-              exit 1
-          }
-
-          # Try to set permissions on virtual environment directory, but continue if it fails
-          try {
-              Write-Output "Attempting to set permissions on virtual environment directory..."
-              $acl = Get-Acl $venvPath
-              $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
-              $acl.SetAccessRule($rule)
-              Set-Acl $venvPath $acl
-              Write-Output "Successfully set permissions on virtual environment directory"
-          } catch {
-              Write-Output "Warning: Could not set permissions on virtual environment directory: $_"
-              Write-Output "Continuing with default permissions..."
-          }
-
-          # Verify activation script exists
-          $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
-          Write-Output "Checking activation script at: $activateScript"
-
-          if (-not (Test-Path $activateScript)) {
-              Write-Error "Activation script not found at: $activateScript"
-              Write-Output "Virtual environment contents:"
-              Get-ChildItem $venvPath -Recurse | Format-Table -AutoSize
-              exit 1
-          }
-
-          # Try to set permissions on activation script, but continue if it fails
-          try {
-              Write-Output "Attempting to set permissions on activation script..."
-              $acl = Get-Acl $activateScript
-              $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "Allow")
-              $acl.SetAccessRule($rule)
-              Set-Acl $activateScript $acl
-              Write-Output "Successfully set permissions on activation script"
-          } catch {
-              Write-Output "Warning: Could not set permissions on activation script: $_"
-              Write-Output "Continuing with default permissions..."
-          }
-
-          # Check for Zone.Identifier and unblock if needed
-          try {
-              if (Get-Item $activateScript -Stream Zone.Identifier -ErrorAction SilentlyContinue) {
-                  Write-Output "Zone.Identifier found! Unblocking script..."
-                  Unblock-File -Path $activateScript
-              }
-          } catch {
-              Write-Output "Warning: Could not unblock file: $_"
-              Write-Output "Continuing anyway..."
-          }
-
-          # Set execution policy for the process
-          try {
-              $currentPolicy = Get-ExecutionPolicy
-              Write-Output "Current execution policy: $currentPolicy"
-              Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
-              Write-Output "Set execution policy to Bypass for this process"
-          } catch {
-              Write-Output "Warning: Could not set execution policy: $_"
-              Write-Output "Continuing with current policy..."
-          }
+          # Verify activation
+          which python
+          python --version
+          echo "================================"
 
       - name: Log Rust cache info
         if: inputs.platform == 'windows'

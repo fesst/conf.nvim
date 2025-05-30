@@ -119,27 +119,10 @@ jobs:
             exit 1
           fi
 
-          # Create activation script if it doesn't exist
+          # Verify activation script exists
           if [ ! -f "$VENV_PATH/bin/activate" ]; then
-            echo "Creating activation script..."
-            # Ensure bin directory exists
-            if [ ! -d "$VENV_PATH/bin" ]; then
-              echo "Creating bin directory..."
-              mkdir -p "$VENV_PATH/bin"
-              if [ ! -d "$VENV_PATH/bin" ]; then
-                echo "Error: Failed to create bin directory"
-                exit 1
-              fi
-            fi
-            # Create activation script with proper permissions
-            echo 'export VIRTUAL_ENV="'"$VENV_PATH"'"' > "$VENV_PATH/bin/activate"
-            echo 'export PATH="$VIRTUAL_ENV/bin:$PATH"' >> "$VENV_PATH/bin/activate"
-            chmod +x "$VENV_PATH/bin/activate"
-            # Verify activation script was created
-            if [ ! -f "$VENV_PATH/bin/activate" ]; then
-              echo "Error: Failed to create activation script"
-              exit 1
-            fi
+            echo "Error: Activation script not found at $VENV_PATH/bin/activate"
+            exit 1
           fi
 
           # Set output variable
