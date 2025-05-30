@@ -37,7 +37,7 @@ jobs:
     uses: ./.github/workflows/cache-config.yml
     with:
       platform: ${{ inputs.platform }}
-      setup_python: true
+      setup_python: ${{ inputs.setup_python }}
       setup_node: true
 
   run-tests:
