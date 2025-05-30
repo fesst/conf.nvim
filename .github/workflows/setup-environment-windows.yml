@@ -198,3 +198,19 @@ jobs:
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
           rustup default stable
           cargo install stylua
+
+      - name: Install Python packages
+        if: inputs.setup_python
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Installing Python packages..."
+          & "infra/packages/pip.ps1"
+
+      - name: Install Lua packages
+        if: inputs.setup_lua
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Output "Installing Lua packages..."
+          choco install lua -y

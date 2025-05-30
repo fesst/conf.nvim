@@ -70,6 +70,19 @@ jobs:
           python-version: "3.13"
           cache: "pip"
 
+      - name: Install Python packages
+        if: inputs.setup_python
+        shell: bash
+        run: |
+          set -eo pipefail
+          if [ "${{ inputs.platform }}" == "windows" ]; then
+            chmod +x infra/packages/pip.ps1
+            ./infra/packages/pip.ps1
+          else
+            chmod +x infra/packages/pip.sh
+            ./infra/packages/pip.sh
+          fi
+
       - name: Cache Homebrew
         if: inputs.platform == 'macos'
         uses: actions/cache@v3
