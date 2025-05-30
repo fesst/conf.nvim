@@ -193,42 +193,6 @@ jobs:
             ./infra/packages/npm.sh
           }
 
-      - name: Setup Rust
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # Install Rust if not present
-          if ! command -v rustc &> /dev/null; then
-            echo "Installing Rust..."
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-            source "$HOME/.cargo/env"
-          fi
-
-          # Verify Rust installation
-          rustc --version
-          cargo --version
-
-          # Install stylua
-          echo "Installing stylua..."
-          cargo install stylua
-
-          # Verify stylua installation
-          if ! command -v stylua &> /dev/null; then
-            echo "Error: stylua not found in PATH"
-            echo "Current PATH: $PATH"
-            echo "Cargo bin: $HOME/.cargo/bin"
-            echo "Checking Cargo bin contents:"
-            ls -la "$HOME/.cargo/bin"
-            exit 1
-          fi
-
-          echo "stylua version: $(stylua --version)"
-
-          # Update PATH to ensure Cargo bin is first
-          export PATH="$HOME/.cargo/bin:$PATH"
-          echo "Updated PATH: $PATH"
-
       - name: Install Python packages
         if: inputs.setup_python
         shell: bash
@@ -271,3 +235,52 @@ jobs:
           set -e
           chmod +x infra/ci-setup-macos.sh
           ./infra/ci-setup-macos.sh
+
+      - name: Cache Cargo packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-cargo-
+
+      - name: Setup Rust
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Install Rust if not present
+          if ! command -v rustc &> /dev/null; then
+            echo "Installing Rust..."
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            source "$HOME/.cargo/env"
+          fi
+
+          # Verify Rust installation
+          rustc --version
+          cargo --version
+
+          # Install stylua if not already installed
+          if ! command -v stylua &> /dev/null; then
+            echo "Installing stylua..."
+            cargo install stylua
+          fi
+
+          # Verify stylua installation
+          if ! command -v stylua &> /dev/null; then
+            echo "Error: stylua not found in PATH"
+            echo "Current PATH: $PATH"
+            echo "Cargo bin: $HOME/.cargo/bin"
+            echo "Checking Cargo bin contents:"
+            ls -la "$HOME/.cargo/bin"
+            exit 1
+          fi
+
+          echo "stylua version: $(stylua --version)"
+
+          # Update PATH to ensure Cargo bin is first
+          export PATH="$HOME/.cargo/bin:$PATH"
+          echo "Updated PATH: $PATH"
