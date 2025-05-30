@@ -113,14 +113,26 @@ jobs:
               exit 1
           }
 
+          # Check if activation script exists
+          $activateScript = Join-Path $VENV_PATH "Scripts\Activate.ps1"
+          if (-not (Test-Path $activateScript)) {
+              Write-Error "Error: Activation script not found at: $activateScript"
+              Write-Output "Directory contents of Scripts folder:"
+              Get-ChildItem (Join-Path $VENV_PATH "Scripts") -ErrorAction SilentlyContinue
+              exit 1
+          }
+
           # Activate virtual environment
-          & "$VENV_PATH\Scripts\Activate.ps1"
+          & $activateScript
           if ($LASTEXITCODE -ne 0) {
               Write-Error "Error: Failed to activate virtual environment"
+              Write-Output "Python version: $(python --version)"
+              Write-Output "Python path: $(Get-Command python | Select-Object -ExpandProperty Source)"
               exit 1
           }
 
           # Verify activation
+          Write-Output "Python executable: $(Get-Command python | Select-Object -ExpandProperty Source)"
           Write-Output "Python version: $(python --version)"
           Write-Output "pip version: $(pip --version)"
           Write-Output "================================"

@@ -79,13 +79,41 @@ jobs:
           $venvPath = Join-Path $env:RUNNER_TOOL_CACHE "venv"
           Write-Output "Setting up virtual environment at: $venvPath"
 
-          if (-not (Test-Path $venvPath)) {
-              Write-Output "Creating new virtual environment..."
-              python -m venv $venvPath
-              if ($LASTEXITCODE -ne 0) {
-                  Write-Error "Failed to create virtual environment"
+          # Remove existing virtual environment if it exists
+          if (Test-Path $venvPath) {
+              Write-Output "Removing existing virtual environment..."
+              Remove-Item -Recurse -Force $venvPath
+              # Wait for filesystem to sync
+              Start-Sleep -Seconds 2
+              if (Test-Path $venvPath) {
+                  Write-Error "Error: Failed to remove existing virtual environment"
                   exit 1
               }
+          }
+
+          # Create virtual environment
+          Write-Output "Creating virtual environment at: $venvPath"
+          python -m venv $venvPath
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Error: Failed to create virtual environment"
+              Write-Output "Python version: $(python --version)"
+              Write-Output "Python path: $(Get-Command python | Select-Object -ExpandProperty Source)"
+              exit 1
+          }
+
+          # Verify virtual environment was created
+          if (-not (Test-Path $venvPath)) {
+              Write-Error "Error: Virtual environment directory not found after creation"
+              exit 1
+          }
+
+          # Verify activation script exists
+          $activateScript = Join-Path $venvPath "Scripts\Activate.ps1"
+          if (-not (Test-Path $activateScript)) {
+              Write-Error "Error: Activation script not found at: $activateScript"
+              Write-Output "Directory contents of Scripts folder:"
+              Get-ChildItem (Join-Path $venvPath "Scripts") -ErrorAction SilentlyContinue
+              exit 1
           }
 
           Write-Output "virtual_env=$venvPath" >> $env:GITHUB_OUTPUT
