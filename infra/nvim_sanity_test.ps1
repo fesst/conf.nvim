@@ -171,9 +171,27 @@ function Test-CorePlugins {
 
 function Test-Treesitter {
     Write-Status "Testing Treesitter functionality..."
+
+    # Debug information
+    Write-Status "Checking tree-sitter installation..."
+    $treeSitterPath = Get-Command tree-sitter -ErrorAction SilentlyContinue
+    if ($treeSitterPath) {
+        Write-Status "tree-sitter found at: $($treeSitterPath.Source)"
+        Write-Status "tree-sitter version: $(tree-sitter --version)"
+    } else {
+        Write-Status "tree-sitter not found in PATH"
+        Write-Status "Current PATH: $env:Path"
+    }
+
+    Write-Status "Checking Neovim Treesitter plugin..."
+    $output = nvim --headless -c 'lua print("Treesitter plugin loaded:", package.loaded["nvim-treesitter"] ~= nil)' -c 'quit'
+    Write-Status "Treesitter plugin status: $output"
+
+    Write-Status "Testing Treesitter functionality..."
     $output = nvim --headless -c 'lua if not require("nvim-treesitter").statusline() then error("Treesitter not functioning") end' -c 'quit'
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Treesitter functionality test failed"
+        Write-Status "Treesitter test output: $output"
         exit 1
     }
 }

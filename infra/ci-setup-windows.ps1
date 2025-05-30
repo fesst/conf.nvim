@@ -61,6 +61,46 @@ if (-not $nvimFound) {
     throw "Neovim installation not found in expected locations"
 }
 
+# Add tree-sitter to PATH - try multiple possible locations
+$treeSitterPaths = @(
+    "C:\Program Files\tree-sitter\bin",
+    "C:\tools\tree-sitter\bin",
+    "C:\ProgramData\chocolatey\lib\tree-sitter\tools\bin"
+)
+
+$treeSitterFound = $false
+foreach ($path in $treeSitterPaths) {
+    if (Test-Path $path) {
+        if ($env:Path -notlike "*$path*") {
+            $env:Path = "$path;$env:Path"
+        }
+        $treeSitterFound = $true
+        Write-Host "Added tree-sitter to PATH: $path"
+        break
+    }
+}
+
+if (-not $treeSitterFound) {
+    Write-Host "Warning: tree-sitter not found in expected locations. Checking Chocolatey installation directory..."
+    $chocoPath = "C:\ProgramData\chocolatey\lib\tree-sitter"
+    if (Test-Path $chocoPath) {
+        Get-ChildItem -Path $chocoPath -Recurse -Filter "tree-sitter.exe" | ForEach-Object {
+            $binPath = Split-Path $_.FullName -Parent
+            if ($env:Path -notlike "*$binPath*") {
+                $env:Path = "$binPath;$env:Path"
+                $treeSitterFound = $true
+                Write-Host "Added tree-sitter to PATH: $binPath"
+            }
+        }
+    }
+}
+
+if (-not $treeSitterFound) {
+    Write-Host "Warning: tree-sitter not found in PATH. Some functionality may be limited."
+} else {
+    Write-Host "tree-sitter version: $(tree-sitter --version)"
+}
+
 # Verify Neovim installation
 if (-not (Get-Command nvim -ErrorAction SilentlyContinue)) {
     throw "Neovim not found in PATH after installation. Current PATH: ${env:Path}"
