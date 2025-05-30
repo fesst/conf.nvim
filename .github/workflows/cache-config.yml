@@ -1,0 +1,56 @@
+name: Cache Configuration
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        required: true
+        type: string
+        description: "Platform (macos/windows)"
+      setup_python:
+        required: true
+        type: boolean
+        description: "Whether to cache Python virtual environment"
+      setup_node:
+        required: true
+        type: boolean
+        description: "Whether to cache Node.js packages"
+    outputs:
+      python_cache_hit:
+        description: "Whether Python virtual environment cache was hit"
+        value: ${{ jobs.cache.outputs.python_cache_hit }}
+      node_cache_hit:
+        description: "Whether Node.js cache was hit"
+        value: ${{ jobs.cache.outputs.node_cache_hit }}
+
+jobs:
+  cache:
+    runs-on: ${{ inputs.platform }}-latest
+    outputs:
+      python_cache_hit: ${{ steps.python-cache.outputs.cache-hit }}
+      node_cache_hit: ${{ steps.node-cache.outputs.cache-hit }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache Python virtual environment
+        if: inputs.setup_python
+        uses: actions/cache@v4
+        id: python-cache
+        with:
+          path: ${{ runner.tool_cache }}/venv
+          key: ${{ runner.os }}-${{ runner.arch }}-venv-${{ hashFiles('infra/packages/pip.sh', 'infra/packages/pip.ps1') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-venv-
+
+      - name: Cache Node.js packages
+        if: inputs.setup_node
+        uses: actions/cache@v4
+        id: node-cache
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('infra/packages/npm.sh') }}
+          restore-keys: |
+            npm-${{ runner.os }}-${{ runner.arch }}-
