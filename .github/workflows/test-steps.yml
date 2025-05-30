@@ -219,6 +219,13 @@ jobs:
 
             # Refresh environment variables
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+            # Add Chocolatey's bin directory to PATH if not present
+            $chocoBinPath = "C:\ProgramData\chocolatey\bin"
+            if ($env:Path -notlike "*$chocoBinPath*") {
+              $env:Path = "$chocoBinPath;$env:Path"
+            }
+
             Write-Host "Updated PATH: $env:Path"
 
             # Verify installation
