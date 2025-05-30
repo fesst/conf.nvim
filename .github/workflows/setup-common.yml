@@ -192,7 +192,15 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           Write-Output "Installing Python packages..."
-          & "${{ steps.setup-venv-win.outputs.virtual_env }}\Scripts\Activate.ps1"
+
+          # Check if we're already in a virtual environment
+          if ($env:VIRTUAL_ENV) {
+              Write-Output "Already in virtual environment: $env:VIRTUAL_ENV"
+          } else {
+              Write-Output "Activating virtual environment..."
+              & "${{ steps.setup-venv-win.outputs.virtual_env }}\Scripts\Activate.ps1"
+          }
+
           chmod +x infra/packages/pip.ps1
           ./infra/packages/pip.ps1 || {
               Write-Output "Failed to install Python packages. Retrying..."
