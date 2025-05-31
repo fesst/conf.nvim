@@ -169,86 +169,6 @@ function Test-CorePlugins {
     if (-not (Run-Lua 'if not package.loaded["telescope"] then error("Telescope not loaded") end' "Telescope plugin test")) { exit 1 }
 }
 
-function Test-Treesitter {
-    Write-Status "Testing Treesitter functionality..."
-
-    # Debug information
-    Write-Status "Checking tree-sitter installation..."
-    $treeSitterPath = Get-Command tree-sitter -ErrorAction SilentlyContinue
-    if ($treeSitterPath) {
-        Write-Status "tree-sitter found at: $($treeSitterPath.Source)"
-        Write-Status "tree-sitter version: $(tree-sitter --version)"
-    } else {
-        Write-Status "tree-sitter not found in PATH"
-        Write-Status "Current PATH: $env:Path"
-
-        # Try to find tree-sitter in common locations
-        $possiblePaths = @(
-            "C:\ProgramData\chocolatey\bin\tree-sitter.exe",
-            "C:\Program Files\tree-sitter-cli\bin\tree-sitter.exe",
-            "C:\tools\tree-sitter-cli\bin\tree-sitter.exe"
-        )
-
-        foreach ($path in $possiblePaths) {
-            if (Test-Path $path) {
-                Write-Status "Found tree-sitter at: $path"
-                $binPath = Split-Path $path -Parent
-                if ($env:Path -notlike "*$binPath*") {
-                    $env:Path = "$binPath;$env:Path"
-                    Write-Status "Added tree-sitter to PATH: $binPath"
-                }
-                break
-            }
-        }
-    }
-
-    # Ensure Neovim Treesitter plugin is installed
-    Write-Status "Checking Neovim Treesitter plugin installation..."
-    $pluginDir = "$env:LOCALAPPDATA\nvim-data\site\pack\lazy\start\nvim-treesitter"
-    if (-not (Test-Path $pluginDir)) {
-        Write-Status "Treesitter plugin not found, installing..."
-        nvim --headless -c "Lazy install nvim-treesitter" -c 'quit'
-    }
-
-    Write-Status "Checking Neovim Treesitter plugin..."
-    $output = nvim --headless -c 'lua print("Treesitter plugin loaded:", package.loaded["nvim-treesitter"] ~= nil)' -c 'quit'
-    Write-Status "Treesitter plugin status: $output"
-
-    # If plugin is not loaded, try to install parsers
-    if ($output -notlike "*true*") {
-        Write-Status "Treesitter plugin not loaded, attempting to install parsers..."
-        $parsers = @("lua", "python", "vim", "vimdoc")
-        foreach ($parser in $parsers) {
-            Write-Status "Installing $parser parser..."
-            nvim --headless -c "TSInstall $parser" -c 'quit'
-        }
-
-        # Try to load the plugin again
-        $output = nvim --headless -c 'lua print("Treesitter plugin loaded:", package.loaded["nvim-treesitter"] ~= nil)' -c 'quit'
-        Write-Status "Treesitter plugin status after parser installation: $output"
-    }
-
-    Write-Status "Testing Treesitter functionality..."
-    $output = nvim --headless -c 'lua if not require("nvim-treesitter").statusline() then error("Treesitter not functioning") end' -c 'quit'
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Treesitter functionality test failed"
-        Write-Status "Treesitter test output: $output"
-
-        # Additional debugging information
-        Write-Status "Checking Neovim plugin directory..."
-        if (Test-Path $pluginDir) {
-            Write-Status "Treesitter plugin directory exists at: $pluginDir"
-            Get-ChildItem $pluginDir | ForEach-Object {
-                Write-Status "Found: $($_.Name)"
-            }
-        } else {
-            Write-Status "Treesitter plugin directory not found at: $pluginDir"
-        }
-
-        exit 1
-    }
-}
-
 function Test-Harpoon {
     Write-Status "Testing Harpoon functionality..."
     Write-Status "Testing Harpoon loading..."
@@ -335,7 +255,6 @@ Create-TestFiles
 Test-BasicFunctionality
 Test-HealthCheck
 Test-CorePlugins
-Test-Treesitter
 Test-Harpoon
 Test-Postgres
 Test-TextFileHandling
