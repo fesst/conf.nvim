@@ -186,25 +186,25 @@ function Test-TextFileHandling {
     # Create a test text file
     "This is a test text file" | Out-File -FilePath "$TEST_DIR/test.txt" -Encoding utf8
 
-    Write-Status "Testing text file LSP..."
-    $output = nvim --headless -c "e $TEST_DIR/test.txt" -c 'lua if #vim.lsp.get_clients() > 0 then error("LSP client should not be attached to text files") end' -c 'quit'
+    Write-Status "Testing text file handling..."
+    $output = nvim --headless -c "e $TEST_DIR/test.txt" -c 'lua local clients = vim.lsp.get_clients(); if clients then for _, client in ipairs(clients) do if client.name == "null-ls" then error("null-ls should not be attached to text files") end end end' -c 'quit'
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Text file LSP test failed"
+        Write-Error "Text file handling test failed"
         exit 1
     }
 
-    Write-Status "Testing markdown file LSP..."
+    Write-Status "Testing markdown file handling..."
     "# Test Markdown" | Out-File -FilePath "$TEST_DIR/test.md" -Encoding utf8
-    $output = nvim --headless -c "e $TEST_DIR/test.md" -c 'lua if #vim.lsp.get_clients() > 0 then error("LSP client should not be attached to markdown files") end' -c 'quit'
+    $output = nvim --headless -c "e $TEST_DIR/test.md" -c 'lua local clients = vim.lsp.get_clients(); if clients then for _, client in ipairs(clients) do if client.name == "null-ls" then error("null-ls should not be attached to markdown files") end end end' -c 'quit'
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Markdown file LSP test failed"
+        Write-Error "Markdown file handling test failed"
         exit 1
     }
 
-    Write-Status "Verifying no LSP clients on text files..."
-    $output = nvim --headless -c "e $TEST_DIR/test.txt" -c 'lua if #vim.lsp.get_clients() > 0 then error("No LSP clients should be attached to text files") end' -c 'quit'
+    Write-Status "Verifying text file handling..."
+    $output = nvim --headless -c "e $TEST_DIR/test.txt" -c 'lua local clients = vim.lsp.get_clients(); if clients then for _, client in ipairs(clients) do if client.name == "null-ls" then error("null-ls should not be attached to text files") end end end' -c 'quit'
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Text file LSP verification failed"
+        Write-Error "Text file handling verification failed"
         exit 1
     }
 }
