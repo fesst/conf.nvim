@@ -202,6 +202,14 @@ function Test-Treesitter {
         }
     }
 
+    # Ensure Neovim Treesitter plugin is installed
+    Write-Status "Checking Neovim Treesitter plugin installation..."
+    $pluginDir = "$env:LOCALAPPDATA\nvim-data\site\pack\lazy\start\nvim-treesitter"
+    if (-not (Test-Path $pluginDir)) {
+        Write-Status "Treesitter plugin not found, installing..."
+        nvim --headless -c "Lazy install nvim-treesitter" -c 'quit'
+    }
+
     Write-Status "Checking Neovim Treesitter plugin..."
     $output = nvim --headless -c 'lua print("Treesitter plugin loaded:", package.loaded["nvim-treesitter"] ~= nil)' -c 'quit'
     Write-Status "Treesitter plugin status: $output"
@@ -214,6 +222,10 @@ function Test-Treesitter {
             Write-Status "Installing $parser parser..."
             nvim --headless -c "TSInstall $parser" -c 'quit'
         }
+
+        # Try to load the plugin again
+        $output = nvim --headless -c 'lua print("Treesitter plugin loaded:", package.loaded["nvim-treesitter"] ~= nil)' -c 'quit'
+        Write-Status "Treesitter plugin status after parser installation: $output"
     }
 
     Write-Status "Testing Treesitter functionality..."
@@ -224,7 +236,6 @@ function Test-Treesitter {
 
         # Additional debugging information
         Write-Status "Checking Neovim plugin directory..."
-        $pluginDir = "$env:LOCALAPPDATA\nvim-data\site\pack\lazy\start\nvim-treesitter"
         if (Test-Path $pluginDir) {
             Write-Status "Treesitter plugin directory exists at: $pluginDir"
             Get-ChildItem $pluginDir | ForEach-Object {
