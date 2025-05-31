@@ -313,21 +313,9 @@ jobs:
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
           Write-Output "Current execution policy: $(Get-ExecutionPolicy)"
 
-          # Run Neovim tests with timeout
+          # Run Neovim tests directly
           if (Test-Path "infra/nvim_sanity_test.ps1") {
-              $timeoutSeconds = 1500  # 25 minutes
-              $job = Start-Job -ScriptBlock {
-                  & "infra/nvim_sanity_test.ps1"
-              }
-              $completed = Wait-Job $job -Timeout $timeoutSeconds
-              if ($completed -eq $null) {
-                  Write-Error "Test execution timed out after $timeoutSeconds seconds"
-                  Stop-Job $job
-                  Remove-Job $job
-                  exit 1
-              }
-              $result = Receive-Job $job
-              Remove-Job $job
+              & "infra/nvim_sanity_test.ps1"
               if ($LASTEXITCODE -ne 0) {
                   Write-Error "Tests failed with exit code $LASTEXITCODE"
                   exit $LASTEXITCODE

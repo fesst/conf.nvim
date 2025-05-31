@@ -229,13 +229,20 @@ New-Item -ItemType Directory -Force -Path (Split-Path $LOG_FILE -Parent) | Out-N
 # Ensure virtual environment is activated
 Ensure-Venv
 
-Create-TestFiles
-Test-BasicFunctionality
-Test-HealthCheck
-Test-CorePlugins
-Test-Harpoon
-Test-Postgres
-Test-TextFileHandling
-Cleanup
+try {
+    Create-TestFiles
+    Test-BasicFunctionality
+    Test-HealthCheck
+    Test-CorePlugins
+    Test-Harpoon
+    Test-Postgres
+    Test-TextFileHandling
+    Cleanup
 
-Write-Status "All sanity tests passed successfully!"
+    Write-Status "All sanity tests passed successfully!"
+    exit 0
+}
+catch {
+    Write-Error "Test execution failed: $_"
+    exit 1
+}
