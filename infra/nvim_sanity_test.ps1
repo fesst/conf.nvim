@@ -171,19 +171,8 @@ function Test-CorePlugins {
 
 function Test-Harpoon {
     Write-Status "Testing Harpoon functionality..."
-    Write-Status "Testing Harpoon loading..."
-    $output = nvim --headless -c 'lua if not package.loaded["harpoon"] then error("Harpoon not loaded") end' -c 'quit'
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Harpoon loading test failed"
-        exit 1
-    }
-
-    Write-Status "Testing Harpoon mark functionality..."
-    $output = nvim --headless -c 'lua if not require("harpoon.mark").add_file then error("Harpoon mark functionality not available") end' -c 'quit'
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Harpoon mark functionality test failed"
-        exit 1
-    }
+    if (-not (Run-Lua 'if not package.loaded["harpoon"] then error("Harpoon not loaded") end' "Harpoon loading test")) { exit 1 }
+    if (-not (Run-Lua 'if not require("harpoon.mark").add_file then error("Harpoon mark functionality not available") end' "Harpoon mark functionality test")) { exit 1 }
 }
 
 function Test-Postgres {
