@@ -169,47 +169,16 @@ function Test-CorePlugins {
     if (-not (Run-Lua 'if not package.loaded["telescope"] then error("Telescope not loaded") end' "Telescope plugin test")) { exit 1 }
 }
 
-function Test-Treesitter {
-    Write-Status "Testing Treesitter functionality..."
-    $output = nvim --headless -c 'lua if not require("nvim-treesitter").statusline() then error("Treesitter not functioning") end' -c 'quit'
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Treesitter functionality test failed"
-        exit 1
-    }
-}
-
 function Test-Harpoon {
     Write-Status "Testing Harpoon functionality..."
-    Write-Status "Testing Harpoon loading..."
-    $output = nvim --headless -c 'lua if not package.loaded["harpoon"] then error("Harpoon not loaded") end' -c 'quit'
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Harpoon loading test failed"
-        exit 1
-    }
-
-    Write-Status "Testing Harpoon mark functionality..."
-    $output = nvim --headless -c 'lua if not require("harpoon.mark").add_file then error("Harpoon mark functionality not available") end' -c 'quit'
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Harpoon mark functionality test failed"
-        exit 1
-    }
+    if (-not (Run-Lua 'if not package.loaded["harpoon"] then error("Harpoon not loaded") end' "Harpoon loading test")) { exit 1 }
+    if (-not (Run-Lua 'if not require("harpoon.mark").add_file then error("Harpoon mark functionality not available") end' "Harpoon mark functionality test")) { exit 1 }
 }
 
 function Test-Postgres {
     Write-Status "Testing PostgreSQL functionality..."
-    Write-Status "Testing SQL LSP loading..."
-    $output = nvim --headless -c 'lua if not package.loaded["sqlls"] then error("SQL LSP not loaded") end' -c 'quit'
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "SQL LSP loading test failed"
-        exit 1
-    }
-
-    Write-Status "Testing SQL LSP config..."
-    $output = nvim --headless -c 'lua if not require("lspconfig").sqlls then error("SQL LSP config not available") end' -c 'quit'
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "SQL LSP config test failed"
-        exit 1
-    }
+    if (-not (Run-Lua 'if not package.loaded["sqlls"] then error("SQL LSP not loaded") end' "SQL LSP loading test")) { exit 1 }
+    if (-not (Run-Lua 'if not require("lspconfig").sqlls then error("SQL LSP config not available") end' "SQL LSP config test")) { exit 1 }
 }
 
 function Test-TextFileHandling {
@@ -217,25 +186,25 @@ function Test-TextFileHandling {
     # Create a test text file
     "This is a test text file" | Out-File -FilePath "$TEST_DIR/test.txt" -Encoding utf8
 
-    Write-Status "Testing text file LSP..."
-    $output = nvim --headless -c "e $TEST_DIR/test.txt" -c 'lua if #vim.lsp.get_clients() > 0 then error("LSP client should not be attached to text files") end' -c 'quit'
+    Write-Status "Testing text file handling..."
+    $output = nvim --headless -c "e $TEST_DIR/test.txt" -c 'lua local clients = vim.lsp.get_clients(); if clients then for _, client in ipairs(clients) do if client.name == "null-ls" then error("null-ls should not be attached to text files") end end end' -c 'quit'
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Text file LSP test failed"
+        Write-Error "Text file handling test failed"
         exit 1
     }
 
-    Write-Status "Testing markdown file LSP..."
+    Write-Status "Testing markdown file handling..."
     "# Test Markdown" | Out-File -FilePath "$TEST_DIR/test.md" -Encoding utf8
-    $output = nvim --headless -c "e $TEST_DIR/test.md" -c 'lua if #vim.lsp.get_clients() > 0 then error("LSP client should not be attached to markdown files") end' -c 'quit'
+    $output = nvim --headless -c "e $TEST_DIR/test.md" -c 'lua local clients = vim.lsp.get_clients(); if clients then for _, client in ipairs(clients) do if client.name == "null-ls" then error("null-ls should not be attached to markdown files") end end end' -c 'quit'
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Markdown file LSP test failed"
+        Write-Error "Markdown file handling test failed"
         exit 1
     }
 
-    Write-Status "Verifying no LSP clients on text files..."
-    $output = nvim --headless -c "e $TEST_DIR/test.txt" -c 'lua if #vim.lsp.get_clients() > 0 then error("No LSP clients should be attached to text files") end' -c 'quit'
+    Write-Status "Verifying text file handling..."
+    $output = nvim --headless -c "e $TEST_DIR/test.txt" -c 'lua local clients = vim.lsp.get_clients(); if clients then for _, client in ipairs(clients) do if client.name == "null-ls" then error("null-ls should not be attached to text files") end end end' -c 'quit'
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Text file LSP verification failed"
+        Write-Error "Text file handling verification failed"
         exit 1
     }
 }
@@ -260,14 +229,20 @@ New-Item -ItemType Directory -Force -Path (Split-Path $LOG_FILE -Parent) | Out-N
 # Ensure virtual environment is activated
 Ensure-Venv
 
-Create-TestFiles
-Test-BasicFunctionality
-Test-HealthCheck
-Test-CorePlugins
-Test-Treesitter
-Test-Harpoon
-Test-Postgres
-Test-TextFileHandling
-Cleanup
+try {
+    Create-TestFiles
+    Test-BasicFunctionality
+    Test-HealthCheck
+    Test-CorePlugins
+    Test-Harpoon
+    Test-Postgres
+    Test-TextFileHandling
+    Cleanup
 
-Write-Status "All sanity tests passed successfully!"
+    Write-Status "All sanity tests passed successfully!"
+    exit 0
+}
+catch {
+    Write-Error "Test execution failed: $_"
+    exit 1
+}

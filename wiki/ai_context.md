@@ -224,6 +224,8 @@ Currently supported platforms:
       - Automatic PATH management
       - Installation verification
       - Parallel package installation
+      - Chocolatey package caching
+      - PowerShell execution policy handling
     - macOS:
       - Homebrew package management
       - Native system integration
@@ -241,6 +243,7 @@ Currently supported platforms:
       - Neovim functionality tests
   - Caching strategy:
     - Homebrew packages (including Apple Silicon paths)
+    - Chocolatey packages (Windows)
     - LuaRocks packages and server index
     - Neovim plugins
   - Performance optimizations:
@@ -259,6 +262,8 @@ Currently supported platforms:
     - Uses PowerShell Core (pwsh) for Windows compatibility
     - Handles virtual environment activation for both Windows and macOS
     - Uses platform-specific paths and commands
+    - Enhanced PATH handling for Windows
+    - Improved Neovim installation verification
 
 - Security Scanning (`.github/workflows/codeql.yml`):
   - CodeQL analysis for security vulnerabilities
@@ -284,6 +289,9 @@ Currently supported platforms:
       - Uses PowerShell Core (pwsh)
       - Virtual environment in `$RUNNER_TOOL_CACHE\venv`
       - Activation via `Scripts\activate.ps1`
+      - Enhanced PATH management
+      - Chocolatey package caching
+      - Execution policy handling
     - macOS:
       - Uses bash
       - Virtual environment in `$RUNNER_TOOL_CACHE/venv`
@@ -326,6 +334,9 @@ Currently supported platforms:
   - `pr-macos-tests.yml`: macOS PR testing
   - `macos-neovim-tests.yml`: Neovim-specific tests
   - `codeql.yml`: Security scanning
+  - `cleanup.yml`: Workflow run cleanup
+  - `docker.yml`: Docker image building and publishing
+  - `security-scan.yml`: Security vulnerability scanning
 
 - Workflow features:
   - Early change detection
@@ -337,6 +348,8 @@ Currently supported platforms:
   - Automatic cleanup
   - Compressed artifacts
   - Security scanning
+  - Docker image management
+  - Workflow run cleanup
 
 ###### Lua Module Loading
 

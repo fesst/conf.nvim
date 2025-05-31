@@ -6,8 +6,20 @@ permissions:
 on:
   pull_request:
     branches: ["master"]
+    paths:
+      - "infra/**"
+      - ".github/workflows/**"
+      - "lua/**"
+      - "after/**"
+      - "init.lua"
   push:
     branches: ["master"]
+    paths:
+      - "infra/**"
+      - ".github/workflows/**"
+      - "lua/**"
+      - "after/**"
+      - "init.lua"
   workflow_dispatch: # Allow manual triggering
 
 concurrency:
