@@ -177,19 +177,8 @@ function Test-Harpoon {
 
 function Test-Postgres {
     Write-Status "Testing PostgreSQL functionality..."
-    Write-Status "Testing SQL LSP loading..."
-    $output = nvim --headless -c 'lua if not package.loaded["sqlls"] then error("SQL LSP not loaded") end' -c 'quit'
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "SQL LSP loading test failed"
-        exit 1
-    }
-
-    Write-Status "Testing SQL LSP config..."
-    $output = nvim --headless -c 'lua if not require("lspconfig").sqlls then error("SQL LSP config not available") end' -c 'quit'
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "SQL LSP config test failed"
-        exit 1
-    }
+    if (-not (Run-Lua 'if not package.loaded["sqlls"] then error("SQL LSP not loaded") end' "SQL LSP loading test")) { exit 1 }
+    if (-not (Run-Lua 'if not require("lspconfig").sqlls then error("SQL LSP config not available") end' "SQL LSP config test")) { exit 1 }
 }
 
 function Test-TextFileHandling {
