@@ -21,6 +21,13 @@ return {
         end,
     },
     {
+        'meeehdi-dev/sunset.nvim',
+        opts = {
+            transparent = true,
+            italic_comment = true,
+        },
+    },
+    {
         "neovim/nvim-lspconfig",
         dependencies = {
             "williamboman/mason.nvim",
@@ -124,15 +131,18 @@ return {
         end,
     },
     {
-        "rose-pine/neovim",
-        name = "rose-pine",
-        lazy = false,
-        priority = 1000,
-        config = function()
-            vim.g.rose_pine_variant = "alt"
-            vim.cmd("colorscheme rose-pine")
-        end,
+        'wilmanbarrios/palenight.nvim',
     },
+    -- {
+    --     "rose-pine/neovim",
+    --     name = "rose-pine",
+    --     lazy = false,
+    --     priority = 1000,
+    --     config = function()
+    --         vim.g.rose_pine_variant = "alt"
+    --         vim.cmd("colorscheme rose-pine")
+    --     end,
+    -- },
     {
         "nvim-treesitter/nvim-treesitter",
         build = ":TSUpdate",
@@ -172,10 +182,6 @@ return {
                 end)
             end
         end,
-    },
-    {
-        "github/copilot.vim",
-        lazy = false,
     },
     {
         "nvim-tree/nvim-tree.lua",

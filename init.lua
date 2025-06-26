@@ -5,7 +5,7 @@ vim.g.loaded_netrwPlugin = 1
 require("motleyfesst.remap")
 require("motleyfesst.set")
 
-vim.opt.runtimepath:append({ "/opt/homebrew/opt/fzf" })
+vim.opt.runtimepath:append({ "/usr/bin/fzf" })
 
 -- Install Lazy.nvim if not already installed
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"

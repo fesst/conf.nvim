@@ -31,6 +31,9 @@ opt.updatetime = 50
 -- term and localization
 opt.guifont = { "JetBrainsMono Nerd Font", ":h12" }
 opt.termguicolors = true
+vim.cmd [[highlight Normal guibg=NONE ctermbg=NONE]]
+vim.cmd [[highlight NormalNC guibg=NONE ctermbg=NONE]]
+vim.cmd [[highlight EndOfBuffer guibg=NONE ctermbg=NONE]]
 opt.langmap =
     "ФИСВУАПРШОЛДЬТЩЗЙКЫЕГМЦЧНЯ;ABCDEFGHIJKLMNOPQRSTUVWXYZ,фисвуапршолдьтщзйкыегмцчня;abcdefghijklmnopqrstuvwxyz"
 
