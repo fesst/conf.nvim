@@ -128,8 +128,22 @@ return {
         name = "rose-pine",
         lazy = false,
         priority = 1000,
+        variant = "alt",
         config = function()
             vim.g.rose_pine_variant = "alt"
+            require("rose-pine").setup({
+                disable_background = true,
+                disable_float_background = true,
+                disable_italics = false,
+                groups = {
+                    background = "NONE",
+                    background_nc = "NONE",
+                    panel = "NONE",
+                    panel_nc = "NONE",
+                    border = "NONE",
+                    comment = "NONE",
+                },
+            })
             vim.cmd("colorscheme rose-pine")
         end,
     },
