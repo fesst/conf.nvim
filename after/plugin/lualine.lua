@@ -1,6 +1,8 @@
+require("motleyfesst/utils")
+
 require("lualine").setup({
     options = {
-        theme = "rose-pine-alt", ---@usage 'rose-pine' | 'rose-pine-alt'
+        theme = is_not_ssh() and "rose-pine-alt" or "palenight", ---@usage 'rose-pine' | 'rose-pine-alt'
         refresh = {
             statusline = 100,
             tabline = 100,

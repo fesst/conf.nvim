@@ -4,8 +4,8 @@ vim.g.loaded_netrwPlugin = 1
 -- Set leader key before anything else
 require("motleyfesst.remap")
 require("motleyfesst.set")
-
-vim.opt.runtimepath:append({ "/opt/homebrew/opt/fzf" })
+require("motleyfesst.utils")
+vim.opt.runtimepath:append({ is_not_ssh and "/opt/homebrew/opt/fzf" or "/usr/bin/fzf" })
 
 -- Install Lazy.nvim if not already installed
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
