@@ -118,6 +118,9 @@ local plugins_list =
 if is_not_ssh() then
     local dev_list = {
         {
+            'github/copilot.vim'
+        },
+        {
             "MeanderingProgrammer/render-markdown.nvim",
             dependencies = { "nvim-treesitter", "nvim-tree/nvim-web-devicons" },
         },
