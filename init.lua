@@ -22,7 +22,7 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 -- Configure Lazy.nvim and load plugins
-local lazy_config = require("lazy").setup("motleyfesst.lazy", {
+require("lazy").setup("motleyfesst.lazy", {
     lockfile = vim.fn.stdpath("config") .. (is_not_ssh() and "lazy-lock.json" or "lazy-lock.ssh.json"),
 })
 
