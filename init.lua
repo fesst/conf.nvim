@@ -23,7 +23,7 @@ vim.opt.rtp:prepend(lazypath)
 
 -- Configure Lazy.nvim and load plugins
 local lazy_config = require("lazy").setup("motleyfesst.lazy", {
-    lockfile = is_not_ssh() and "lazy-lock.json" or "lazy-lock.ssh.json",
+    lockfile = vim.fn.stdpath("config") .. (is_not_ssh() and "lazy-lock.json" or "lazy-lock.ssh.json"),
 })
 
 -- Set up highlight on yank
