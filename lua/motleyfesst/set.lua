@@ -22,8 +22,8 @@ opt.splitright = true
 opt.splitbelow = true
 
 -- editor appearance
-opt.cursorline = true
-opt.cursorcolumn = true
+--opt.cursorline = true
+--opt.cursorcolumn = true
 opt.scrolloff = 8
 opt.signcolumn = "yes"
 opt.updatetime = 50
