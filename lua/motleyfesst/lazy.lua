@@ -342,9 +342,12 @@ else
                 })
             end,
         },
-        {
-            "wilmanbarrios/palenight.nvim",
-        },
+        -- {
+        --     'wilmanbarrios/palenight.nvim',
+        -- },
+        -- {
+        --     'alexmozaidze/palenight.nvim',
+        -- },
     }
     for i, line in ipairs(ssh_list) do
         table.insert(plugins_list, line)

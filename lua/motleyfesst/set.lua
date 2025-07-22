@@ -1,3 +1,5 @@
+require("motleyfesst/utils")
+
 vim.wo.number = true
 vim.wo.relativenumber = true
 
@@ -52,6 +54,11 @@ opt.foldlevel = 99
 opt.foldminlines = 1
 opt.foldnestmax = 20
 
--- Persistent folding state
-opt.viewoptions = "folds,cursor,curdir,slash,unix"
-opt.sessionoptions = "blank,buffers,curdir,folds,help,options,tabpages,terminal,winsize"
+if is_not_ssh() then
+	-- Persistent folding state
+	opt.viewoptions = "folds,cursor,curdir,slash,unix"
+	opt.sessionoptions = "blank,buffers,curdir,folds,help,options,tabpages,terminal,winsize"
+else
+	-- palenight
+	--opt.background = "dark"
+end
