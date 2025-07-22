@@ -11,8 +11,7 @@ local function setup_persistent_folding()
     -- Set view directory
     vim.opt.viewdir = view_dir
 
-    -- Enable view options for folding
-    vim.opt.viewoptions = "folds,cursor,curdir,slash,unix"
+    -- Enable view options for folding (configured in lua/motleyfesst/set.lua)
 end
 
 -- Set up persistent folding
