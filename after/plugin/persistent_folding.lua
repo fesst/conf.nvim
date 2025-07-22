@@ -65,7 +65,7 @@ vim.api.nvim_create_autocmd("WinLeave", {
                 vim.fn.timer_stop(win_leave_timer)
             end
             win_leave_timer = vim.defer_fn(function()
-                vim.cmd("mkview")
+                pcall(vim.cmd, "mkview")
             end, 200) -- 200ms debounce interval
         end
     end,
