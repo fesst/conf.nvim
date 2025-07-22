@@ -49,7 +49,7 @@ vim.api.nvim_create_autocmd("BufEnter", {
                 vim.fn.timer_stop(buf_enter_timer)
             end
             buf_enter_timer = vim.defer_fn(function()
-                vim.cmd("loadview")
+                pcall(vim.cmd, "loadview")
             end, 200) -- 200ms debounce interval
         end
     end,
