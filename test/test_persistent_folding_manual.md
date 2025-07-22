@@ -1,30 +1,30 @@
-# Тест персистентного фолдинга
+# Persistent Folding Test
 
-## Шаги для тестирования
+## Steps for Testing
 
-1. Откройте этот файл в Neovim: `nvim test/test_persistent_folding_manual.md`
+1. Open this file in Neovim: `nvim test/test_persistent_folding_manual.md`
 
-2. Закройте все фолды: `zM`
+2. Close all folds: `zM`
 
-3. Сохраните view: `:mkview`
+3. Save the view: `:mkview`
 
-4. Закройте файл: `:q`
+4. Close the file: `:q`
 
-5. Откройте файл снова: `nvim test/test_persistent_folding_manual.md`
+5. Reopen the file: `nvim test/test_persistent_folding_manual.md`
 
-6. Проверьте, что фолды остались закрытыми
+6. Verify that the folds remain closed
 
-## Альтернативный тест
+## Alternative Test
 
-1. Откройте файл: `nvim test/test_persistent_folding_manual.md`
+1. Open the file: `nvim test/test_persistent_folding_manual.md`
 
-2. Используйте команды:
-   - `<leader>vs` - сохранить view
-   - `<leader>vl` - загрузить view
-   - `<leader>vr` - принудительно загрузить view
+2. Use the commands:
+   - `<leader>vs` - save the view
+   - `<leader>vl` - load the view
+   - `<leader>vr` - force load the view
 
-## Ожидаемый результат
+## Expected Result
 
-- Состояние фолдинга должно сохраняться между сессиями
-- View файлы должны создаваться в `~/.local/share/nvim/view/`
-- Автоматическая загрузка должна работать при открытии файла
+- The folding state should persist between sessions
+- View files should be created in `~/.local/share/nvim/view/`
+- Automatic loading should work when reopening the file
