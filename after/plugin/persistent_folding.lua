@@ -32,7 +32,7 @@ vim.api.nvim_create_autocmd("BufLeave", {
                 vim.fn.timer_stop(buf_leave_timer)
             end
             buf_leave_timer = vim.defer_fn(function()
-                vim.cmd("mkview")
+                pcall(vim.cmd, "mkview")
             end, 200) -- 200ms debounce interval
         end
     end,
