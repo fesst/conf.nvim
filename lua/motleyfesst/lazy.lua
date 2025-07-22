@@ -1,7 +1,6 @@
-local pt = require('motleyfesst.print_table')
+local pt = require("motleyfesst.print_table")
 
-local plugins_list =
-{
+local plugins_list = {
     {
         "nvim-telescope/telescope.nvim",
         dependencies = { "nvim-lua/plenary.nvim" },
@@ -118,7 +117,7 @@ local plugins_list =
 if is_not_ssh() then
     local dev_list = {
         {
-            'github/copilot.vim'
+            "github/copilot.vim",
         },
         {
             "MeanderingProgrammer/render-markdown.nvim",
@@ -271,7 +270,7 @@ if is_not_ssh() then
 else
     local ssh_list = {
         {
-            'meeehdi-dev/sunset.nvim',
+            "meeehdi-dev/sunset.nvim",
             opts = {
                 transparent = true,
                 italic_comment = true,
@@ -341,10 +340,10 @@ else
                         delta = "#f3be7c",
                     },
                 })
-            end
-        }, 
+            end,
+        },
         {
-            'wilmanbarrios/palenight.nvim',
+            "wilmanbarrios/palenight.nvim",
         },
     }
     for i, line in ipairs(ssh_list) do
@@ -352,4 +351,3 @@ else
     end
 end
 return plugins_list
-

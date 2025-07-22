@@ -149,6 +149,10 @@ Note: These overrides are chosen to provide more sophisticated functionality whi
 - Fold column width: 4 characters
 - Minimum 1 line per fold
 - Maximum nesting level: 20
+- **Persistent folding state** - automatically saves and restores fold state between sessions
+- `<leader>vs` - Save view (folding state) manually
+- `<leader>vl` - Load view (folding state) manually
+- `<leader>vr` - Load view (folding state) forcefully
 
 ### Language-Specific Settings
 

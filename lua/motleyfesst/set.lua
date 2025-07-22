@@ -51,3 +51,7 @@ opt.foldcolumn = "4"
 opt.foldlevel = 99
 opt.foldminlines = 1
 opt.foldnestmax = 20
+
+-- Persistent folding state
+opt.viewoptions = "folds,cursor,curdir,slash,unix"
+opt.sessionoptions = "blank,buffers,curdir,folds,help,options,tabpages,terminal,winsize"

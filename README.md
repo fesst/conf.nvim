@@ -30,6 +30,7 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
 ### Settings and CI
 
 - Autofolding for multiple languages (using LSP and treesitter, except indent for python).
+- **Persistent folding state** - automatically saves and restores fold state between sessions.
 - Various custom settings and mappings (with focus on preservation compatibility with help).
 - Installation script for MacOS ([brew](https://brew.sh/)).
 - GitHub Actions CI with:
