@@ -19,7 +19,7 @@ setup_persistent_folding()
 
 -- Key mappings for manual view management
 vim.keymap.set("n", "<leader>vs", ":mkview<CR>", { desc = "Save view (folding state)" })
-vim.keymap.set("n", "<leader>vl", ":loadview<CR>", { desc = "Load view (folding state)" })
+vim.keymap.set("n", "<leader>vl", ":silent! loadview<CR>", { desc = "Load view (folding state)" })
 vim.keymap.set("n", "<leader>vr", ":silent! loadview!<CR>", { desc = "Load view (force)" })
 
 -- Simple auto-save on buffer leave
