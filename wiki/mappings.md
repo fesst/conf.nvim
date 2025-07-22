@@ -152,7 +152,7 @@ Note: These overrides are chosen to provide more sophisticated functionality whi
 - **Persistent folding state** - automatically saves and restores fold state between sessions
 - `<leader>vs` - Save view (folding state) manually
 - `<leader>vl` - Load view (folding state) manually
-- `<leader>vr` - Load view (folding state) forcefully
+- `<leader>vr` - Load view (folding state) forcibly
 
 ### Language-Specific Settings
 
