@@ -31,7 +31,7 @@ opt.signcolumn = "yes"
 opt.updatetime = 50
 
 -- term and localization
-opt.guifont = { "JetBrainsMono Nerd Font", ":h12" }
+opt.guifont = { "JetBrainsMono Nerd Font", ":h14" }
 opt.termguicolors = true
 vim.cmd([[highlight Normal guibg=NONE ctermbg=NONE]])
 vim.cmd([[highlight NormalNC guibg=NONE ctermbg=NONE]])
