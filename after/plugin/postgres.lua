@@ -1,6 +1,6 @@
 require("motleyfesst.utils")
 
-if IS_NOT_SSH then
+if IS_NOT_SSH() then
     -- PostgreSQL-specific features
     local keymap = vim.keymap.set
 

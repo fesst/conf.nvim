@@ -1,7 +1,7 @@
 require("motleyfesst.utils")
 
 local plugins_list = {
-    { "nvim-tree/nvim-tree.lua", dependencies = { "nvim-tree/nvim-web-devicons" } },
+    { "nvim-tree/nvim-tree.lua",       dependencies = { "nvim-tree/nvim-web-devicons" } },
     { "nvim-telescope/telescope.nvim", dependencies = { "nvim-lua/plenary.nvim" } },
     {
         "nvim-treesitter/nvim-treesitter",
@@ -15,7 +15,7 @@ local plugins_list = {
     { "nvim-lualine/lualine.nvim", dependencies = { "nvim-tree/nvim-web-devicons" } },
     { "tpope/vim-fugitive" },
 }
-if IS_NOT_SSH then
+if IS_NOT_SSH() then
     local dev_list = {
         { "github/copilot.vim" },
         {
@@ -84,7 +84,7 @@ if IS_NOT_SSH then
                 null_ls.setup({ debug = false, sources = sources })
             end,
         },
-        { "rcarriga/nvim-dap-ui", dependencies = { "mfussenegger/nvim-dap", "nvim-neotest/nvim-nio" } },
+        { "rcarriga/nvim-dap-ui",            dependencies = { "mfussenegger/nvim-dap", "nvim-neotest/nvim-nio" } },
         { "theHamsta/nvim-dap-virtual-text", dependencies = { "mfussenegger/nvim-dap" } },
         {
             "rose-pine/neovim",

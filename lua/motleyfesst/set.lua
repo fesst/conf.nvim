@@ -55,7 +55,7 @@ opt.foldminlines = 1
 opt.foldnestmax = 20
 
 opt.viewoptions = "folds,cursor,curdir,slash,unix"
-if IS_NOT_SSH then
+if IS_NOT_SSH() then
 	-- Persistent folding state
 	opt.sessionoptions = "blank,buffers,curdir,folds,help,options,tabpages,terminal,winsize"
 else

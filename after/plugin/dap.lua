@@ -1,6 +1,6 @@
 require("motleyfesst.utils")
 
-if IS_NOT_SSH then
+if IS_NOT_SSH() then
     local dap = require("dap")
     local dapui = require("dapui")
     local mason_registry = require("mason-registry")
@@ -34,17 +34,17 @@ if IS_NOT_SSH then
         layouts = {
             {
                 elements = {
-                    { id = "scopes", size = 0.33 },
+                    { id = "scopes",      size = 0.33 },
                     { id = "breakpoints", size = 0.17 },
-                    { id = "stacks", size = 0.25 },
-                    { id = "watches", size = 0.25 },
+                    { id = "stacks",      size = 0.25 },
+                    { id = "watches",     size = 0.25 },
                 },
                 size = 0.33,
                 position = "right",
             },
             {
                 elements = {
-                    { id = "repl", size = 0.45 },
+                    { id = "repl",    size = 0.45 },
                     { id = "console", size = 0.55 },
                 },
                 size = 0.27,
