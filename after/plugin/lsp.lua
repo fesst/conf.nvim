@@ -1,10 +1,18 @@
--- Mason configuration is now handled in lazy.lua
 require("motleyfesst.utils")
 
-if is_not_ssh() then
+if IS_NOT_SSH then
+    require("mason").setup({
+                    ui = {
+                        icons = {
+                            package_installed = "✓",
+                            package_pending = "➜",
+                            package_uninstalled = "✗",
+                        },
+                    }
+    })
     require("mason-lspconfig").setup({
         ensure_installed = {
-            "gradle_ls",
+            "angularls", "ts_ls", "eslint", "html", "cssls", "jsonls", "yamlls", "dockerls", "taplo", "pyright", "gopls", "omnisharp", "jdtls", "kotlin_language_server", "clangd", "rust_analyzer", "elixirls", "zls", "sqlls", "gradle_ls", "bashls", "lua_ls", "awk_ls", "texlab", "lemminx",
         },
         automatic_installation = true,
         handlers = {
@@ -41,13 +49,11 @@ if is_not_ssh() then
         },
     })
 
-    -- Configure filetype-specific LSP settings
     vim.api.nvim_create_autocmd("FileType", {
         pattern = { "text", "txt", "markdown", "md" },
         callback = function()
             -- Prevent LSP from attaching to text files
             vim.api.nvim_buf_set_option(0, "omnifunc", "")
-            -- Clear any existing LSP clients
             local clients = vim.lsp.get_clients()
             for _, client in ipairs(clients) do
                 if client.name == "textlsp" then
@@ -56,8 +62,6 @@ if is_not_ssh() then
             end
         end,
     })
-
-    -- Configure global diagnostic settings
     vim.diagnostic.config({
         virtual_text = true,
         signs = true,
@@ -66,7 +70,6 @@ if is_not_ssh() then
         severity_sort = false,
     })
 
-    -- Disable diagnostics for specific filetypes
     vim.api.nvim_create_autocmd("BufReadPost", {
         pattern = { "*.txt", "*.text", "*.md", "*.markdown" },
         callback = function()
@@ -74,55 +77,16 @@ if is_not_ssh() then
         end,
     })
 
-    -- Render Markdown configuration
     require("render-markdown").setup({})
 
     require("mason-lspconfig").setup({
-        ensure_installed = {
-            -- Web Development
-            "angularls", -- Angular
-            "ts_ls", -- TypeScript/JavaScript
-            "eslint", -- ESLint
-            "html", -- HTML
-            "cssls", -- CSS
-            "jsonls", -- JSON
-            "yamlls", -- YAML
-            "dockerls", -- Docker
-            "taplo", -- TOML
 
-            -- Backend Languages
-            "pyright", -- Python
-            "gopls", -- Go
-            "omnisharp", -- C#
-            "jdtls", -- Java
-            "kotlin_language_server", -- Kotlin
-            "clangd", -- C/C++
-            "rust_analyzer", -- Rust
-            "elixirls", -- Elixir
-            "zls", -- Zig
-            "sqlls", -- SQL
-
-            "gradle_ls", -- Gradle
-
-            -- Scripting
-            "bashls", -- Bash
-            "lua_ls", -- Lua
-            "awk_ls", -- AWK
-
-            -- Markup
-            "texlab", -- LaTeX
-            "lemminx", -- XML
-        },
-        automatic_installation = true,
     })
 
-    -- Ensure LSP capabilities are properly set up
     local capabilities = require("cmp_nvim_lsp").default_capabilities()
     local lspconfig = require("lspconfig")
 
-    -- Enhanced on_attach function
     local on_attach = function(client, bufnr)
-        -- Enable formatting on save
         vim.api.nvim_create_autocmd("BufWritePre", {
             buffer = bufnr,
             callback = function()
@@ -130,7 +94,6 @@ if is_not_ssh() then
             end,
         })
 
-        -- Key mappings
         local opts = { buffer = bufnr, silent = true }
         vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
         vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
@@ -142,9 +105,7 @@ if is_not_ssh() then
         vim.keymap.set("n", "]i", vim.diagnostic.goto_next, opts)
     end
 
-    -- Language-specific configurations
     local configs = {
-        -- Web Development
         angularls = {
             capabilities = capabilities,
             on_attach = on_attach,
@@ -154,7 +115,6 @@ if is_not_ssh() then
         ts_ls = {
             capabilities = capabilities,
             on_attach = function(client, bufnr)
-                -- Enable formatting on save
                 vim.api.nvim_create_autocmd("BufWritePre", {
                     buffer = bufnr,
                     callback = function()
@@ -162,7 +122,6 @@ if is_not_ssh() then
                     end,
                 })
 
-                -- Set up folding for JavaScript/TypeScript
                 vim.opt_local.foldmethod = "expr"
                 vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
                 vim.opt_local.foldenable = true
@@ -170,7 +129,6 @@ if is_not_ssh() then
                 vim.opt_local.foldlevel = 99
                 vim.opt_local.foldminlines = 1
 
-                -- Key mappings
                 local opts = { buffer = bufnr, silent = true }
                 vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
                 vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
@@ -200,7 +158,6 @@ if is_not_ssh() then
         html = {
             capabilities = capabilities,
             on_attach = function(client, bufnr)
-                -- Enable formatting on save
                 vim.api.nvim_create_autocmd("BufWritePre", {
                     buffer = bufnr,
                     callback = function()
@@ -208,7 +165,6 @@ if is_not_ssh() then
                     end,
                 })
 
-                -- Set up folding for HTML
                 vim.opt_local.foldmethod = "expr"
                 vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
                 vim.opt_local.foldenable = true
@@ -216,7 +172,6 @@ if is_not_ssh() then
                 vim.opt_local.foldlevel = 99
                 vim.opt_local.foldminlines = 1
 
-                -- Key mappings
                 local opts = { buffer = bufnr, silent = true }
                 vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
                 vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
@@ -237,7 +192,6 @@ if is_not_ssh() then
         cssls = {
             capabilities = capabilities,
             on_attach = function(client, bufnr)
-                -- Enable formatting on save
                 vim.api.nvim_create_autocmd("BufWritePre", {
                     buffer = bufnr,
                     callback = function()
@@ -245,7 +199,6 @@ if is_not_ssh() then
                     end,
                 })
 
-                -- Set up folding for CSS
                 vim.opt_local.foldmethod = "expr"
                 vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
                 vim.opt_local.foldenable = true
@@ -253,7 +206,6 @@ if is_not_ssh() then
                 vim.opt_local.foldlevel = 99
                 vim.opt_local.foldminlines = 1
 
-                -- Key mappings
                 local opts = { buffer = bufnr, silent = true }
                 vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
                 vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
@@ -274,7 +226,6 @@ if is_not_ssh() then
         jsonls = {
             capabilities = capabilities,
             on_attach = function(client, bufnr)
-                -- Enable formatting on save
                 vim.api.nvim_create_autocmd("BufWritePre", {
                     buffer = bufnr,
                     callback = function()
@@ -282,7 +233,6 @@ if is_not_ssh() then
                     end,
                 })
 
-                -- Set up folding for JSON
                 vim.opt_local.foldmethod = "expr"
                 vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
                 vim.opt_local.foldenable = true
@@ -290,7 +240,6 @@ if is_not_ssh() then
                 vim.opt_local.foldlevel = 99
                 vim.opt_local.foldminlines = 1
 
-                -- Key mappings
                 local opts = { buffer = bufnr, silent = true }
                 vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
                 vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
@@ -323,11 +272,9 @@ if is_not_ssh() then
             on_attach = on_attach,
         },
 
-        -- Backend Languages
         pyright = {
             capabilities = capabilities,
             on_attach = function(client, bufnr)
-                -- Enable formatting on save
                 vim.api.nvim_create_autocmd("BufWritePre", {
                     buffer = bufnr,
                     callback = function()
@@ -335,7 +282,6 @@ if is_not_ssh() then
                     end,
                 })
 
-                -- Key mappings
                 local opts = { buffer = bufnr, silent = true }
                 vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
                 vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
@@ -392,7 +338,6 @@ if is_not_ssh() then
         clangd = {
             capabilities = capabilities,
             on_attach = function(client, bufnr)
-                -- Enable formatting on save
                 vim.api.nvim_create_autocmd("BufWritePre", {
                     buffer = bufnr,
                     callback = function()
@@ -400,7 +345,6 @@ if is_not_ssh() then
                     end,
                 })
 
-                -- Set up folding for C/C++
                 vim.opt_local.foldmethod = "expr"
                 vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
                 vim.opt_local.foldenable = true
@@ -408,7 +352,6 @@ if is_not_ssh() then
                 vim.opt_local.foldlevel = 99
                 vim.opt_local.foldminlines = 1
 
-                -- Key mappings
                 local opts = { buffer = bufnr, silent = true }
                 vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
                 vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
@@ -461,7 +404,6 @@ if is_not_ssh() then
             on_attach = on_attach,
         },
 
-        -- Scripting
         bashls = {
             capabilities = capabilities,
             on_attach = on_attach,
@@ -493,7 +435,6 @@ if is_not_ssh() then
             on_attach = on_attach,
         },
 
-        -- Markup
         texlab = {
             capabilities = capabilities,
             on_attach = on_attach,
@@ -517,14 +458,12 @@ if is_not_ssh() then
             },
         },
 
-        -- SQL LSP configuration
         sqlls = {
             capabilities = capabilities,
             on_attach = on_attach,
             settings = {
                 sqlLanguageServer = {
                     connections = {
-                        -- Development database
                         {
                             name = "PostgreSQL Dev",
                             adapter = "postgresql",
@@ -610,12 +549,10 @@ if is_not_ssh() then
         },
     }
 
-    -- Set up each LSP server
     for server_name, config in pairs(configs) do
         lspconfig[server_name].setup(config)
     end
 
-    -- Additional diagnostics configuration
     vim.diagnostic.config({
         virtual_text = true,
         signs = true,
@@ -624,7 +561,6 @@ if is_not_ssh() then
         severity_sort = false,
     })
 
-    -- Enable border for floating windows
     local border = {
         { "╭", "FloatBorder" },
         { "─", "FloatBorder" },

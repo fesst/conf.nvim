@@ -1,28 +1,24 @@
 require("motleyfesst.utils")
 
-if is_not_ssh() then
+if IS_NOT_SSH then
     local dap = require("dap")
     local dapui = require("dapui")
-
-    -- Auto-install DAP adapters
     local mason_registry = require("mason-registry")
+
     local function ensure_dap_installed()
         local adapters = {
-            "debugpy", -- Python
-            "netcoredbg", -- C#
-            "elixir-ls", -- Elixir
+            "debugpy",
+            "netcoredbg",
+            "elixir-ls",
         }
-
         for _, adapter in ipairs(adapters) do
             if not mason_registry.is_installed(adapter) then
                 mason_registry.get_package(adapter):install()
             end
         end
     end
-
     ensure_dap_installed()
 
-    -- DAP UI setup
     dapui.setup({
         icons = { expanded = "▾", collapsed = "▸", current_frame = "▸" },
         mappings = {
@@ -33,20 +29,7 @@ if is_not_ssh() then
             repl = "r",
             toggle = "t",
         },
-        element_mappings = {
-            stacks = {
-                open = "<CR>",
-                expand = "o",
-            },
-            scopes = {
-                open = "<CR>",
-                expand = "o",
-            },
-            breakpoints = {
-                open = "<CR>",
-                expand = "o",
-            },
-        },
+        element_mappings = { stacks = { open = "<CR>", expand = "o", }, scopes = { open = "<CR>", expand = "o", }, breakpoints = { open = "<CR>", expand = "o", }, },
         expand_lines = true,
         layouts = {
             {
@@ -93,7 +76,6 @@ if is_not_ssh() then
         windows = { indent = 1 },
     })
 
-    -- DAP keymaps
     vim.keymap.set("n", "<leader>dc", dap.continue, { desc = "Debug: Start/Continue" })
     vim.keymap.set("n", "<leader>di", dap.step_into, { desc = "Debug: Step Into" })
     vim.keymap.set("n", "<leader>do", dap.step_over, { desc = "Debug: Step Over" })
@@ -108,7 +90,6 @@ if is_not_ssh() then
     vim.keymap.set("n", "<leader>dr", dap.repl.open, { desc = "Debug: Open REPL" })
     vim.keymap.set("n", "<leader>dL", dap.run_last, { desc = "Debug: Run Last" })
 
-    -- DAP events
     dap.listeners.after.event_initialized["dapui_config"] = function()
         dapui.open()
     end
@@ -119,7 +100,6 @@ if is_not_ssh() then
         dapui.close()
     end
 
-    -- Python DAP configuration
     dap.adapters.python = {
         type = "executable",
         command = "python",
@@ -146,7 +126,6 @@ if is_not_ssh() then
         },
     }
 
-    -- JavaScript/TypeScript DAP configuration
     dap.adapters.node = {
         type = "server",
         host = "localhost",
@@ -172,9 +151,6 @@ if is_not_ssh() then
 
     dap.configurations.typescript = dap.configurations.javascript
 
-    -- Go DAP configuration
-    -- Note: Requires manual installation of Delve:
-    -- go install github.com/go-delve/delve/cmd/dlv@latest
     dap.adapters.delve = {
         type = "server",
         port = "${port}",
@@ -183,7 +159,6 @@ if is_not_ssh() then
             args = { "dap", "-l", "127.0.0.1:${port}" },
         },
     }
-
     dap.configurations.go = {
         {
             type = "delve",
@@ -199,10 +174,6 @@ if is_not_ssh() then
             program = "${file}",
         },
     }
-
-    -- Rust and C/C++ DAP configuration
-    -- Note: Requires manual installation of CodeLLDB:
-    -- cargo install codelldb
     dap.adapters.codelldb = {
         type = "server",
         port = "${port}",
@@ -211,7 +182,6 @@ if is_not_ssh() then
             args = { "--port", "${port}" },
         },
     }
-
     dap.configurations.rust = {
         {
             type = "codelldb",
@@ -237,8 +207,6 @@ if is_not_ssh() then
             showDisassembly = "never",
         },
     }
-
-    -- C/C++ DAP configuration
     dap.configurations.cpp = {
         {
             name = "Launch file",
@@ -271,11 +239,9 @@ if is_not_ssh() then
 
     dap.configurations.c = dap.configurations.cpp
 
-    -- Lua DAP configuration
     dap.adapters.nlua = function(callback, config)
         callback({ type = "server", host = config.host or "127.0.0.1", port = config.port or 8086 })
     end
-
     dap.configurations.lua = {
         {
             type = "nlua",
@@ -289,8 +255,6 @@ if is_not_ssh() then
             end,
         },
     }
-
-    -- Java DAP configuration
     dap.configurations.java = {
         {
             type = "java",
@@ -309,10 +273,8 @@ if is_not_ssh() then
         },
     }
 
-    -- Kotlin DAP configuration
     dap.configurations.kotlin = dap.configurations.java
 
-    -- PHP DAP configuration
     dap.adapters.php = {
         type = "executable",
         command = "php",
@@ -328,7 +290,6 @@ if is_not_ssh() then
         },
     }
 
-    -- Ruby DAP configuration
     dap.adapters.ruby = {
         type = "executable",
         command = "bundle",
@@ -354,7 +315,6 @@ if is_not_ssh() then
         },
     }
 
-    -- Elixir DAP configuration
     dap.adapters.mix_task = {
         type = "executable",
         command = "elixir-ls-debugger",
@@ -386,7 +346,6 @@ if is_not_ssh() then
         },
     }
 
-    -- C# DAP configuration
     dap.adapters.coreclr = {
         type = "executable",
         command = "netcoredbg",
@@ -404,7 +363,6 @@ if is_not_ssh() then
         },
     }
 
-    -- Zig DAP configuration
     dap.adapters.zls = {
         type = "executable",
         command = "zls",
@@ -423,6 +381,5 @@ if is_not_ssh() then
         },
     }
 
-    -- Enable DAP logging
     dap.set_log_level("DEBUG")
 end

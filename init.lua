@@ -1,28 +1,19 @@
---remove netrw
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
--- Set leader key before anything else
-require("motleyfesst.remap")
-require("motleyfesst.set")
-require("motleyfesst.utils")
-vim.opt.runtimepath:append({ is_not_ssh and "/opt/homebrew/opt/fzf" or "/usr/bin/fzf" })
 
--- Install Lazy.nvim if not already installed
+require("motleyfesst.remap") -- set leader key before anything else and load utils
+require("motleyfesst.set")
+
+vim.opt.runtimepath:append({ IS_NOT_SSH and "/opt/homebrew/opt/fzf" or "/usr/bin/fzf" })
+
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
+
 if not vim.loop.fs_stat(lazypath) then
-    vim.fn.system({
-        "git",
-        "clone",
-        "--filter=blob:none",
-        "https://github.com/folke/lazy.nvim.git",
-        "--branch=stable", -- latest stable release
-        lazypath,
-    })
+    vim.fn.system({ "git", "clone", "--filter=blob:none", "https://github.com/folke/lazy.nvim.git", "--branch=stable", lazypath, })
 end
 vim.opt.rtp:prepend(lazypath)
--- Configure Lazy.nvim and load plugins
 require("lazy").setup("motleyfesst.lazy", {
-    lockfile = vim.fn.stdpath("config") .. (is_not_ssh() and "/lazy-lock.json" or "/lazy-lock.ssh.json"),
+    lockfile = vim.fn.stdpath("config") .. (IS_NOT_SSH and "/lazy-lock.json" or "/lazy-lock.ssh.json"),
 })
 
 -- Set up highlight on yank

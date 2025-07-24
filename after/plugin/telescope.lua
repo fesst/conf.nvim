@@ -16,18 +16,14 @@ require("telescope").setup({
     },
     extensions = {
         media_files = {
-            -- filetypes whitelist
-            -- defaults to {"png", "jpg", "mp4", "webm", "pdf"}
-            filetypes = { "pdf", "png", "webp", "jpg", "jpeg" },
-            -- find command (defaults to `fd`)
-            find_cmd = "rg",
+                filetypes = { "pdf", "png", "webp", "jpg", "jpeg" },-- defaults to {"png", "jpg", "mp4", "webm", "pdf"}
+            find_cmd = "rg",-- find command (defaults to `fd`)
         },
     },
 })
 
 local builtin = require("telescope.builtin")
 vim.keymap.set("n", "<leader>tf", builtin.find_files, { desc = "Telescope find files" })
-
 vim.keymap.set("n", "<leader>te", builtin.oldfiles, { desc = "Telescope old files" })
 vim.keymap.set("n", "<leader>ts", function()
     return builtin.grep_string({ search = vim.fn.input("Grep > ") })

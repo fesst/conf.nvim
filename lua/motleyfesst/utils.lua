@@ -1,4 +1,4 @@
-function is_not_ssh()
+function IS_NOT_SSH()
     local ssh = os.getenv("SSH_CONNECTION") or os.getenv("SSH_CLIENT") or os.getenv("SSH_TTY")
     return not ssh
 end
