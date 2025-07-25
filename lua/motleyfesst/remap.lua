@@ -10,6 +10,56 @@ local function map(mode, lhs, rhs, opts)
     vim.keymap.set(mode, lhs, rhs, options)
 end
 
+-- Smart text object detection and selection
+local function smart_select_text_object()
+    local line = vim.api.nvim_get_current_line()
+    local col = vim.api.nvim_win_get_cursor(0)[2] + 1 -- Convert to 1-indexed
+
+    -- Patterns to detect different text objects
+    local patterns = {
+        -- Environment variables ${...}
+        { pattern = "%$%{[^}]*%}", name = "env_var" },
+        -- Quoted strings "..." or '...'
+        { pattern = '"[^"]*"', name = "double_quote" },
+        { pattern = "'[^']*'", name = "single_quote" },
+        -- Parentheses (...)
+        { pattern = "%([^)]*%)", name = "parentheses" },
+        -- Square brackets [...]
+        { pattern = "%[[^%]]*%]", name = "square_brackets" },
+        -- Curly braces {...}
+        { pattern = "%{[^}]*%}", name = "curly_braces" },
+        -- Angle brackets <...>
+        { pattern = "%<[^>]*%>", name = "angle_brackets" },
+        -- Backticks `...`
+        { pattern = "`[^`]*`", name = "backticks" },
+        -- File paths (simplified: word chars, dots, slashes, hyphens)
+        { pattern = "[%w%./_%-]+", name = "path" },
+    }
+
+    -- Find the pattern that contains the cursor position
+    for _, p in ipairs(patterns) do
+        local start_pos = 1
+        while true do
+            local s, e = line:find(p.pattern, start_pos)
+            if not s then break end
+
+            -- Check if cursor is within this match
+            if col >= s and col <= e then
+                -- Set visual selection
+                vim.api.nvim_win_set_cursor(0, {vim.api.nvim_win_get_cursor(0)[1], s - 1})
+                vim.cmd('normal! v')
+                vim.api.nvim_win_set_cursor(0, {vim.api.nvim_win_get_cursor(0)[1], e - 1})
+                return true
+            end
+            start_pos = e + 1
+        end
+    end
+
+    -- Fallback to word selection if no pattern matches
+    vim.cmd('normal! viw')
+    return false
+end
+
 -- Smart bracket deletion function
 local function smart_delete_brackets(open_char, close_char)
     return function()
@@ -43,6 +93,15 @@ local function smart_change_brackets(old_open, old_close, new_open, new_close)
     end
 end
 
+-- Smart surround function for normal mode
+local function smart_surround(open_char, close_char)
+    return function()
+        smart_select_text_object()
+        vim.cmd('normal! x')
+        vim.cmd('normal! i' .. open_char .. close_char .. '<Esc>P')
+    end
+end
+
 -- Surround with brackets (visual mode)
 map("v", "<leader>b(", "xi()<Esc>P")
 map("v", "<leader>b[", "xi[]<Esc>P")
@@ -52,14 +111,14 @@ map("v", "<leader>b'", "xi''<Esc>P")
 map("v", '<leader>b"', 'xi""<Esc>P')
 map("v", "<leader>b`", "xi``<Esc>P")
 
--- Surround with brackets (normal mode)
-map("n", "<leader>b(", "viwxi()<Esc>P")
-map("n", "<leader>b[", "viwxi[]<Esc>P")
-map("n", "<leader>b{", "viwxi{}<Esc>P")
-map("n", "<leader>b<", "viwxi<><Esc>P")
-map("n", "<leader>b'", "viwxi''<Esc>P")
-map("n", '<leader>b"', 'viwxi""<Esc>P')
-map("n", "<leader>b`", "viwxi``<Esc>P")
+-- Smart surround with brackets (normal mode)
+map("n", "<leader>b(", smart_surround("(", ")"))
+map("n", "<leader>b[", smart_surround("[", "]"))
+map("n", "<leader>b{", smart_surround("{", "}"))
+map("n", "<leader>b<", smart_surround("<", ">"))
+map("n", "<leader>b'", smart_surround("'", "'"))
+map("n", '<leader>b"', smart_surround('"', '"'))
+map("n", "<leader>b`", smart_surround("`", "`"))
 
 -- Delete surrounding brackets (smart logic)
 map("n", "<leader>B(", smart_delete_brackets("(", ")"))

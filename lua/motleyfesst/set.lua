@@ -1,5 +1,3 @@
-require("motleyfesst/utils")
-
 vim.wo.number = true
 vim.wo.relativenumber = true
 
@@ -55,10 +53,11 @@ opt.foldminlines = 1
 opt.foldnestmax = 20
 
 opt.viewoptions = "folds,cursor,curdir,slash,unix"
-if IS_NOT_SSH() then
-	-- Persistent folding state
+
+local ssh_utils = require("motleyfesst.utils")
+if ssh_utils.IS_NOT_SSH() then
 	opt.sessionoptions = "blank,buffers,curdir,folds,help,options,tabpages,terminal,winsize"
 else
-	-- palenight
-	--opt.background = "dark"
+	-- SSH sessions - simplified settings for better performance
+	-- Disable persistent folding and advanced sessionoptions
 end

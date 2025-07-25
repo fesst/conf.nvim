@@ -1,6 +1,6 @@
-require("motleyfesst.utils")
+local ssh_utils = require("motleyfesst.utils")
 
-if IS_NOT_SSH() then
+if ssh_utils.IS_NOT_SSH() then
     local keymap = vim.keymap.set
 
     local function setup_tabs(tab_size, expand_tab)

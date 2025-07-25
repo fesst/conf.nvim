@@ -15,7 +15,9 @@ local plugins_list = {
     { "nvim-lualine/lualine.nvim", dependencies = { "nvim-tree/nvim-web-devicons" } },
     { "tpope/vim-fugitive" },
 }
-if IS_NOT_SSH() then
+local utils = require("motleyfesst.utils")
+
+if utils.IS_NOT_SSH() then
     local dev_list = {
         { "github/copilot.vim" },
         {

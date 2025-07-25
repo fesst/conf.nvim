@@ -1,4 +1,4 @@
-require("motleyfesst.utils")
+local ssh_utils = require("motleyfesst.utils")
 
 local function setup_base_folding()
     vim.opt_local.foldmethod = "expr"
@@ -75,7 +75,7 @@ vim.api.nvim_create_autocmd("FileType", {
     end,
     group = vim.api.nvim_create_augroup("CSSFolding", { clear = true }),
 })
-if IS_NOT_SSH() then
+if ssh_utils.IS_NOT_SSH() then
     vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "FileType" }, {
         pattern = { "*" },
         callback = function()

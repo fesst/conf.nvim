@@ -1,4 +1,4 @@
-require("motleyfesst.utils")
+local ssh_utils = require("motleyfesst.utils")
 
 local function setup_persistent_folding()
     local view_dir = vim.fn.stdpath("data") .. "/view"
