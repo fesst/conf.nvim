@@ -45,10 +45,14 @@ local function smart_select_text_object()
 
             -- Check if cursor is within this match
             if col >= s and col <= e then
-                -- Set visual selection
-                vim.api.nvim_win_set_cursor(0, {vim.api.nvim_win_get_cursor(0)[1], s - 1})
-                vim.cmd('normal! v')
-                vim.api.nvim_win_set_cursor(0, {vim.api.nvim_win_get_cursor(0)[1], e - 1})
+                -- Set visual selection by positioning start and end
+                local row = vim.api.nvim_win_get_cursor(0)[1]
+                -- Set visual selection start
+                vim.fn.setpos("'<", {0, row, s, 0})
+                -- Set visual selection end
+                vim.fn.setpos("'>", {0, row, e, 0})
+                -- Enter visual mode to activate the selection
+                vim.cmd('normal! gv')
                 return true
             end
             start_pos = e + 1
