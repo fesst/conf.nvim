@@ -8,9 +8,15 @@ local function map(mode, lhs, rhs, opts)
     vim.keymap.set(mode, lhs, rhs, options)
 end
 
-map("n", "<leader>m", ":messages<CR>")
+map({'n', 'v'}, "<leader>T", function()
+    vim.cmd("botright " .. math.floor(vim.o.lines / 4) .. "split")
+    vim.cmd("terminal")
+    vim.cmd("startinsert")
+end, {})
+
 map("n", "<leader>R", ":source %<CR>")
 map("n", "<leader>w", ":write %<CR>")
+map("n", "<leader>m", ":messages<CR>")
 
 map("n", "<leader>*", ":nohlsearch<CR>")
 
