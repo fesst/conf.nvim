@@ -9,22 +9,35 @@ require("lualine").setup({
             winbar = 100,
         },
         show_filename_only = false,
-        sections = {
-            lualine_c = { { "filename", path = 1, newfile_status = true } },
-            lualine_x = {
-                "encoding",
-                "lsp_status",
-                {
-                    "fileformat",
-                    symbols = {
-                        unix = "", -- e711
-                        dos = "", -- e70f
-                        mac = "", -- e711
-                    },
-                    "filetype",
-                },
+    },
+    sections = {
+        lualine_c = {
+            {
+                "filename",
+                path = 1,
+                newfile_status = true,
             },
         },
-        inactive_sections = { lualine_c = { { "filename", path = 1 } } },
+        lualine_x = {
+            "encoding",
+            "lsp-status",
+            {
+                "fileformat",
+                symbols = {
+                    unix = "", -- e711
+                    dos = "", -- e70f
+                    mac = "", -- e711
+                },
+                "filetype",
+            },
+        },
+    },
+    inactive_sections = {
+        lualine_c = {
+            {
+                "filename",
+                path = 2,
+            },
+        },
     },
 })
