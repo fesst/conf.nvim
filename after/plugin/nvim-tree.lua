@@ -17,7 +17,7 @@ require("nvim-tree").setup({
             enable = true,
             open_win_config = function()
                 local screen = vim.api.nvim_get_current_win()
-                local cmdheight = vim.opt.cmdheight:get();
+                local cmdheight = vim.opt.cmdheight:get()
 
                 local screen_h = vim.api.nvim_win_get_height(screen) - cmdheight
                 local window_h = HEIGHT_RATIO * screen_h
@@ -40,161 +40,162 @@ require("nvim-tree").setup({
             end,
         },
         -- width = function()
-            --     return math.floor(WIDTH_RATIO * vim.opt.columns:get())
-            -- end,
+        --     return math.floor(WIDTH_RATIO * vim.opt.columns:get())
+        -- end,
+    },
+    modified = {
+        enable = true,
+    },
+    tab = {
+        sync = {
+            open = true,
+            close = true,
+            ignore = {},
         },
-        modified = {
+    },
+    renderer = {
+        add_trailing = true,
+        group_empty = true,
+        symlink_destination = true,
+        highlight_git = "icon",
+        highlight_opened_files = "all",
+        highlight_modified = "all",
+        highlight_hidden = "icon",
+        highlight_bookmarks = "name",
+        highlight_clipboard = "all",
+        hidden_display = "all",
+        indent_markers = {
             enable = true,
         },
-        tab = {
-            sync = {
-                open = true,
-                close = true,
-                ignore = {},
-            },
-        },
-        renderer = {
-            add_trailing = true,
-            group_empty = true,
-            symlink_destination = true,
-            highlight_git = "icon",
-            highlight_opened_files = "all",
-            highlight_modified = "all",
-            highlight_hidden = "icon",
-            highlight_bookmarks = "name",
-            highlight_clipboard = "all",
-            hidden_display = "all",
-            indent_markers = {
-                enable = true,
-            },
-            icons = {
-                web_devicons = {
-                    folder = {
-                        enable = true,
-                    },
-                },
-                show = {
-                    hidden = true,
-                },
-                bookmarks_placement = "signcolumn",
-                git_placement = "before",
-                modified_placement = "after",
-                hidden_placement = "right_align",
-            },
-        },
-        filters = {
-            dotfiles = true,
-            custom = {
-                "010-installers",
-                "Applications",
-                "Desktop",
-                "Documents",
-                "Downloads",
-                "Library",
-                "Live projects mac",
-                "Live\\ projects",
-                "Movies",
-                "Music",
-                "MusicCreation",
-                "Pictures",
-                "Public",
-                "Push3",
-                "\\.CFUserTextEncoding",
-                "\\.DS_Store",
-                "\\.Spotlight-V100",
-                "\\.aspnet",
-                "\\.cache",
-                "\\.colima",
-                "\\.docker",
-                "\\.dotnet",
-                "\\.git",
-                "\\.idead",
-                "\\.lesshst",
-                "\\.local",
-                "\\.mounty",
-                "\\.node_repl_history",
-                "\\.npm",
-                "\\.nuget",
-                "\\.nvm",
-                "\\.python_history",
-                "\\.sdkman",
-                "\\.templateengine",
-                "node_modules",
-            },
-        },
-        hijack_directories = {
-            enable = true,
-        },
-        diagnostics = {
-            enable = true,
-            show_on_dirs = true,
-            show_on_open_dirs = true,
-            debounce_delay = 500,
-            severity = {
-                min = vim.diagnostic.severity.HINT,
-                max = vim.diagnostic.severity.ERROR,
-            },
-            icons = {
-                hint = "󰠠",
-                info = "󰋼",
-                warning = "󰅚",
-                error = "󰅚",
-            },
-        },
-        git = {
-            enable = true,
-        },
-        update_focused_file = {
-            enable = true,
-            update_cwd = true,
-        },
-        actions = {
-            change_dir = {
-                restrict_above_cwd = true,
-            },
-            open_file = {
-                quit_on_open = true,
-                window_picker = {
+        icons = {
+            web_devicons = {
+                folder = {
                     enable = true,
                 },
             },
+            show = {
+                hidden = true,
+            },
+            bookmarks_placement = "signcolumn",
+            git_placement = "before",
+            modified_placement = "after",
+            hidden_placement = "right_align",
         },
-    })
+    },
+    filters = {
+        dotfiles = true,
+        custom = {
+            "010-installers",
+            "Applications",
+            "Desktop",
+            "Documents",
+            "Downloads",
+            "Library",
+            "Live projects mac",
+            "Live\\ projects",
+            "Movies",
+            "Music",
+            "MusicCreation",
+            "Pictures",
+            "Public",
+            "Push3",
+            "\\.CFUserTextEncoding",
+            "\\.DS_Store",
+            "\\.Spotlight-V100",
+            "\\.aspnet",
+            "\\.cache",
+            "\\.colima",
+            "\\.docker",
+            "\\.dotnet",
+            "\\.git",
+            "\\.idead",
+            "\\.lesshst",
+            "\\.local",
+            "\\.mounty",
+            "\\.node_repl_history",
+            "\\.npm",
+            "\\.nuget",
+            "\\.nvm",
+            "\\.python_history",
+            "\\.sdkman",
+            "\\.templateengine",
+            "node_modules",
+        },
+    },
+    hijack_directories = {
+        enable = true,
+    },
+    diagnostics = {
+        enable = true,
+        show_on_dirs = true,
+        show_on_open_dirs = true,
+        debounce_delay = 500,
+        severity = {
+            min = vim.diagnostic.severity.HINT,
+            max = vim.diagnostic.severity.ERROR,
+        },
+        icons = {
+            hint = "󰠠",
+            info = "󰋼",
+            warning = "󰅚",
+            error = "󰅚",
+        },
+    },
+    git = {
+        enable = true,
+    },
+    update_focused_file = {
+        enable = true,
+        update_cwd = true,
+    },
+    actions = {
+        change_dir = {
+            restrict_above_cwd = true,
+        },
+        open_file = {
+            quit_on_open = true,
+            window_picker = {
+                enable = true,
+            },
+        },
+    },
+})
 
-    vim.keymap.set("n", "<leader>pv", ":NvimTreeFindFile<CR>", { noremap = true, silent = true })
-    vim.keymap.set("n", "<leader>p-", ":NvimTreeToggle<CR>", { noremap = true, silent = true })
-    vim.keymap.set("n", "<leader>pc", ":NvimTreeClose<CR>", { noremap = true, silent = true })
+vim.keymap.set("n", "<leader>pv", ":NvimTreeFindFile<CR>", { noremap = true, silent = true })
+vim.keymap.set("n", "<leader>p-", ":NvimTreeToggle<CR>", { noremap = true, silent = true })
+vim.keymap.set("n", "<leader>pc", ":NvimTreeClose<CR>", { noremap = true, silent = true })
 
-    local function open_nvim_tree(data)
-        if vim.fn.isdirectory(data.file) == 1 then -- buffer is not a directory
-            vim.cmd.cd(data.file)
-            require("nvim-tree.api").tree.open({
-                focus = false,
-                find_file = true,
-            })
-        end
+local function open_nvim_tree(data)
+    if vim.fn.isdirectory(data.file) == 1 then -- buffer is not a directory
+        vim.cmd.cd(data.file)
+        require("nvim-tree.api").tree.open({
+            hidden_display = "all",
+            focus = false,
+            find_file = true,
+        })
     end
-    vim.api.nvim_create_autocmd({ "VimEnter" }, {
-        callback = function(data)
-            if vim.fn.isdirectory(data.file) == 1 then
-                vim.schedule(function()
-                    open_nvim_tree(data)
-                end)
-            end
-        end,
-        group = vim.api.nvim_create_augroup("NvimTreeInit", { clear = true }),
-    })
-    vim.api.nvim_create_augroup("NvimTreeResize", {
-        clear = true,
-    })
+end
+vim.api.nvim_create_autocmd({ "VimEnter" }, {
+    callback = function(data)
+        if vim.fn.isdirectory(data.file) == 1 then
+            vim.schedule(function()
+                open_nvim_tree(data)
+            end)
+        end
+    end,
+    group = vim.api.nvim_create_augroup("NvimTreeInit", { clear = true }),
+})
+vim.api.nvim_create_augroup("NvimTreeResize", {
+    clear = true,
+})
 
-    local api = require("nvim-tree.api")
-    vim.api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
-        group = "NvimTreeResize",
-        callback = function()
-            local winid = api.tree.winid()
-            if winid then
-                api.tree.reload()
-            end
-        end,
-    })
+local api = require("nvim-tree.api")
+vim.api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
+    group = "NvimTreeResize",
+    callback = function()
+        local winid = api.tree.winid()
+        if winid then
+            api.tree.reload()
+        end
+    end,
+})

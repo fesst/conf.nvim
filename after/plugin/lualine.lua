@@ -1,5 +1,4 @@
 require("lualine").setup({
-    extensions = { "nvimtree", "fzf", "lazy", "mason", "nvim-dap-ui" },
     options = {
         theme = require("motleyfesst.utils").IS_NOT_SSH() and "rose-pine-alt" or "vague",
         section_separators = { left = "", right = "" },
