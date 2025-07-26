@@ -91,18 +91,18 @@ if ssh_utils.IS_NOT_SSH() then
                 -- Format current SQL file
                 keymap("n", "<leader>sf", ":!pg_format -i %<CR>", { desc = "Format SQL file" })
                 keymap("v", "<leader>se", ":!psql -c 'EXPLAIN ANALYZE ' . vim.fn.getreg('*')<CR>",
-                    { desc = "Explain selected query" })
+                { desc = "Explain selected query" })
                 keymap("v", "<leader>sr", ":!psql -c " .. vim.fn.getreg("*") .. "<CR>", { desc = "Run selected query" })
                 keymap("n", "<leader>st", ":!psql -c '\\d ' . expand('<cword>')<CR>", { desc = "Show table structure" })
                 keymap("n", "<leader>sd", ":!psql -c '\\l+'<CR>", { desc = "Show database sizes" })
                 keymap("n", "<leader>ss", ":!psql -c '\\dt+'<CR>", { desc = "Show table sizes" })
                 keymap("n", "<leader>si", ":!psql -c 'SELECT * FROM pg_stat_user_indexes'<CR>",
-                    { desc = "Show index usage" })
+                { desc = "Show index usage" })
                 keymap("n", "<leader>sl", ":!psql -c 'SELECT * FROM pg_stat_activity WHERE state = ''active'''<CR>",
-                    { desc = "Show long-running queries" })
+                { desc = "Show long-running queries" })
                 keymap("n", "<leader>sk", ":!psql -c 'SELECT * FROM pg_locks'<CR>", { desc = "Show locks" })
                 keymap("n", "<leader>sv", ":!psql -c 'SELECT * FROM pg_stat_user_tables'<CR>",
-                    { desc = "Show vacuum status" })
+                { desc = "Show vacuum status" })
             end,
         })
     end
@@ -121,7 +121,7 @@ if ssh_utils.IS_NOT_SSH() then
         keymap("n", "<leader>yt", ":!npm test<CR>", { desc = "Run JavaScript tests" })
 
         keymap("n", "<leader>yb", ":!latexmk -pdf -synctex=1 -interaction=nonstopmode %<CR>",
-            { desc = "Build LaTeX document" })
+        { desc = "Build LaTeX document" })
         keymap("n", "<leader>yv", ":!open -a Skim %:r.pdf<CR>", { desc = "View LaTeX PDF" })
 
         keymap("n", "<leader>yd", ":!docker build .<CR>", { desc = "Build Docker image" })

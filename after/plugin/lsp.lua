@@ -2,13 +2,13 @@ local ssh_utils = require("motleyfesst.utils")
 
 if ssh_utils.IS_NOT_SSH() then
     require("mason").setup({
-                    ui = {
-                        icons = {
-                            package_installed = "✓",
-                            package_pending = "➜",
-                            package_uninstalled = "✗",
-                        },
-                    }
+        ui = {
+            icons = {
+                package_installed = "✓",
+                package_pending = "➜",
+                package_uninstalled = "✗",
+            },
+        }
     })
     require("mason-lspconfig").setup({
         ensure_installed = {
@@ -475,107 +475,107 @@ if ssh_utils.IS_NOT_SSH() then
                         },
                         -- Production database (commented out for safety)
                         -- {
-                        --     name = "PostgreSQL Prod",
-                        --     adapter = "postgresql",
-                        --     host = "prod.example.com",
-                        --     port = 5432,
-                        --     database = "prod_db",
-                        --     user = "prod_user",
-                        --     password = "", -- Set this in your environment or use .pgpass
-                        -- },
-                        -- Test database
-                        {
-                            name = "PostgreSQL Test",
-                            adapter = "postgresql",
-                            host = "localhost",
-                            port = 5432,
-                            database = "test_db",
-                            user = "test_user",
-                            password = "", -- Set this in your environment or use .pgpass
+                            --     name = "PostgreSQL Prod",
+                            --     adapter = "postgresql",
+                            --     host = "prod.example.com",
+                            --     port = 5432,
+                            --     database = "prod_db",
+                            --     user = "prod_user",
+                            --     password = "", -- Set this in your environment or use .pgpass
+                            -- },
+                            -- Test database
+                            {
+                                name = "PostgreSQL Test",
+                                adapter = "postgresql",
+                                host = "localhost",
+                                port = 5432,
+                                database = "test_db",
+                                user = "test_user",
+                                password = "", -- Set this in your environment or use .pgpass
+                            },
                         },
-                    },
-                    format = {
-                        language = "postgresql",
-                        uppercase = true,
-                        linesBetweenQueries = 2,
-                        keywordCase = "upper", -- Options: "upper", "lower", "capitalize"
-                        identifierCase = "lower", -- Options: "upper", "lower", "capitalize"
-                        dataTypeCase = "upper", -- Options: "upper", "lower", "capitalize"
-                        functionCase = "lower", -- Options: "upper", "lower", "capitalize"
-                        indentStyle = "standard", -- Options: "standard", "tabularLeft", "tabularRight"
-                        maxLineLength = 100,
-                        commaStyle = "end", -- Options: "end", "start"
-                        logicalOperatorNewLine = "before", -- Options: "before", "after"
-                    },
-                    lint = {
-                        enable = true,
-                        dialect = "postgresql",
-                        rules = {
-                            ["keyword-case"] = "error",
-                            ["identifier-case"] = "warning",
-                            ["quoted-identifier-case"] = "off",
-                            ["function-case"] = "warning",
-                            ["data-type-case"] = "error",
-                            ["table-name-case"] = "warning",
-                            ["column-name-case"] = "warning",
-                            ["schema-name-case"] = "warning",
-                            ["view-name-case"] = "warning",
-                            ["materialized-view-name-case"] = "warning",
-                            ["function-name-case"] = "warning",
-                            ["procedure-name-case"] = "warning",
-                            ["trigger-name-case"] = "warning",
-                            ["index-name-case"] = "warning",
-                            ["constraint-name-case"] = "warning",
-                            ["sequence-name-case"] = "warning",
-                            ["type-name-case"] = "warning",
-                            ["domain-name-case"] = "warning",
+                        format = {
+                            language = "postgresql",
+                            uppercase = true,
+                            linesBetweenQueries = 2,
+                            keywordCase = "upper", -- Options: "upper", "lower", "capitalize"
+                            identifierCase = "lower", -- Options: "upper", "lower", "capitalize"
+                            dataTypeCase = "upper", -- Options: "upper", "lower", "capitalize"
+                            functionCase = "lower", -- Options: "upper", "lower", "capitalize"
+                            indentStyle = "standard", -- Options: "standard", "tabularLeft", "tabularRight"
+                            maxLineLength = 100,
+                            commaStyle = "end", -- Options: "end", "start"
+                            logicalOperatorNewLine = "before", -- Options: "before", "after"
                         },
-                    },
-                    completion = {
-                        enable = true,
-                        showTables = true,
-                        showViews = true,
-                        showFunctions = true,
-                        showProcedures = true,
-                        showTriggers = true,
-                        showIndexes = true,
-                        showConstraints = true,
-                        showSequences = true,
-                        showTypes = true,
-                        showDomains = true,
+                        lint = {
+                            enable = true,
+                            dialect = "postgresql",
+                            rules = {
+                                ["keyword-case"] = "error",
+                                ["identifier-case"] = "warning",
+                                ["quoted-identifier-case"] = "off",
+                                ["function-case"] = "warning",
+                                ["data-type-case"] = "error",
+                                ["table-name-case"] = "warning",
+                                ["column-name-case"] = "warning",
+                                ["schema-name-case"] = "warning",
+                                ["view-name-case"] = "warning",
+                                ["materialized-view-name-case"] = "warning",
+                                ["function-name-case"] = "warning",
+                                ["procedure-name-case"] = "warning",
+                                ["trigger-name-case"] = "warning",
+                                ["index-name-case"] = "warning",
+                                ["constraint-name-case"] = "warning",
+                                ["sequence-name-case"] = "warning",
+                                ["type-name-case"] = "warning",
+                                ["domain-name-case"] = "warning",
+                            },
+                        },
+                        completion = {
+                            enable = true,
+                            showTables = true,
+                            showViews = true,
+                            showFunctions = true,
+                            showProcedures = true,
+                            showTriggers = true,
+                            showIndexes = true,
+                            showConstraints = true,
+                            showSequences = true,
+                            showTypes = true,
+                            showDomains = true,
+                        },
                     },
                 },
             },
-        },
-    }
+        }
 
-    for server_name, config in pairs(configs) do
-        lspconfig[server_name].setup(config)
+        for server_name, config in pairs(configs) do
+            lspconfig[server_name].setup(config)
+        end
+
+        vim.diagnostic.config({
+            virtual_text = true,
+            signs = true,
+            underline = true,
+            update_in_insert = false,
+            severity_sort = false,
+        })
+
+        local border = {
+            { "╭", "FloatBorder" },
+            { "─", "FloatBorder" },
+            { "╮", "FloatBorder" },
+            { "│", "FloatBorder" },
+            { "╯", "FloatBorder" },
+            { "─", "FloatBorder" },
+            { "╰", "FloatBorder" },
+            { "│", "FloatBorder" },
+        }
+
+        local orig_util_open_floating_preview = vim.lsp.util.open_floating_preview
+        function vim.lsp.util.open_floating_preview(contents, syntax, opts, ...)
+            opts = opts or {}
+            opts.border = opts.border or border
+            return orig_util_open_floating_preview(contents, syntax, opts, ...)
+        end
     end
-
-    vim.diagnostic.config({
-        virtual_text = true,
-        signs = true,
-        underline = true,
-        update_in_insert = false,
-        severity_sort = false,
-    })
-
-    local border = {
-        { "╭", "FloatBorder" },
-        { "─", "FloatBorder" },
-        { "╮", "FloatBorder" },
-        { "│", "FloatBorder" },
-        { "╯", "FloatBorder" },
-        { "─", "FloatBorder" },
-        { "╰", "FloatBorder" },
-        { "│", "FloatBorder" },
-    }
-
-    local orig_util_open_floating_preview = vim.lsp.util.open_floating_preview
-    function vim.lsp.util.open_floating_preview(contents, syntax, opts, ...)
-        opts = opts or {}
-        opts.border = opts.border or border
-        return orig_util_open_floating_preview(contents, syntax, opts, ...)
-    end
-end

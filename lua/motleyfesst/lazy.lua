@@ -121,12 +121,12 @@ else
         { "meeehdi-dev/sunset.nvim", opts = { transparent = true, italic_comment = true } },
         { "vague2k/vague.nvim" },
         -- {
-        --     'wilmanbarrios/palenight.nvim',
-        --     'alexmozaidze/palenight.nvim',
-        -- },
-    }
-    for _, line in ipairs(ssh_list) do
-        table.insert(plugins_list, line)
+            --     'wilmanbarrios/palenight.nvim',
+            --     'alexmozaidze/palenight.nvim',
+            -- },
+        }
+        for _, line in ipairs(ssh_list) do
+            table.insert(plugins_list, line)
+        end
     end
-end
-return plugins_list
+    return plugins_list
