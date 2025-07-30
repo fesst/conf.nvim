@@ -1,9 +1,11 @@
 require("lualine").setup({
     options = {
-        theme = require("motleyfesst.utils").IS_NOT_SSH() and "rose-pine-alt" or "vague",
+        -- "palenight",
+        theme = require("motleyfesst.utils").IS_NOT_SSH() and "rose-pine" or "rose-pine-alt",
         section_separators = { left = "", right = "" },
         component_separators = { left = "", right = "" },
         refresh = {
+            refresh_time = 50,
             statusline = 100,
             tabline = 100,
             winbar = 100,

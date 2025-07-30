@@ -11,7 +11,7 @@ require("nvim-tree").setup({
     view = {
         centralize_selection = true,
         side = "right",
-        preserve_window_proportions = true,
+        -- preserve_window_proportions = true,
         relativenumber = true,
         float = {
             enable = true,
@@ -43,9 +43,9 @@ require("nvim-tree").setup({
         --     return math.floor(WIDTH_RATIO * vim.opt.columns:get())
         -- end,
     },
-    modified = {
-        enable = true,
-    },
+    -- modified = {
+    --     enable = true,
+    -- },
     tab = {
         sync = {
             open = true,
@@ -84,43 +84,7 @@ require("nvim-tree").setup({
     },
     filters = {
         dotfiles = true,
-        custom = {
-            "010-installers",
-            "Applications",
-            "Desktop",
-            "Documents",
-            "Downloads",
-            "Library",
-            "Live projects mac",
-            "Live\\ projects",
-            "Movies",
-            "Music",
-            "MusicCreation",
-            "Pictures",
-            "Public",
-            "Push3",
-            "\\.CFUserTextEncoding",
-            "\\.DS_Store",
-            "\\.Spotlight-V100",
-            "\\.aspnet",
-            "\\.cache",
-            "\\.colima",
-            "\\.docker",
-            "\\.dotnet",
-            "\\.git",
-            "\\.idead",
-            "\\.lesshst",
-            "\\.local",
-            "\\.mounty",
-            "\\.node_repl_history",
-            "\\.npm",
-            "\\.nuget",
-            "\\.nvm",
-            "\\.python_history",
-            "\\.sdkman",
-            "\\.templateengine",
-            "node_modules",
-        },
+        custom = { "010-installers", "Applications", "Desktop", "Documents", "Downloads", "Library", "Live projects mac", "Live\\ projects", "Movies", "Music", "MusicCreation", "Pictures", "Public", "Push3", "\\.CFUserTextEncoding", "\\.DS_Store", "\\.Spotlight-V100", "\\.aspnet", "\\.cache", "\\.colima", "\\.docker", "\\.dotnet", "\\.git", "\\.idead", "\\.lesshst", "\\.local", "\\.mounty", "\\.node_repl_history", "\\.npm", "\\.nuget", "\\.nvm", "\\.python_history", "\\.sdkman", "\\.templateengine", "node_modules", },
     },
     hijack_directories = {
         enable = true,
@@ -146,7 +110,7 @@ require("nvim-tree").setup({
     },
     update_focused_file = {
         enable = true,
-        update_cwd = true,
+        -- update_cwd = true,
     },
     actions = {
         change_dir = {

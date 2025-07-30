@@ -37,7 +37,7 @@ vim.cmd([[highlight EndOfBuffer guibg=NONE ctermbg=NONE]])
 opt.langmap =
 "ФИСВУАПРШОЛДЬТЩЗЙКЫЕГМЦЧНЯ;ABCDEFGHIJKLMNOPQRSTUVWXYZ,фисвуапршолдьтщзйкыегмцчня;abcdefghijklmnopqrstuvwxyz"
 
--- backup swap save undo
+-- backup swap save
 opt.autowriteall = true
 opt.swapfile = false
 opt.backup = false
@@ -56,8 +56,8 @@ opt.viewoptions = "folds,cursor,curdir,slash,unix"
 
 local ssh_utils = require("motleyfesst.utils")
 if ssh_utils.IS_NOT_SSH() then
-    opt.sessionoptions = "blank,buffers,curdir,folds,help,options,tabpages,terminal,winsize"
+	opt.sessionoptions = "blank,buffers,curdir,folds,help,options,tabpages,terminal,winsize"
 else
-    -- SSH sessions - simplified settings for better performance
-    -- Disable persistent folding and advanced sessionoptions
+	-- SSH sessions - simplified settings for better performance
+	-- Disable persistent folding and advanced sessionoptions
 end

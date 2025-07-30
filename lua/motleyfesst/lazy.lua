@@ -1,5 +1,3 @@
-require("motleyfesst.utils")
-
 local plugins_list = {
     { "nvim-tree/nvim-tree.lua",       dependencies = { "nvim-tree/nvim-web-devicons" } },
     { "nvim-telescope/telescope.nvim", dependencies = { "nvim-lua/plenary.nvim" } },
@@ -16,7 +14,6 @@ local plugins_list = {
     { "tpope/vim-fugitive" },
 }
 local utils = require("motleyfesst.utils")
-
 if utils.IS_NOT_SSH() then
     local dev_list = {
         { "github/copilot.vim" },
@@ -118,15 +115,44 @@ if utils.IS_NOT_SSH() then
     end
 else
     local ssh_list = {
-        { "meeehdi-dev/sunset.nvim", opts = { transparent = true, italic_comment = true } },
-        { "vague2k/vague.nvim" },
-        -- {
-            --     'wilmanbarrios/palenight.nvim',
-            --     'alexmozaidze/palenight.nvim',
-            -- },
-        }
-        for _, line in ipairs(ssh_list) do
-            table.insert(plugins_list, line)
-        end
+        {
+            "meeehdi-dev/sunset.nvim",
+            lazy = false,
+            opts = { transparent = true, italic_comment = true },
+            config = function()
+                vim.cmd("colorscheme sunset")
+            end,
+        },
+        {
+            "rose-pine/neovim",
+            name = "rose-pine",
+            lazy = false,
+            variant = "alt"
+        },
+    }
+    for _, line in ipairs(ssh_list) do
+        table.insert(plugins_list, line)
     end
-    return plugins_list
+end
+
+table.insert(plugins_list, {
+    "mcauley-penney/visual-whitespace.nvim",
+    branch = "main",
+    lazy = false,
+
+})
+return plugins_list
+
+-- {
+--     "RRethy/base16-nvim",
+--     lazy = false,
+--     opts = { transparent = true, italic_comment = true },
+--     config = function()
+--         vim.cmd("colorscheme base16-material-palenight")
+--     end,
+-- },
+-- {
+--     "vague2k/vague.nvim",
+--     'wilmanbarrios/palenight.nvim',
+--     'alexmozaidze/palenight.nvim',
+-- },
