@@ -1,4 +1,5 @@
 local ssh_utils = require("motleyfesst.utils")
+
 if ssh_utils.IS_NOT_SSH() then
     vim.g.copilot_no_tab_map = true
     vim.g.copilot_assume_mapped = true
