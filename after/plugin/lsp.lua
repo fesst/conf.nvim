@@ -12,39 +12,15 @@ if ssh_utils.IS_NOT_SSH() then
     })
     require("mason-lspconfig").setup({
         ensure_installed = {
-            "angularls", "ts_ls", "eslint", "html", "cssls", "jsonls", "yamlls", "dockerls", "taplo", "pyright", "gopls", "omnisharp", "jdtls", "kotlin_language_server", "clangd", "rust_analyzer", "elixirls", "zls", "sqlls", "gradle_ls", "bashls", "lua_ls", "awk_ls", "texlab", "lemminx",
+            "angularls", "ts_ls", "eslint", "html", "cssls", "jsonls", "yamlls", "jdtls", "kotlin_language_server", "bashls", "lua_ls", "awk_ls", "texlab", "lemminx", "pyright",
+"dockerls",
+            --  "taplo", "gopls", "omnisharp", "clangd", "rust_analyzer", "elixirls", "zls", "sqlls", "gradle_ls", 
         },
         automatic_installation = true,
         handlers = {
             function(server_name)
                 local lspconfig = require("lspconfig")
-                if server_name == "gradle_ls" then
-                    lspconfig.gradle_ls.setup({
-                        init_options = {
-                            settings = {
-                                gradle = {
-                                    wrapperEnabled = true,
-                                    wrapperPath = "gradle/wrapper/gradle-wrapper.jar",
-                                },
-                            },
-                        },
-                        settings = {
-                            gradle = {
-                                wrapperEnabled = true,
-                                wrapperPath = "gradle/wrapper/gradle-wrapper.jar",
-                            },
-                        },
-                        filetypes = { "groovy", "java", "kotlin" },
-                        root_dir = lspconfig.util.root_pattern(
-                            "build.gradle",
-                            "build.gradle.kts",
-                            "settings.gradle",
-                            "settings.gradle.kts"
-                        ),
-                    })
-                else
-                    lspconfig[server_name].setup({})
-                end
+                lspconfig[server_name].setup({})
             end,
         },
     })
@@ -79,9 +55,7 @@ if ssh_utils.IS_NOT_SSH() then
 
     require("render-markdown").setup({})
 
-    require("mason-lspconfig").setup({
-
-    })
+    require("mason-lspconfig").setup({ })
 
     local capabilities = require("cmp_nvim_lsp").default_capabilities()
     local lspconfig = require("lspconfig")
@@ -267,10 +241,10 @@ if ssh_utils.IS_NOT_SSH() then
                 },
             },
         },
-        dockerls = {
-            capabilities = capabilities,
-            on_attach = on_attach,
-        },
+        -- dockerls = {
+        --     capabilities = capabilities,
+        --     on_attach = on_attach,
+        -- },
 
         pyright = {
             capabilities = capabilities,
@@ -302,31 +276,31 @@ if ssh_utils.IS_NOT_SSH() then
                 },
             },
         },
-        gopls = {
-            capabilities = capabilities,
-            on_attach = on_attach,
-            settings = {
-                gopls = {
-                    analyses = {
-                        unusedparams = true,
-                    },
-                    staticcheck = true,
-                },
-            },
-        },
-        omnisharp = {
-            capabilities = capabilities,
-            on_attach = on_attach,
-            cmd = { "omnisharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
-            settings = {
-                omnisharp = {
-                    enableRoslynAnalyzers = true,
-                    organizeImportsOnFormat = true,
-                    enableEditorConfigSupport = true,
-                    enableImportCompletion = true,
-                },
-            },
-        },
+        -- gopls = {
+        --     capabilities = capabilities,
+        --     on_attach = on_attach,
+        --     settings = {
+        --         gopls = {
+        --             analyses = {
+        --                 unusedparams = true,
+        --             },
+        --             staticcheck = true,
+        --         },
+        --     },
+        -- },
+        -- omnisharp = {
+        --     capabilities = capabilities,
+        --     on_attach = on_attach,
+        --     cmd = { "omnisharp", "--languageserver", "--hostPID", tostring(vim.fn.getpid()) },
+        --     settings = {
+        --         omnisharp = {
+        --             enableRoslynAnalyzers = true,
+        --             organizeImportsOnFormat = true,
+        --             enableEditorConfigSupport = true,
+        --             enableImportCompletion = true,
+        --         },
+        --     },
+        -- },
         jdtls = {
             capabilities = capabilities,
             on_attach = on_attach,
@@ -375,34 +349,34 @@ if ssh_utils.IS_NOT_SSH() then
                 },
             },
         },
-        rust_analyzer = {
-            capabilities = capabilities,
-            on_attach = on_attach,
-            settings = {
-                ["rust-analyzer"] = {
-                    checkOnSave = true,
-                    diagnostics = {
-                        enable = true,
-                    },
-                    cargo = {
-                        allFeatures = true,
-                    },
-                },
-            },
-        },
-        elixirls = {
-            capabilities = capabilities,
-            on_attach = on_attach,
-            settings = {
-                elixirLS = {
-                    dialyzerEnabled = true,
-                },
-            },
-        },
-        zls = {
-            capabilities = capabilities,
-            on_attach = on_attach,
-        },
+        -- rust_analyzer = {
+        --     capabilities = capabilities,
+        --     on_attach = on_attach,
+        --     settings = {
+        --         ["rust-analyzer"] = {
+        --             checkOnSave = true,
+        --             diagnostics = {
+        --                 enable = true,
+        --             },
+        --             cargo = {
+        --                 allFeatures = true,
+        --             },
+        --         },
+        --     },
+        -- },
+        -- elixirls = {
+        --     capabilities = capabilities,
+        --     on_attach = on_attach,
+        --     settings = {
+        --         elixirLS = {
+        --             dialyzerEnabled = true,
+        --         },
+        --     },
+        -- },
+        -- zls = {
+        --     capabilities = capabilities,
+        --     on_attach = on_attach,
+        -- },
 
         bashls = {
             capabilities = capabilities,
@@ -443,110 +417,110 @@ if ssh_utils.IS_NOT_SSH() then
             capabilities = capabilities,
             on_attach = on_attach,
         },
-        taplo = {
-            capabilities = capabilities,
-            on_attach = on_attach,
-            settings = {
-                taplo = {
-                    formatter = {
-                        alignEntries = true,
-                        alignComments = true,
-                        compactArrays = true,
-                        compactInlineTables = true,
-                    },
-                },
-            },
-        },
+        -- taplo = {
+        --     capabilities = capabilities,
+        --     on_attach = on_attach,
+        --     settings = {
+        --         taplo = {
+        --             formatter = {
+        --                 alignEntries = true,
+        --                 alignComments = true,
+        --                 compactArrays = true,
+        --                 compactInlineTables = true,
+        --             },
+        --         },
+        --     },
+        -- },
 
-        sqlls = {
-            capabilities = capabilities,
-            on_attach = on_attach,
-            settings = {
-                sqlLanguageServer = {
-                    connections = {
-                        {
-                            name = "PostgreSQL Dev",
-                            adapter = "postgresql",
-                            host = "localhost",
-                            port = 5432,
-                            database = "dev_db",
-                            user = "dev_user",
-                            password = "", -- Set this in your environment or use .pgpass
-                        },
-                        -- Production database (commented out for safety)
-                        -- {
-                            --     name = "PostgreSQL Prod",
-                            --     adapter = "postgresql",
-                            --     host = "prod.example.com",
-                            --     port = 5432,
-                            --     database = "prod_db",
-                            --     user = "prod_user",
-                            --     password = "", -- Set this in your environment or use .pgpass
-                            -- },
-                            -- Test database
-                            {
-                                name = "PostgreSQL Test",
-                                adapter = "postgresql",
-                                host = "localhost",
-                                port = 5432,
-                                database = "test_db",
-                                user = "test_user",
-                                password = "", -- Set this in your environment or use .pgpass
-                            },
-                        },
-                        format = {
-                            language = "postgresql",
-                            uppercase = true,
-                            linesBetweenQueries = 2,
-                            keywordCase = "upper", -- Options: "upper", "lower", "capitalize"
-                            identifierCase = "lower", -- Options: "upper", "lower", "capitalize"
-                            dataTypeCase = "upper", -- Options: "upper", "lower", "capitalize"
-                            functionCase = "lower", -- Options: "upper", "lower", "capitalize"
-                            indentStyle = "standard", -- Options: "standard", "tabularLeft", "tabularRight"
-                            maxLineLength = 100,
-                            commaStyle = "end", -- Options: "end", "start"
-                            logicalOperatorNewLine = "before", -- Options: "before", "after"
-                        },
-                        lint = {
-                            enable = true,
-                            dialect = "postgresql",
-                            rules = {
-                                ["keyword-case"] = "error",
-                                ["identifier-case"] = "warning",
-                                ["quoted-identifier-case"] = "off",
-                                ["function-case"] = "warning",
-                                ["data-type-case"] = "error",
-                                ["table-name-case"] = "warning",
-                                ["column-name-case"] = "warning",
-                                ["schema-name-case"] = "warning",
-                                ["view-name-case"] = "warning",
-                                ["materialized-view-name-case"] = "warning",
-                                ["function-name-case"] = "warning",
-                                ["procedure-name-case"] = "warning",
-                                ["trigger-name-case"] = "warning",
-                                ["index-name-case"] = "warning",
-                                ["constraint-name-case"] = "warning",
-                                ["sequence-name-case"] = "warning",
-                                ["type-name-case"] = "warning",
-                                ["domain-name-case"] = "warning",
-                            },
-                        },
-                        completion = {
-                            enable = true,
-                            showTables = true,
-                            showViews = true,
-                            showFunctions = true,
-                            showProcedures = true,
-                            showTriggers = true,
-                            showIndexes = true,
-                            showConstraints = true,
-                            showSequences = true,
-                            showTypes = true,
-                            showDomains = true,
-                        },
-                    },
-                },
-            },
+        -- sqlls = {
+        --     capabilities = capabilities,
+        --     on_attach = on_attach,
+        --     settings = {
+        --         sqlLanguageServer = {
+        --             connections = {
+        --                 {
+        --                     name = "PostgreSQL Dev",
+        --                     adapter = "postgresql",
+        --                     host = "localhost",
+        --                     port = 5432,
+        --                     database = "dev_db",
+        --                     user = "dev_user",
+        --                     password = "", -- Set this in your environment or use .pgpass
+        --                 },
+        --                 -- Production database (commented out for safety)
+        --                 -- {
+        --                     --     name = "PostgreSQL Prod",
+        --                     --     adapter = "postgresql",
+        --                     --     host = "prod.example.com",
+        --                     --     port = 5432,
+        --                     --     database = "prod_db",
+        --                     --     user = "prod_user",
+        --                     --     password = "", -- Set this in your environment or use .pgpass
+        --                     -- },
+        --                     -- Test database
+        --                     {
+        --                         name = "PostgreSQL Test",
+        --                         adapter = "postgresql",
+        --                         host = "localhost",
+        --                         port = 5432,
+        --                         database = "test_db",
+        --                         user = "test_user",
+        --                         password = "", -- Set this in your environment or use .pgpass
+        --                     },
+        --                 },
+        --                 format = {
+        --                     language = "postgresql",
+        --                     uppercase = true,
+        --                     linesBetweenQueries = 2,
+        --                     keywordCase = "upper", -- Options: "upper", "lower", "capitalize"
+        --                     identifierCase = "lower", -- Options: "upper", "lower", "capitalize"
+        --                     dataTypeCase = "upper", -- Options: "upper", "lower", "capitalize"
+        --                     functionCase = "lower", -- Options: "upper", "lower", "capitalize"
+        --                     indentStyle = "standard", -- Options: "standard", "tabularLeft", "tabularRight"
+        --                     maxLineLength = 100,
+        --                     commaStyle = "end", -- Options: "end", "start"
+        --                     logicalOperatorNewLine = "before", -- Options: "before", "after"
+        --                 },
+        --                 lint = {
+        --                     enable = true,
+        --                     dialect = "postgresql",
+        --                     rules = {
+        --                         ["keyword-case"] = "error",
+        --                         ["identifier-case"] = "warning",
+        --                         ["quoted-identifier-case"] = "off",
+        --                         ["function-case"] = "warning",
+        --                         ["data-type-case"] = "error",
+        --                         ["table-name-case"] = "warning",
+        --                         ["column-name-case"] = "warning",
+        --                         ["schema-name-case"] = "warning",
+        --                         ["view-name-case"] = "warning",
+        --                         ["materialized-view-name-case"] = "warning",
+        --                         ["function-name-case"] = "warning",
+        --                         ["procedure-name-case"] = "warning",
+        --                         ["trigger-name-case"] = "warning",
+        --                         ["index-name-case"] = "warning",
+        --                         ["constraint-name-case"] = "warning",
+        --                         ["sequence-name-case"] = "warning",
+        --                         ["type-name-case"] = "warning",
+        --                         ["domain-name-case"] = "warning",
+        --                     },
+        --                 },
+        --                 completion = {
+        --                     enable = true,
+        --                     showTables = true,
+        --                     showViews = true,
+        --                     showFunctions = true,
+        --                     showProcedures = true,
+        --                     showTriggers = true,
+        --                     showIndexes = true,
+        --                     showConstraints = true,
+        --                     showSequences = true,
+        --                     showTypes = true,
+        --                     showDomains = true,
+        --                 },
+        --             },
+        --         },
+        --     },
         }
 
         for server_name, config in pairs(configs) do

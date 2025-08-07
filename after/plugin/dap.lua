@@ -7,9 +7,9 @@ if ssh_utils.IS_NOT_SSH() then
 
     local function ensure_dap_installed()
         local adapters = {
-            "debugpy",
-            "netcoredbg",
-            "elixir-ls",
+            -- "debugpy",
+            -- "netcoredbg",
+            -- "elixir-ls",
         }
         for _, adapter in ipairs(adapters) do
             if not mason_registry.is_installed(adapter) then
@@ -29,22 +29,26 @@ if ssh_utils.IS_NOT_SSH() then
             repl = "r",
             toggle = "t",
         },
-        element_mappings = { stacks = { open = "<CR>", expand = "o", }, scopes = { open = "<CR>", expand = "o", }, breakpoints = { open = "<CR>", expand = "o", }, },
+        element_mappings = {
+            stacks = { open = "<CR>", expand = "o" },
+            scopes = { open = "<CR>", expand = "o" },
+            breakpoints = { open = "<CR>", expand = "o" },
+        },
         expand_lines = true,
         layouts = {
             {
                 elements = {
-                    { id = "scopes",      size = 0.33 },
+                    { id = "scopes", size = 0.33 },
                     { id = "breakpoints", size = 0.17 },
-                    { id = "stacks",      size = 0.25 },
-                    { id = "watches",     size = 0.25 },
+                    { id = "stacks", size = 0.25 },
+                    { id = "watches", size = 0.25 },
                 },
                 size = 0.33,
                 position = "right",
             },
             {
                 elements = {
-                    { id = "repl",    size = 0.45 },
+                    { id = "repl", size = 0.45 },
                     { id = "console", size = 0.55 },
                 },
                 size = 0.27,
@@ -100,31 +104,31 @@ if ssh_utils.IS_NOT_SSH() then
         dapui.close()
     end
 
-    dap.adapters.python = {
-        type = "executable",
-        command = "python",
-        args = { "-m", "debugpy.adapter" },
-    }
+    -- dap.adapters.python = {
+    --     type = "executable",
+    --     command = "python",
+    --     args = { "-m", "debugpy.adapter" },
+    -- }
 
-    dap.configurations.python = {
-        {
-            type = "python",
-            request = "launch",
-            name = "Launch file",
-            program = "${file}",
-            pythonPath = function()
-                return vim.fn.exepath("python3")
-            end,
-        },
-        {
-            type = "python",
-            request = "attach",
-            name = "Attach to process",
-            processId = function()
-                return vim.fn.input("Process ID: ")
-            end,
-        },
-    }
+    -- dap.configurations.python = {
+    --     {
+    --         type = "python",
+    --         request = "launch",
+    --         name = "Launch file",
+    --         program = "${file}",
+    --         pythonPath = function()
+    --             return vim.fn.exepath("python3")
+    --         end,
+    --     },
+    --     {
+    --         type = "python",
+    --         request = "attach",
+    --         name = "Attach to process",
+    --         processId = function()
+    --             return vim.fn.input("Process ID: ")
+    --         end,
+    --     },
+    -- }
 
     dap.adapters.node = {
         type = "server",
@@ -151,94 +155,94 @@ if ssh_utils.IS_NOT_SSH() then
 
     dap.configurations.typescript = dap.configurations.javascript
 
-    dap.adapters.delve = {
-        type = "server",
-        port = "${port}",
-        executable = {
-            command = "dlv",
-            args = { "dap", "-l", "127.0.0.1:${port}" },
-        },
-    }
-    dap.configurations.go = {
-        {
-            type = "delve",
-            name = "Debug",
-            request = "launch",
-            program = "${file}",
-        },
-        {
-            type = "delve",
-            name = "Debug test",
-            request = "launch",
-            mode = "test",
-            program = "${file}",
-        },
-    }
-    dap.adapters.codelldb = {
-        type = "server",
-        port = "${port}",
-        executable = {
-            command = vim.fn.stdpath("data") .. "/mason/packages/codelldb/extension/adapter/codelldb",
-            args = { "--port", "${port}" },
-        },
-    }
-    dap.configurations.rust = {
-        {
-            type = "codelldb",
-            request = "launch",
-            name = "Debug executable",
-            program = function()
-                return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
-            end,
-            cwd = "${workspaceFolder}",
-            stopOnEntry = false,
-            showDisassembly = "never",
-        },
-        {
-            type = "codelldb",
-            request = "launch",
-            name = "Debug unit tests",
-            program = function()
-                return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
-            end,
-            cwd = "${workspaceFolder}",
-            args = { "--test" },
-            stopOnEntry = false,
-            showDisassembly = "never",
-        },
-    }
-    dap.configurations.cpp = {
-        {
-            name = "Launch file",
-            type = "codelldb",
-            request = "launch",
-            program = function()
-                return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
-            end,
-            cwd = "${workspaceFolder}",
-            stopOnEntry = false,
-            args = {},
-            showDisassembly = "never",
-        },
-        {
-            name = "Debug with arguments",
-            type = "codelldb",
-            request = "launch",
-            program = function()
-                return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
-            end,
-            cwd = "${workspaceFolder}",
-            args = function()
-                local args = vim.fn.input("Program arguments: ")
-                return vim.split(args, " ")
-            end,
-            stopOnEntry = false,
-            showDisassembly = "never",
-        },
-    }
-
-    dap.configurations.c = dap.configurations.cpp
-
+    -- dap.adapters.delve = {
+    --     type = "server",
+    --     port = "${port}",
+    --     executable = {
+    --         command = "dlv",
+    --         args = { "dap", "-l", "127.0.0.1:${port}" },
+    --     },
+    -- }
+    -- dap.configurations.go = {
+    --     {
+    --         type = "delve",
+    --         name = "Debug",
+    --         request = "launch",
+    --         program = "${file}",
+    --     },
+    --     {
+    --         type = "delve",
+    --         name = "Debug test",
+    --         request = "launch",
+    --         mode = "test",
+    --         program = "${file}",
+    --     },
+    -- }
+    -- dap.adapters.codelldb = {
+    --     type = "server",
+    --     port = "${port}",
+    --     executable = {
+    --         command = vim.fn.stdpath("data") .. "/mason/packages/codelldb/extension/adapter/codelldb",
+    --         args = { "--port", "${port}" },
+    --     },
+    -- }
+    -- dap.configurations.rust = {
+    --     {
+    --         type = "codelldb",
+    --         request = "launch",
+    --         name = "Debug executable",
+    --         program = function()
+    --             return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+    --         end,
+    --         cwd = "${workspaceFolder}",
+    --         stopOnEntry = false,
+    --         showDisassembly = "never",
+    --     },
+    --     {
+    --         type = "codelldb",
+    --         request = "launch",
+    --         name = "Debug unit tests",
+    --         program = function()
+    --             return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+    --         end,
+    --         cwd = "${workspaceFolder}",
+    --         args = { "--test" },
+    --         stopOnEntry = false,
+    --         showDisassembly = "never",
+    --     },
+    -- }
+    -- dap.configurations.cpp = {
+    --     {
+    --         name = "Launch file",
+    --         type = "codelldb",
+    --         request = "launch",
+    --         program = function()
+    --             return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+    --         end,
+    --         cwd = "${workspaceFolder}",
+    --         stopOnEntry = false,
+    --         args = {},
+    --         showDisassembly = "never",
+    --     },
+    --     {
+    --         name = "Debug with arguments",
+    --         type = "codelldb",
+    --         request = "launch",
+    --         program = function()
+    --             return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+    --         end,
+    --         cwd = "${workspaceFolder}",
+    --         args = function()
+    --             local args = vim.fn.input("Program arguments: ")
+    --             return vim.split(args, " ")
+    --         end,
+    --         stopOnEntry = false,
+    --         showDisassembly = "never",
+    --     },
+    -- }
+    --
+    -- dap.configurations.c = dap.configurations.cpp
+    --
     dap.adapters.nlua = function(callback, config)
         callback({ type = "server", host = config.host or "127.0.0.1", port = config.port or 8086 })
     end
@@ -280,106 +284,106 @@ if ssh_utils.IS_NOT_SSH() then
         command = "php",
         args = { "-dxdebug.remote_enable=1", "-dxdebug.remote_autostart=1" },
     }
-
-    dap.configurations.php = {
-        {
-            type = "php",
-            request = "launch",
-            name = "Listen for Xdebug",
-            port = 9003,
-        },
-    }
-
-    dap.adapters.ruby = {
-        type = "executable",
-        command = "bundle",
-        args = { "exec", "rdbg", "-n", "--open", "--port", "${port}" },
-    }
-
-    dap.configurations.ruby = {
-        {
-            type = "ruby",
-            request = "launch",
-            name = "Rails server",
-            program = "bundle",
-            args = { "exec", "rails", "server" },
-            askArgs = true,
-        },
-        {
-            type = "ruby",
-            request = "launch",
-            name = "RSpec current file",
-            program = "bundle",
-            args = { "exec", "rspec", "${file}" },
-            askArgs = true,
-        },
-    }
-
-    dap.adapters.mix_task = {
-        type = "executable",
-        command = "elixir-ls-debugger",
-        args = {},
-    }
-
-    dap.configurations.elixir = {
-        {
-            type = "mix_task",
-            name = "mix test",
-            task = "test",
-            taskArgs = { "--trace" },
-            request = "launch",
-            startApps = true,
-            projectDir = "${workspaceFolder}",
-            requireFiles = {
-                "test/**/test_helper.exs",
-                "test/**/*_test.exs",
-            },
-        },
-        {
-            type = "mix_task",
-            name = "mix test current file",
-            task = "test",
-            taskArgs = { "${file}" },
-            request = "launch",
-            startApps = true,
-            projectDir = "${workspaceFolder}",
-        },
-    }
-
-    dap.adapters.coreclr = {
-        type = "executable",
-        command = "netcoredbg",
-        args = { "--interpreter=vscode" },
-    }
-
-    dap.configurations.cs = {
-        {
-            type = "coreclr",
-            name = "Launch .NET Core",
-            request = "launch",
-            program = function()
-                return vim.fn.input("Path to dll: ", vim.fn.getcwd() .. "/bin/Debug/", "file")
-            end,
-        },
-    }
-
-    dap.adapters.zls = {
-        type = "executable",
-        command = "zls",
-        args = { "--debug" },
-    }
-
-    dap.configurations.zig = {
-        {
-            type = "zls",
-            name = "Debug",
-            request = "launch",
-            program = function()
-                return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
-            end,
-            cwd = "${workspaceFolder}",
-        },
-    }
+    --
+    -- dap.configurations.php = {
+    --     {
+    --         type = "php",
+    --         request = "launch",
+    --         name = "Listen for Xdebug",
+    --         port = 9003,
+    --     },
+    -- }
+    --
+    -- dap.adapters.ruby = {
+    --     type = "executable",
+    --     command = "bundle",
+    --     args = { "exec", "rdbg", "-n", "--open", "--port", "${port}" },
+    -- }
+    --
+    -- dap.configurations.ruby = {
+    --     {
+    --         type = "ruby",
+    --         request = "launch",
+    --         name = "Rails server",
+    --         program = "bundle",
+    --         args = { "exec", "rails", "server" },
+    --         askArgs = true,
+    --     },
+    --     {
+    --         type = "ruby",
+    --         request = "launch",
+    --         name = "RSpec current file",
+    --         program = "bundle",
+    --         args = { "exec", "rspec", "${file}" },
+    --         askArgs = true,
+    --     },
+    -- }
+    --
+    -- dap.adapters.mix_task = {
+    --     type = "executable",
+    --     command = "elixir-ls-debugger",
+    --     args = {},
+    -- }
+    --
+    -- dap.configurations.elixir = {
+    --     {
+    --         type = "mix_task",
+    --         name = "mix test",
+    --         task = "test",
+    --         taskArgs = { "--trace" },
+    --         request = "launch",
+    --         startApps = true,
+    --         projectDir = "${workspaceFolder}",
+    --         requireFiles = {
+    --             "test/**/test_helper.exs",
+    --             "test/**/*_test.exs",
+    --         },
+    --     },
+    --     {
+    --         type = "mix_task",
+    --         name = "mix test current file",
+    --         task = "test",
+    --         taskArgs = { "${file}" },
+    --         request = "launch",
+    --         startApps = true,
+    --         projectDir = "${workspaceFolder}",
+    --     },
+    -- }
+    --
+    -- dap.adapters.coreclr = {
+    --     type = "executable",
+    --     command = "netcoredbg",
+    --     args = { "--interpreter=vscode" },
+    -- }
+    --
+    -- dap.configurations.cs = {
+    --     {
+    --         type = "coreclr",
+    --         name = "Launch .NET Core",
+    --         request = "launch",
+    --         program = function()
+    --             return vim.fn.input("Path to dll: ", vim.fn.getcwd() .. "/bin/Debug/", "file")
+    --         end,
+    --     },
+    -- }
+    --
+    -- dap.adapters.zls = {
+    --     type = "executable",
+    --     command = "zls",
+    --     args = { "--debug" },
+    -- }
+    --
+    -- dap.configurations.zig = {
+    --     {
+    --         type = "zls",
+    --         name = "Debug",
+    --         request = "launch",
+    --         program = function()
+    --             return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+    --         end,
+    --         cwd = "${workspaceFolder}",
+    --     },
+    -- }
 
     dap.set_log_level("DEBUG")
 end
