@@ -9,9 +9,10 @@ local function map(mode, lhs, rhs, opts)
     vim.keymap.set(mode, lhs, rhs, options)
 end
 
-local ssh_utils = require("motleyfesst/utils")
+local ssh_utils = require("motleyfesst.ssh_utils")
 local function terminal()
     vim.o.shell = ssh_utils.IS_NOT_SSH() and "/bin/zsh -i" or "/usr/bin/bash --login"
+
     map({ "n", "v" }, "<leader>TT", function()
         vim.cmd("botright " .. math.floor(vim.o.lines / 4) .. "split")
         vim.cmd("setlocal modified")

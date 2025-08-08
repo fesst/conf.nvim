@@ -1,4 +1,4 @@
-local ssh_utils = require("motleyfesst.utils")
+local ssh_utils = require("motleyfesst.ssh_utils")
 
 if ssh_utils.IS_NOT_SSH() then
     local dap = require("dap")

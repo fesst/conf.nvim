@@ -52,7 +52,7 @@ end, { desc = "Telescope grep string" })
 vim.keymap.set("n", "<leader>tu", builtin.resume, { desc = "Telescope resume" })
 vim.keymap.set("n", "<leader>tv", builtin.vim_options, { desc = "Telescope vim options" })
 
-local ssh_utils = require("motleyfesst/utils")
+local ssh_utils = require("motleyfesst.ssh_utils")
 if ssh_utils.IS_NOT_SSH() then
     vim.keymap.set("n", "<leader>tyr", builtin.lsp_references, { desc = "Telescope refs" })
     vim.keymap.set("n", "<leader>tyi", builtin.lsp_implementations, { desc = "Telescope implementations" })

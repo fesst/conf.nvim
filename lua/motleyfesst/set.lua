@@ -54,7 +54,7 @@ opt.foldnestmax = 20
 
 opt.viewoptions = "folds,cursor,curdir,slash,unix"
 
-local ssh_utils = require("motleyfesst.utils")
+local ssh_utils = require("motleyfesst.ssh_utils")
 if ssh_utils.IS_NOT_SSH() then
 	opt.sessionoptions = "blank,buffers,curdir,folds,help,options,tabpages,terminal,winsize"
 else

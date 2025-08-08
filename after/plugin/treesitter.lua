@@ -1,4 +1,4 @@
-local ssh_utils = require("motleyfesst.utils")
+local ssh_utils = require("motleyfesst.ssh_utils")
 
 local function setup_base_folding()
     vim.opt_local.foldmethod = "expr"
