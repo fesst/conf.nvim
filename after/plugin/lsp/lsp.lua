@@ -1,6 +1,6 @@
 local ssh_utils = require("motleyfesst.ssh_utils")
 
-if ssh_utils.IS_NOT_SSH() then
+if ssh_utils.IS_MAC() then
     require("mason").setup({
         ui = {
             icons = {

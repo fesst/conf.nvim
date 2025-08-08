@@ -14,7 +14,7 @@ local plugins_list = {
     { "tpope/vim-fugitive" },
 }
 local ssh_utils = require("motleyfesst.ssh_utils")
-if ssh_utils.IS_NOT_SSH() then
+if ssh_utils.IS_MAC() then
     local dev_list = {
         { "github/copilot.vim" },
         {

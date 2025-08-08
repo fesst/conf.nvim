@@ -1,7 +1,7 @@
 require("lualine").setup({
     options = {
         -- "palenight",
-        theme = require("motleyfesst.ssh_utils").IS_NOT_SSH() and "rose-pine" or "ayu_light",
+        theme = require("motleyfesst.ssh_utils").IS_MAC() and "rose-pine" or "ayu_light",
         section_separators = { left = "", right = "" },
         component_separators = { left = "", right = "" },
         refresh = {

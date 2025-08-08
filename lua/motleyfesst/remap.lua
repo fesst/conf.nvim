@@ -11,7 +11,7 @@ end
 
 local ssh_utils = require("motleyfesst.ssh_utils")
 local function terminal()
-    vim.o.shell = ssh_utils.IS_NOT_SSH() and "/bin/zsh -i" or "/usr/bin/bash --login"
+    vim.o.shell = ssh_utils.IS_ZSH() and "/bin/zsh -i" or "/usr/bin/bash --login"
 
     map({ "n", "v" }, "<leader>TT", function()
         vim.cmd("botright " .. math.floor(vim.o.lines / 4) .. "split")

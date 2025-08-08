@@ -52,14 +52,10 @@ end, { desc = "Telescope grep string" })
 vim.keymap.set("n", "<leader>tu", builtin.resume, { desc = "Telescope resume" })
 vim.keymap.set("n", "<leader>tv", builtin.vim_options, { desc = "Telescope vim options" })
 
-local ssh_utils = require("motleyfesst.ssh_utils")
-if ssh_utils.IS_NOT_SSH() then
-    vim.keymap.set("n", "<leader>tyr", builtin.lsp_references, { desc = "Telescope refs" })
-    vim.keymap.set("n", "<leader>tyi", builtin.lsp_implementations, { desc = "Telescope implementations" })
-    vim.keymap.set("n", "<leader>tyt", builtin.lsp_definitions, { desc = "Telescope definitions" })
-    vim.keymap.set("n", "<leader>tyr", builtin.lsp_type_definitions, { desc = "Telescope types" })
-    vim.keymap.set("n", "<leader>tyw", builtin.lsp_workspace_symbols, { desc = "Telescope ws symbols" })
-    vim.keymap.set("n", "<leader>tyd", builtin.lsp_document_symbols, { desc = "Telescope doc symbols" })
-else
-    vim.keymap.set("n", "<leader>ty", builtin.treesitter, { desc = "Telescope treesitter" })
-end
+vim.keymap.set("n", "<leader>tyr", builtin.lsp_references, { desc = "Telescope refs" })
+vim.keymap.set("n", "<leader>tyi", builtin.lsp_implementations, { desc = "Telescope implementations" })
+vim.keymap.set("n", "<leader>tyt", builtin.lsp_definitions, { desc = "Telescope definitions" })
+vim.keymap.set("n", "<leader>tyr", builtin.lsp_type_definitions, { desc = "Telescope types" })
+vim.keymap.set("n", "<leader>tyw", builtin.lsp_workspace_symbols, { desc = "Telescope ws symbols" })
+vim.keymap.set("n", "<leader>tyd", builtin.lsp_document_symbols, { desc = "Telescope doc symbols" })
+--vim.keymap.set("n", "<leader>ty", builtin.treesitter, { desc = "Telescope treesitter" })

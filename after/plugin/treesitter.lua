@@ -75,7 +75,7 @@ vim.api.nvim_create_autocmd("FileType", {
     end,
     group = vim.api.nvim_create_augroup("CSSFolding", { clear = true }),
 })
-if ssh_utils.IS_NOT_SSH() then
+if ssh_utils.IS_MAC() then
     vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "FileType" }, {
         pattern = { "*" },
         callback = function()

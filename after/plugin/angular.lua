@@ -1,5 +1,5 @@
 local ssh_utils = require("motleyfesst.ssh_utils")
-if ssh_utils.IS_NOT_SSH() then
+if ssh_utils.IS_MAC() then
     local keymap = vim.keymap.set
 
     keymap("n", "<leader>taf", ":Telescope find_files cwd=src/app<CR>", { desc = "Find Angular Component" })
