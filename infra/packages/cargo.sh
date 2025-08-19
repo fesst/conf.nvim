@@ -3,7 +3,7 @@ set -e
 
 # Cargo packages
 CARGO_PACKAGES=(
-    "stylua"        # Required for Lua formatting
+    "stylua" # Required for Lua formatting
 )
 
 # Export variables
@@ -41,7 +41,7 @@ if [ "${INSTALL_STYLUA:-true}" = "true" ]; then
 
     # Verify installations
     for package in "${CARGO_PACKAGES[@]}"; do
-        if ! command -v "$package" &> /dev/null; then
+        if ! command -v "$package" &>/dev/null; then
             echo "Error: $package installation failed or not found in PATH"
             echo "Current PATH: $PATH"
             echo "Cargo bin location: $HOME/.cargo/bin"

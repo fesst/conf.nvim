@@ -4,12 +4,12 @@
 set -e
 
 # Install required tools if not present
-if ! command -v stylua &> /dev/null; then
+if ! command -v stylua &>/dev/null; then
     echo "Installing stylua..."
     cargo install stylua
 fi
 
-if ! command -v luacheck &> /dev/null; then
+if ! command -v luacheck &>/dev/null; then
     echo "Installing luacheck..."
     luarocks install luacheck
 fi
@@ -27,4 +27,4 @@ find lua/ after/plugin/ -type f -name "*.lua" -exec sed -i '/^[[:space:]]*$/d' {
 echo "Running luacheck..."
 luacheck lua/ after/plugin/ --codes --ranges --formatter plain
 
-echo "Formatting complete!" 
+echo "Formatting complete!"

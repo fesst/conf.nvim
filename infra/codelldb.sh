@@ -31,21 +31,21 @@ if [ ! -f "$CODELDB_DIR/extension/adapter/codelldb" ]; then
     # Create temp directory
     TEMP_DIR=$(mktemp -d)
     cd "$TEMP_DIR"
-    
+
     # Download CodeLLDB
     curl -L "https://github.com/vadimcn/codelldb/releases/download/v$CODELDB_VERSION/$CODELDB_ARCHIVE" -o codelldb.vsix
-    
+
     # Create directory if it doesn't exist
     mkdir -p "$CODELDB_DIR"
-    
+
     # Unzip the vsix file (it's just a zip file)
     unzip -q codelldb.vsix -d "$CODELDB_DIR"
-    
+
     # Clean up
-    cd - > /dev/null
+    cd - >/dev/null
     rm -rf "$TEMP_DIR"
-    
+
     print_status "CodeLLDB installed successfully"
 else
     print_warning "CodeLLDB is already installed"
-fi 
+fi

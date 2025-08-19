@@ -44,12 +44,12 @@ run_nvim() {
     local test_name="$2"
 
     print_status "Running: $test_name"
-    if nvim --headless -c "$cmd" -c 'quit' 2>> "$LOG_FILE"; then
+    if nvim --headless -c "$cmd" -c 'quit' 2>>"$LOG_FILE"; then
         print_status "Success: $test_name"
         return 0
     else
         print_error "Failed: $test_name"
-        echo "Command: $cmd" >> "$LOG_FILE"
+        echo "Command: $cmd" >>"$LOG_FILE"
         return 1
     fi
 }
@@ -60,12 +60,12 @@ run_lua() {
     local test_name="$2"
 
     print_status "Running: $test_name"
-    if nvim --headless -c "lua $cmd" -c 'quit' 2>> "$LOG_FILE"; then
+    if nvim --headless -c "lua $cmd" -c 'quit' 2>>"$LOG_FILE"; then
         print_status "Success: $test_name"
         return 0
     else
         print_error "Failed: $test_name"
-        echo "Lua Command: $cmd" >> "$LOG_FILE"
+        echo "Lua Command: $cmd" >>"$LOG_FILE"
         return 1
     fi
 }
@@ -76,7 +76,7 @@ create_test_files() {
     mkdir -p "$TEST_DIR"
 
     # Create test.lua
-    cat > "$TEST_DIR/test.lua" << 'EOF'
+    cat >"$TEST_DIR/test.lua" <<'EOF'
 local function test()
     print("Test function")
 end
@@ -84,13 +84,13 @@ test()
 EOF
 
     # Create test.md
-    cat > "$TEST_DIR/test.md" << 'EOF'
+    cat >"$TEST_DIR/test.md" <<'EOF'
 # Test Markdown
 This is a test markdown file.
 EOF
 
     # Create test.py
-    cat > "$TEST_DIR/test.py" << 'EOF'
+    cat >"$TEST_DIR/test.py" <<'EOF'
 def test():
     print("Test function")
 
@@ -139,41 +139,65 @@ test_core_plugins() {
 
 test_treesitter() {
     print_status "Testing Treesitter functionality..."
-    nvim --headless -c 'lua if not require("nvim-treesitter").statusline() then error("Treesitter not functioning") end' -c 'quit' || { print_error "Treesitter functionality test failed"; exit 1; }
+    nvim --headless -c 'lua if not require("nvim-treesitter").statusline() then error("Treesitter not functioning") end' -c 'quit' || {
+        print_error "Treesitter functionality test failed"
+        exit 1
+    }
 }
 
 test_harpoon() {
     print_status "Testing Harpoon functionality..."
     print_status "Testing Harpoon loading..."
-    nvim --headless -c 'lua if not package.loaded["harpoon"] then error("Harpoon not loaded") end' -c 'quit' || { print_error "Harpoon loading test failed"; exit 1; }
+    nvim --headless -c 'lua if not package.loaded["harpoon"] then error("Harpoon not loaded") end' -c 'quit' || {
+        print_error "Harpoon loading test failed"
+        exit 1
+    }
 
     print_status "Testing Harpoon mark functionality..."
-    nvim --headless -c 'lua if not require("harpoon.mark").add_file then error("Harpoon mark functionality not available") end' -c 'quit' || { print_error "Harpoon mark functionality test failed"; exit 1; }
+    nvim --headless -c 'lua if not require("harpoon.mark").add_file then error("Harpoon mark functionality not available") end' -c 'quit' || {
+        print_error "Harpoon mark functionality test failed"
+        exit 1
+    }
 }
 
 test_postgres() {
     print_status "Testing PostgreSQL functionality..."
     print_status "Testing SQL LSP loading..."
-    nvim --headless -c 'lua if not package.loaded["sqlls"] then error("SQL LSP not loaded") end' -c 'quit' || { print_error "SQL LSP loading test failed"; exit 1; }
+    nvim --headless -c 'lua if not package.loaded["sqlls"] then error("SQL LSP not loaded") end' -c 'quit' || {
+        print_error "SQL LSP loading test failed"
+        exit 1
+    }
 
     print_status "Testing SQL LSP config..."
-    nvim --headless -c 'lua if not require("lspconfig").sqlls then error("SQL LSP config not available") end' -c 'quit' || { print_error "SQL LSP config test failed"; exit 1; }
+    nvim --headless -c 'lua if not require("lspconfig").sqlls then error("SQL LSP config not available") end' -c 'quit' || {
+        print_error "SQL LSP config test failed"
+        exit 1
+    }
 }
 
 test_text_file_handling() {
     print_status "Testing text file handling..."
     # Create a test text file
-    echo "This is a test text file" > "$TEST_DIR/test.txt"
+    echo "This is a test text file" >"$TEST_DIR/test.txt"
 
     print_status "Testing text file LSP..."
-    nvim --headless -c "e $TEST_DIR/test.txt" -c 'lua if #vim.lsp.get_clients() > 0 then error("LSP client should not be attached to text files") end' -c 'quit' || { print_error "Text file LSP test failed"; exit 1; }
+    nvim --headless -c "e $TEST_DIR/test.txt" -c 'lua if #vim.lsp.get_clients() > 0 then error("LSP client should not be attached to text files") end' -c 'quit' || {
+        print_error "Text file LSP test failed"
+        exit 1
+    }
 
     print_status "Testing markdown file LSP..."
-    echo "# Test Markdown" > "$TEST_DIR/test.md"
-    nvim --headless -c "e $TEST_DIR/test.md" -c 'lua if #vim.lsp.get_clients() > 0 then error("LSP client should not be attached to markdown files") end' -c 'quit' || { print_error "Markdown file LSP test failed"; exit 1; }
+    echo "# Test Markdown" >"$TEST_DIR/test.md"
+    nvim --headless -c "e $TEST_DIR/test.md" -c 'lua if #vim.lsp.get_clients() > 0 then error("LSP client should not be attached to markdown files") end' -c 'quit' || {
+        print_error "Markdown file LSP test failed"
+        exit 1
+    }
 
     print_status "Verifying no LSP clients on text files..."
-    nvim --headless -c "e $TEST_DIR/test.txt" -c 'lua if #vim.lsp.get_clients() > 0 then error("No LSP clients should be attached to text files") end' -c 'quit' || { print_error "Text file LSP verification failed"; exit 1; }
+    nvim --headless -c "e $TEST_DIR/test.txt" -c 'lua if #vim.lsp.get_clients() > 0 then error("No LSP clients should be attached to text files") end' -c 'quit' || {
+        print_error "Text file LSP verification failed"
+        exit 1
+    }
 }
 
 cleanup() {
@@ -187,7 +211,7 @@ print_status "Running Neovim sanity tests..."
 
 # Initialize log file
 mkdir -p "$(dirname "$LOG_FILE")"
-echo "=== Neovim Test Log $(date) ===" > "$LOG_FILE"
+echo "=== Neovim Test Log $(date) ===" >"$LOG_FILE"
 
 # Ensure virtual environment is activated
 ensure_venv

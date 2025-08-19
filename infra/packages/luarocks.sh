@@ -3,7 +3,7 @@ set -e
 
 # LuaRocks packages
 LUAROCKS_PACKAGES=(
-    "luacheck"      # Required for Lua linting
+    "luacheck" # Required for Lua linting
 )
 
 # Export variables

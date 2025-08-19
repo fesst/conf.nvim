@@ -91,7 +91,7 @@ if check_command nvim; then
 fi
 
 # Remove Lua tools
-if command -v stylua &> /dev/null; then
+if command -v stylua &>/dev/null; then
     echo "Removing stylua..."
     cargo uninstall stylua
 fi
