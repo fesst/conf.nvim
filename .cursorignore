@@ -1,6 +1,0 @@
-# Files to include in AI context by default
-!wiki/ai_context.md  # This file is always included in AI context
-
-# Files to ignore
-.DS_Store
-
