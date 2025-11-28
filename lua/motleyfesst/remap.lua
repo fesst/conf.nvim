@@ -35,6 +35,8 @@ local function leader_motions()
     map("n", "<leader>m", ":messages<CR>")
 
     map("n", "<leader>*", ":nohlsearch<CR>")
+
+    map("v", "<leader>8", '"*y')
 end
 
 local function embrace_visual()
