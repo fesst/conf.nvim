@@ -10,11 +10,11 @@ if ssh_utils.IS_MAC() then
             },
         }
     })
-    
+
     require("mason-lspconfig").setup({
         ensure_installed = {
-            "angularls", "ts_ls", "eslint", "html", "cssls", "jsonls", "yamlls", "jdtls", 
-            "kotlin_language_server", "bashls", "lua_ls", "awk_ls", "texlab", "lemminx", 
+            "angularls", "ts_ls", "eslint", "html", "cssls", "jsonls", "yamlls", "jdtls",
+            "kotlin_language_server", "bashls", "lua_ls", "awk_ls", "texlab", "lemminx",
             "pyright", "dockerls", "clangd"
         },
         automatic_installation = true,
@@ -22,7 +22,7 @@ if ssh_utils.IS_MAC() then
 
     -- Global capabilities
     local capabilities = require("cmp_nvim_lsp").default_capabilities()
-    
+
     -- Global on_attach function
     local on_attach = function(client, bufnr)
         vim.api.nvim_create_autocmd("BufWritePre", {
@@ -212,6 +212,11 @@ if ssh_utils.IS_MAC() then
         capabilities = capabilities,
         on_attach = on_attach,
         filetypes = { "sh", "zsh", "bash" },
+        settings = {
+            bashls = { folding = true, shiftwidth =4},
+            zsh = { folding = true, shiftwidth =4},
+            sh = { folding = true, shiftwidth =4},
+        },
     })
     vim.lsp.enable('bashls')
 
