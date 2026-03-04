@@ -16,7 +16,7 @@ end
 
 vim.opt.rtp:prepend(lazypath)
 require("lazy").setup("motleyfesst.lazy", {
-    lockfile = vim.fn.stdpath("config") .. (ssh_utils.IS_MAC() and "/lazy-lock.json" or "/lazy-lock.ssh.json"),
+    lockfile = vim.fn.stdpath("config") .. (ssh_utils.IS_LOCAL() and "/lazy-lock.json" or "/lazy-lock.ssh.json"),
 })
 
 -- Set up highlight on yank

@@ -4,3 +4,5 @@ vim.g.undotree_Width = 50
 vim.g.undotree_DiffpanelHeight = 10
 
 vim.keymap.set("n", "<leader>u", vim.cmd.UndotreeToggle, { desc = "Toggle undo view" })
+vim.keymap.set("v", "<leader>U", vim.cmd.UndotreeToggle, { desc = "Close undo view" })
+vim.keymap.set("i", "<A-u>", vim.cmd.UndotreeToggle, { desc = "close undo view" })

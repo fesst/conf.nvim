@@ -1,5 +1,5 @@
 local plugins_list = {
-    { "nvim-tree/nvim-tree.lua",       dependencies = { "nvim-tree/nvim-web-devicons" } },
+    { "nvim-tree/nvim-tree.lua", dependencies = { "nvim-tree/nvim-web-devicons" } },
     { "nvim-telescope/telescope.nvim", dependencies = { "nvim-lua/plenary.nvim" } },
     {
         "nvim-treesitter/nvim-treesitter",
@@ -14,9 +14,9 @@ local plugins_list = {
     { "tpope/vim-fugitive" },
 }
 local ssh_utils = require("motleyfesst.ssh_utils")
-if ssh_utils.IS_MAC() then
+if ssh_utils.IS_LOCAL() then
     local dev_list = {
-        { "github/copilot.vim" },
+        -- { "github/copilot.vim" },
         {
             "MeanderingProgrammer/render-markdown.nvim",
             dependencies = { "nvim-treesitter", "nvim-tree/nvim-web-devicons" },
@@ -38,52 +38,26 @@ if ssh_utils.IS_MAC() then
         },
         {
             "hrsh7th/nvim-cmp",
-            dependencies = { "hrsh7th/cmp-buffer", "hrsh7th/cmp-path", "hrsh7th/cmp-nvim-lsp" },
+            dependencies = {
+                "hrsh7th/cmp-buffer",
+                "hrsh7th/cmp-path",
+                "hrsh7th/cmp-nvim-lsp",
+                "nvim-lua/plenary.nvim",
+                "alexander-born/cmp-bazel",
+                "onsails/lspkind.nvim",
+            },
         },
         { "mfussenegger/nvim-dap" },
-        { "mfussenegger/nvim-jdtls" },
+        {
+            "mfussenegger/nvim-jdtls",
+            ft = "java",
+        },
         {
             "nvimtools/none-ls.nvim",
             dependencies = { "nvim-lua/plenary.nvim" },
             event = { "BufReadPre", "BufNewFile" },
-            config = function()
-                local null_ls = require("null-ls")
-                local builtins = null_ls.builtins
-
-                if not builtins then
-                    vim.notify("null-ls builtins not found", vim.log.levels.ERROR)
-                    return
-                end
-
-                local sources = {}
-                if builtins.formatting then
-                    if builtins.formatting.stylua then
-                        table.insert(sources, builtins.formatting.stylua)
-                    end
-                    if builtins.formatting.shfmt then
-                        table.insert(sources, builtins.formatting.shfmt.with({ extra_args = { "-i", "2", "-ci" } }))
-                    end
-                end
-
-                if builtins.diagnostics then
-                    if builtins.diagnostics.shellcheck then
-                        table.insert(
-                            sources,
-                            builtins.diagnostics.shellcheck.with({ filetypes = { "sh", "bash", "zsh" } })
-                        )
-                    else
-                        vim.notify("shellcheck not found in null-ls builtins", vim.log.levels.WARN)
-                    end
-                    if builtins.diagnostics.luacheck then
-                        table.insert(sources, builtins.diagnostics.luacheck)
-                    end
-                else
-                    vim.notify("null-ls diagnostics not found", vim.log.levels.WARN)
-                end
-                null_ls.setup({ debug = false, sources = sources })
-            end,
         },
-        { "rcarriga/nvim-dap-ui",            dependencies = { "mfussenegger/nvim-dap", "nvim-neotest/nvim-nio" } },
+        { "rcarriga/nvim-dap-ui", dependencies = { "mfussenegger/nvim-dap", "nvim-neotest/nvim-nio" } },
         { "theHamsta/nvim-dap-virtual-text", dependencies = { "mfussenegger/nvim-dap" } },
         {
             "rose-pine/neovim",
@@ -127,7 +101,7 @@ else
             "rose-pine/neovim",
             name = "rose-pine",
             lazy = false,
-            variant = "alt"
+            variant = "alt",
         },
     }
     for _, line in ipairs(ssh_list) do
@@ -139,7 +113,6 @@ table.insert(plugins_list, {
     "mcauley-penney/visual-whitespace.nvim",
     branch = "main",
     lazy = false,
-
 })
 return plugins_list
 

@@ -1,0 +1,47 @@
+local ok_cmp, cmp = pcall(require, "cmp")
+if not ok_cmp then
+    return
+end
+local ok_lspkind, lspkind = pcall(require, "lspkind")
+
+local config = {
+    sources = cmp.config.sources({
+        { name = "nvim_lsp" },
+        { name = "path" },
+        { name = "buffer" },
+    }, {
+        { name = "bazel" },
+    }),
+    completion = {
+        completeopt = "menu,menuone,noselect",
+    },
+    window = {
+        completion = cmp.config.window.bordered(),
+        documentation = cmp.config.window.bordered(),
+    },
+    mapping = cmp.mapping.preset.insert({
+        ["<C-j>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
+        ["<C-k>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
+        ["<C-b>"] = cmp.mapping(cmp.mapping.scroll_docs(-4), { "i", "c" }),
+        ["<C-f>"] = cmp.mapping(cmp.mapping.scroll_docs(4), { "i", "c" }),
+        ["<C-Space>"] = cmp.mapping(cmp.mapping.complete(), { "i", "c" }),
+        ["<C-@>"] = cmp.mapping(cmp.mapping.complete(), { "i", "c" }),
+        ["<C-e>"] = cmp.mapping({
+            i = cmp.mapping.abort(),
+            c = cmp.mapping.close(),
+        }),
+        ["<CR>"] = cmp.mapping.confirm({ select = true }),
+    }),
+}
+
+if ok_lspkind then
+    config.formatting = {
+        format = lspkind.cmp_format({
+            mode = "symbol_text",
+            maxwidth = 50,
+            ellipsis_char = "...",
+        }),
+    }
+end
+
+cmp.setup(config)

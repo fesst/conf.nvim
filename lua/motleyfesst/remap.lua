@@ -1,12 +1,10 @@
 vim.g.mapleader = " "
 
-local options = { noremap = true, silent = true }
+local base_options = { noremap = true, silent = true }
 
 local function map(mode, lhs, rhs, opts)
-    if opts then
-        options = vim.tbl_extend("force", options, opts)
-    end
-    vim.keymap.set(mode, lhs, rhs, options)
+    local merged_opts = opts and vim.tbl_extend("force", base_options, opts) or base_options
+    vim.keymap.set(mode, lhs, rhs, merged_opts)
 end
 
 local ssh_utils = require("motleyfesst.ssh_utils")
@@ -25,18 +23,112 @@ local function terminal()
         vim.cmd("terminal")
         vim.cmd("startinsert")
     end, {})
-    map("t", "<C-q>", "<C-\\><C-n>", {})
+    map("t", "<A-q>", "<C-\\><C-n>", {})
 end
 
 local function leader_motions()
     map("n", "<leader>R", ":source %<CR>")
     map("n", "<leader>w", ":write %<CR>")
-    map("n", "<leader>q", ":wq%<CR>")
+    map("n", "<leader>q", ":wq<CR>")
     map("n", "<leader>m", ":messages<CR>")
 
     map("n", "<leader>*", ":nohlsearch<CR>")
 
     map("v", "<leader>8", '"*y')
+    map("v", "<leader>=", '"+y')
+
+    map("n", "<leader>gf", ":new <cfile><CR>")
+    map("v", "<leader>gf", ":new <cfile><CR>")
+    map("n", "<leader>gF", ":vnew <cfile><CR>")
+    map("v", "<leader>gF", ":vnew <cfile><CR>")
+end
+
+local function jdtls_motions()
+    local function with_jdtls(cb)
+        return function()
+            local ok, jdtls = pcall(require, "jdtls")
+            if not ok then
+                vim.notify("jdtls is not available in this buffer", vim.log.levels.WARN)
+                return
+            end
+            cb(jdtls)
+        end
+    end
+
+    map(
+        "n",
+        "crv",
+        with_jdtls(function(jdtls)
+            jdtls.extract_variable()
+        end)
+    )
+    map(
+        "v",
+        "crv",
+        with_jdtls(function(jdtls)
+            jdtls.extract_variable(true)
+        end)
+    )
+    map(
+        "n",
+        "crc",
+        with_jdtls(function(jdtls)
+            jdtls.extract_constant()
+        end)
+    )
+    map(
+        "v",
+        "crc",
+        with_jdtls(function(jdtls)
+            jdtls.extract_constant(true)
+        end)
+    )
+    map(
+        "v",
+        "crm",
+        with_jdtls(function(jdtls)
+            jdtls.extract_method(true)
+        end)
+    )
+
+    map(
+        "n",
+        "<leader>df",
+        with_jdtls(function(jdtls)
+            jdtls.test_class()
+        end)
+    )
+    map(
+        "n",
+        "<leader>dn",
+        with_jdtls(function(jdtls)
+            jdtls.test_nearest_method()
+        end)
+    )
+end
+
+local function completion_motions()
+    local function trigger_completion()
+        local ok, cmp = pcall(require, "cmp")
+        if not ok then
+            vim.notify("nvim-cmp is not available", vim.log.levels.WARN)
+            return
+        end
+
+        local mode = vim.fn.mode()
+        if mode == "n" then
+            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("i", true, false, true), "n", false)
+        elseif mode:match("[vV\22]") then
+            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>i", true, false, true), "n", false)
+        end
+
+        vim.schedule(function()
+            cmp.complete()
+        end)
+    end
+
+    map({ "n", "v" }, "<leader><C-Space>", trigger_completion, { desc = "Completion menu" })
+    map({ "n", "v" }, "<leader><C-@>", trigger_completion, { desc = "Completion menu" })
 end
 
 local function embrace_visual()
@@ -86,8 +178,12 @@ local function wrap_brackets()
             return nil
         end
 
-        local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+        local row, col0 = unpack(vim.api.nvim_win_get_cursor(0))
         local line = vim.api.nvim_get_current_line()
+        if line == "" then
+            return
+        end
+        local col = math.max(1, math.min(col0 + 1, #line))
 
         local left, right = nil, nil
         for i = col, 1, -1 do
@@ -105,17 +201,25 @@ local function wrap_brackets()
 
         if left and right and left < right then
             vim.api.nvim_set_current_line(
-                line:sub(1, left) .. open .. line:sub(left + 1, right - 1) .. line:sub(right) .. after
+                line:sub(1, left) .. open .. line:sub(left + 1, right - 1) .. close .. line:sub(right)
             )
             vim.api.nvim_win_set_cursor(0, { row, left + 1 })
         else
-            local word = vim.fn.expand("<cword>")
-            local s = line:find(word, 1, true)
-            if not s then
+            local is_word = line:sub(col, col):match("[%w_]")
+            if not is_word then
                 return
             end
-            local e = s + #word
-            vim.api.nvim_set_current_line(line:sub(1, s - 1) .. open .. word .. close .. line:sub(e))
+
+            local s = col
+            while s > 1 and line:sub(s - 1, s - 1):match("[%w_]") do
+                s = s - 1
+            end
+            local e = col
+            while e < #line and line:sub(e + 1, e + 1):match("[%w_]") do
+                e = e + 1
+            end
+            local word = line:sub(s, e)
+            vim.api.nvim_set_current_line(line:sub(1, s - 1) .. open .. word .. close .. line:sub(e + 1))
             vim.api.nvim_win_set_cursor(0, { row, s + 1 })
         end
     end
@@ -129,6 +233,8 @@ end
 
 terminal()
 leader_motions()
+jdtls_motions()
+completion_motions()
 embrace_visual()
 add_pair_big_motion()
 delete_pairs()

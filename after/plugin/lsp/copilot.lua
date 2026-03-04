@@ -1,6 +1,10 @@
 local ssh_utils = require("motleyfesst.ssh_utils")
 
-if ssh_utils.IS_NOT_SSH() then
+if ssh_utils.IS_MAC() then
+    if vim.fn.exists(":Copilot") == 0 then
+        return
+    end
+
     vim.g.copilot_no_tab_map = true
     vim.g.copilot_assume_mapped = true
     vim.g.copilot_enabled = true

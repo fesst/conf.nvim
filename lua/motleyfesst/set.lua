@@ -1,11 +1,27 @@
-vim.wo.number = true
-vim.wo.relativenumber = true
-
 local opt = vim.opt
 
 opt.hidden = true
 opt.number = true
+opt.relativenumber = true
 opt.wrap = true
+
+-- clipboard: always sync unnamed yanks to both system clipboards (+ and *)
+opt.clipboard = { "unnamed", "unnamedplus" }
+vim.api.nvim_create_autocmd("TextYankPost", {
+    group = vim.api.nvim_create_augroup("yank_to_system_clipboard", { clear = true }),
+    desc = "Mirror yanks into + and * registers",
+    callback = function()
+        local e = vim.v.event
+        if not e or e.operator ~= "y" then
+            return
+        end
+        if not e.regcontents or #e.regcontents == 0 then
+            return
+        end
+        pcall(vim.fn.setreg, "+", e.regcontents, e.regtype)
+        pcall(vim.fn.setreg, "*", e.regcontents, e.regtype)
+    end,
+})
 
 -- search
 opt.hlsearch = false
@@ -35,14 +51,16 @@ vim.cmd([[highlight Normal guibg=NONE ctermbg=NONE]])
 vim.cmd([[highlight NormalNC guibg=NONE ctermbg=NONE]])
 vim.cmd([[highlight EndOfBuffer guibg=NONE ctermbg=NONE]])
 opt.langmap =
-"ФИСВУАПРШОЛДЬТЩЗЙКЫЕГМЦЧНЯ;ABCDEFGHIJKLMNOPQRSTUVWXYZ,фисвуапршолдьтщзйкыегмцчня;abcdefghijklmnopqrstuvwxyz"
+    "ФИСВУАПРШОЛДЬТЩЗЙКЫЕГМЦЧНЯ;ABCDEFGHIJKLMNOPQRSTUVWXYZ,фисвуапршолдьтщзйкыегмцчня;abcdefghijklmnopqrstuvwxyz"
 
 -- backup swap save
 opt.autowriteall = true
 opt.swapfile = false
 opt.backup = false
 opt.undofile = true
-opt.undodir = os.getenv("HOME") .. "/.vim/undodir"
+local undodir = vim.fn.expand("$HOME/.vim/undodir")
+opt.undodir = undodir
+vim.fn.mkdir(undodir, "p")
 
 -- folding
 opt.foldmethod = "expr"
@@ -54,5 +72,4 @@ opt.foldnestmax = 20
 
 opt.viewoptions = "folds,cursor,curdir,slash,unix"
 
-local ssh_utils = require("motleyfesst.ssh_utils")
 opt.sessionoptions = "blank,buffers,curdir,folds,help,options,tabpages,terminal,winsize"

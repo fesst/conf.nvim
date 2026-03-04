@@ -1,8 +1,16 @@
 local ssh_utils = require("motleyfesst.ssh_utils")
 
-if ssh_utils.IS_MAC() then
+if ssh_utils.IS_LOCAL() then
     -- PostgreSQL-specific features
     local keymap = vim.keymap.set
+    local sql_group = vim.api.nvim_create_augroup("SqlSpecificConfig", { clear = true })
+
+    local function setup_tabs(tab_size, expand_tab)
+        vim.opt_local.tabstop = tab_size
+        vim.opt_local.shiftwidth = tab_size
+        vim.opt_local.softtabstop = tab_size
+        vim.opt_local.expandtab = expand_tab
+    end
 
     -- Query templates
     local query_templates = {
@@ -129,11 +137,6 @@ if ssh_utils.IS_MAC() then
         end
     end
 
-    -- Function to get current connection
-    local function get_current_connection()
-        return current_connection
-    end
-
     -- Function to insert query template
     local function insert_template(template_name, ...)
         local template = query_templates[template_name]
@@ -162,53 +165,104 @@ if ssh_utils.IS_MAC() then
         vim.api.nvim_buf_set_lines(0, 0, -1, false, formatted_lines)
     end
 
-    -- Set up keybindings
-    local function setup_keybindings()
-        -- Query templates
-        keymap("n", "<leader>qt", function()
-            local templates = vim.tbl_keys(query_templates)
-            vim.ui.select(templates, {
-                prompt = "Select query template:",
-            }, function(choice)
-                if choice then
-                    local table_name = vim.fn.input("Enter table name: ")
-                    insert_template(choice, table_name)
+    vim.api.nvim_create_autocmd("FileType", {
+        group = sql_group,
+        pattern = "sql",
+        callback = function(ev)
+            setup_tabs(4, true)
+            vim.opt_local.syntax = "sql"
+            vim.opt_local.commentstring = "-- %s"
+            vim.opt_local.formatoptions:append("c")
+            vim.opt_local.formatoptions:append("r")
+            vim.opt_local.formatoptions:append("o")
+            vim.opt_local.formatoptions:append("q")
+            vim.opt_local.formatoptions:append("n")
+            vim.opt_local.formatoptions:append("j")
+            vim.opt_local.textwidth = 100
+
+            local function get_visual_selection()
+                local start_pos = vim.fn.getpos("'<")
+                local end_pos = vim.fn.getpos("'>")
+                if start_pos[2] == 0 or end_pos[2] == 0 then
+                    return nil
                 end
-            end)
-        end, { desc = "Insert query template" })
 
-        -- Connection management
-        keymap("n", "<leader>qc", function()
-            local conns = vim.tbl_keys(connections)
-            vim.ui.select(conns, {
-                prompt = "Select database connection:",
-            }, function(choice)
-                if choice then
-                    switch_connection(choice)
+                local lines = vim.api.nvim_buf_get_lines(0, start_pos[2] - 1, end_pos[2], false)
+                if #lines == 0 then
+                    return nil
                 end
-            end)
-        end, { desc = "Switch database connection" })
+                lines[1] = lines[1]:sub(start_pos[3], -1)
+                lines[#lines] = lines[#lines]:sub(1, end_pos[3])
 
-        -- Format query results
-        keymap("n", "<leader>qf", format_query_results, { desc = "Format query results" })
+                return table.concat(lines, " "):gsub("%s+", " ")
+            end
 
-        -- Quick access to common queries
-        keymap("n", "<leader>ql", function()
-            insert_template("long_running")
-        end, { desc = "Show long-running queries" })
-        keymap("n", "<leader>qk", function()
-            insert_template("locks")
-        end, { desc = "Show locks" })
-        keymap("n", "<leader>qs", function()
-            insert_template("table_stats", vim.fn.expand("<cword>"))
-        end, { desc = "Show table stats" })
-        keymap("n", "<leader>qi", function()
-            insert_template("index_stats", vim.fn.expand("<cword>"))
-        end, { desc = "Show index stats" })
-    end
+            local function run_psql(query)
+                if not query or query == "" then
+                    vim.notify("No SQL query to execute", vim.log.levels.WARN)
+                    return
+                end
+                vim.cmd("silent !psql -c " .. vim.fn.shellescape(query))
+            end
 
-    -- Initialize
-    setup_keybindings()
+            local opts = { buffer = ev.buf, silent = true }
+            keymap("n", "<leader>sc", function()
+                local conns = vim.tbl_keys(connections)
+                vim.ui.select(conns, {
+                    prompt = "Select database connection:",
+                }, function(choice)
+                    if choice then
+                        switch_connection(choice)
+                    end
+                end)
+            end, vim.tbl_extend("force", opts, { desc = "Switch database connection" }))
+            keymap("n", "<leader>sT", function()
+                local templates = vim.tbl_keys(query_templates)
+                vim.ui.select(templates, {
+                    prompt = "Select query template:",
+                }, function(choice)
+                    if choice then
+                        local table_name = vim.fn.input("Enter table name: ")
+                        insert_template(choice, table_name)
+                    end
+                end)
+            end, vim.tbl_extend("force", opts, { desc = "Insert query template" }))
+            keymap("n", "<leader>sF", format_query_results, vim.tbl_extend("force", opts, { desc = "Compact SQL text" }))
+            keymap("n", "<leader>sf", ":!pg_format -i %<CR>", vim.tbl_extend("force", opts, { desc = "Format SQL file" }))
+            keymap("v", "<leader>se", function()
+                local query = get_visual_selection()
+                if not query then
+                    vim.notify("No selected SQL for EXPLAIN ANALYZE", vim.log.levels.WARN)
+                    return
+                end
+                run_psql("EXPLAIN ANALYZE " .. query)
+            end, vim.tbl_extend("force", opts, { desc = "Explain selected query" }))
+            keymap("v", "<leader>sr", function()
+                run_psql(get_visual_selection())
+            end, vim.tbl_extend("force", opts, { desc = "Run selected query" }))
+            keymap("n", "<leader>st", function()
+                run_psql("\\d " .. vim.fn.expand("<cword>"))
+            end, vim.tbl_extend("force", opts, { desc = "Show table structure" }))
+            keymap("n", "<leader>sd", function()
+                run_psql("\\l+")
+            end, vim.tbl_extend("force", opts, { desc = "Show database sizes" }))
+            keymap("n", "<leader>ss", function()
+                run_psql("\\dt+")
+            end, vim.tbl_extend("force", opts, { desc = "Show table sizes" }))
+            keymap("n", "<leader>si", function()
+                run_psql("SELECT * FROM pg_stat_user_indexes")
+            end, vim.tbl_extend("force", opts, { desc = "Show index usage" }))
+            keymap("n", "<leader>sl", function()
+                run_psql("SELECT * FROM pg_stat_activity WHERE state = 'active'")
+            end, vim.tbl_extend("force", opts, { desc = "Show long-running queries" }))
+            keymap("n", "<leader>sk", function()
+                run_psql("SELECT * FROM pg_locks")
+            end, vim.tbl_extend("force", opts, { desc = "Show locks" }))
+            keymap("n", "<leader>sv", function()
+                run_psql("SELECT * FROM pg_stat_user_tables")
+            end, vim.tbl_extend("force", opts, { desc = "Show vacuum status" }))
+        end,
+    })
 
     -- Export functions for use in other files
     return {

@@ -75,11 +75,32 @@ vim.api.nvim_create_autocmd("FileType", {
     end,
     group = vim.api.nvim_create_augroup("CSSFolding", { clear = true }),
 })
-if ssh_utils.IS_MAC() then
+if ssh_utils.IS_LOCAL() then
     vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "FileType" }, {
         pattern = { "*" },
         callback = function()
-            local skip_filetypes = { python = true, lua = true, sh = true, bash = true, zsh = true, c = true, cpp = true, objc = true, cuda = true, javascript = true, typescript = true, javascriptreact = true, typescriptreact = true, json = true, jsonc = true, html = true, htmldjango = true, css = true, scss = true, less = true, }
+            local skip_filetypes = {
+                python = true,
+                lua = true,
+                sh = true,
+                bash = true,
+                zsh = true,
+                c = true,
+                cpp = true,
+                objc = true,
+                cuda = true,
+                javascript = true,
+                typescript = true,
+                javascriptreact = true,
+                typescriptreact = true,
+                json = true,
+                jsonc = true,
+                html = true,
+                htmldjango = true,
+                css = true,
+                scss = true,
+                less = true,
+            }
             if skip_filetypes[vim.bo.filetype] then
                 return
             end
@@ -90,7 +111,33 @@ if ssh_utils.IS_MAC() then
     })
 
     require("nvim-treesitter.configs").setup({
-        ensure_installed = { "bash", "c", "cpp", "css", "csv", "diff", "dockerfile", "html", "jq", "json", "lua", "luadoc", "passwd", "python", "regex", "rust", "scss", "toml", "vim", "vimdoc", "xml", "yaml", },
+        ensure_installed = {
+            "bash",
+            "c",
+            "cpp",
+            "css",
+            "csv",
+            "diff",
+            "dockerfile",
+            "graphql",
+            "html",
+            "jq",
+            "java",
+            "json",
+            "lua",
+            "luadoc",
+            "passwd",
+            "python",
+            "regex",
+            "rust",
+            "scss",
+            "toml",
+            "vim",
+            "vimdoc",
+            "xml",
+            "yaml",
+            "starlark",
+        },
         sync_install = false,
         auto_install = true,
         modules = {},
@@ -98,7 +145,7 @@ if ssh_utils.IS_MAC() then
         highlight = {
             enable = true,
             additional_vim_regex_highlighting = false,
-            disable = {},-- Add safety checks to prevent index out of bounds errors
+            disable = {}, -- Add safety checks to prevent index out of bounds errors
         },
         incremental_selection = {
             enable = true,

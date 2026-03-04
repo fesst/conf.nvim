@@ -1,6 +1,6 @@
 local ssh_utils = require("motleyfesst.ssh_utils")
 
-if ssh_utils.IS_MAC() then
+if ssh_utils.IS_LOCAL() then
     local dap = require("dap")
     local dapui = require("dapui")
     local mason_registry = require("mason-registry")
