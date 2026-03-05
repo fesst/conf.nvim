@@ -26,13 +26,6 @@ local function setup_language_settings()
     vim.api.nvim_create_autocmd("FileType", {
         pattern = "rust",
         callback = function()
-            vim.opt_local.foldmethod = "expr"
-            vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
-
             setup_tabs(4, true)
             vim.opt_local.colorcolumn = "100"
             vim.opt_local.textwidth = 100
@@ -71,15 +64,7 @@ vim.lsp.enable("pyright")
 -- C/C++
 vim.lsp.config("clangd", {
     capabilities = capabilities,
-    on_attach = function(client, bufnr)
-        on_attach(client, bufnr)
-        vim.opt_local.foldmethod = "expr"
-        vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
-        vim.opt_local.foldenable = true
-        vim.opt_local.foldcolumn = "4"
-        vim.opt_local.foldlevel = 99
-        vim.opt_local.foldminlines = 1
-    end,
+    on_attach = on_attach,
     cmd = {
         "clangd",
         "--background-index",

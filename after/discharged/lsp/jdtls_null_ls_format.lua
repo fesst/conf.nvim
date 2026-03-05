@@ -1,0 +1,29 @@
+-- Old jdtls format-on-save with null-ls filter (removed: now uses conform.nvim)
+-- Was in after/plugin/lsp/jdtls.lua on_attach
+-- To restore: replace the conform block in jdtls.lua on_attach
+
+-- local format_group = vim.api.nvim_create_augroup("JavaFormatOnSave", { clear = false })
+-- vim.api.nvim_clear_autocmds({ group = format_group, buffer = bufnr })
+-- vim.api.nvim_create_autocmd("BufWritePre", {
+--     group = format_group,
+--     buffer = bufnr,
+--     callback = function()
+--         local has_null_ls = false
+--         for _, client in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
+--             if client.name == "null-ls" then
+--                 has_null_ls = true
+--                 break
+--             end
+--         end
+--         vim.lsp.buf.format({
+--             bufnr = bufnr,
+--             async = false,
+--             filter = function(client)
+--                 if has_null_ls then
+--                     return client.name == "null-ls"
+--                 end
+--                 return client.name == "jdtls"
+--             end,
+--         })
+--     end,
+-- })

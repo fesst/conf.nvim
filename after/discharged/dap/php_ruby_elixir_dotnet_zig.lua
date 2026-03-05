@@ -1,0 +1,107 @@
+-- PHP, Ruby, Elixir, .NET, Zig DAP adapters
+-- To restore: uncomment and add to after/plugin/lsp/dap.lua
+--
+-- -- PHP (Xdebug)
+-- dap.configurations.php = {
+--     {
+--         type = "php",
+--         request = "launch",
+--         name = "Listen for Xdebug",
+--         port = 9003,
+--     },
+-- }
+--
+-- -- Ruby (rdbg)
+-- dap.adapters.ruby = {
+--     type = "executable",
+--     command = "bundle",
+--     args = { "exec", "rdbg", "-n", "--open", "--port", "${port}" },
+-- }
+--
+-- dap.configurations.ruby = {
+--     {
+--         type = "ruby",
+--         request = "launch",
+--         name = "Rails server",
+--         program = "bundle",
+--         args = { "exec", "rails", "server" },
+--         askArgs = true,
+--     },
+--     {
+--         type = "ruby",
+--         request = "launch",
+--         name = "RSpec current file",
+--         program = "bundle",
+--         args = { "exec", "rspec", "${file}" },
+--         askArgs = true,
+--     },
+-- }
+--
+-- -- Elixir (mix_task)
+-- dap.adapters.mix_task = {
+--     type = "executable",
+--     command = "elixir-ls-debugger",
+--     args = {},
+-- }
+--
+-- dap.configurations.elixir = {
+--     {
+--         type = "mix_task",
+--         name = "mix test",
+--         task = "test",
+--         taskArgs = { "--trace" },
+--         request = "launch",
+--         startApps = true,
+--         projectDir = "${workspaceFolder}",
+--         requireFiles = {
+--             "test/**/test_helper.exs",
+--             "test/**/*_test.exs",
+--         },
+--     },
+--     {
+--         type = "mix_task",
+--         name = "mix test current file",
+--         task = "test",
+--         taskArgs = { "${file}" },
+--         request = "launch",
+--         startApps = true,
+--         projectDir = "${workspaceFolder}",
+--     },
+-- }
+--
+-- -- .NET (coreclr)
+-- dap.adapters.coreclr = {
+--     type = "executable",
+--     command = "netcoredbg",
+--     args = { "--interpreter=vscode" },
+-- }
+--
+-- dap.configurations.cs = {
+--     {
+--         type = "coreclr",
+--         name = "Launch .NET Core",
+--         request = "launch",
+--         program = function()
+--             return vim.fn.input("Path to dll: ", vim.fn.getcwd() .. "/bin/Debug/", "file")
+--         end,
+--     },
+-- }
+--
+-- -- Zig
+-- dap.adapters.zls = {
+--     type = "executable",
+--     command = "zls",
+--     args = { "--debug" },
+-- }
+--
+-- dap.configurations.zig = {
+--     {
+--         type = "zls",
+--         name = "Debug",
+--         request = "launch",
+--         program = function()
+--             return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+--         end,
+--         cwd = "${workspaceFolder}",
+--     },
+-- }

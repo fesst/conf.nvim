@@ -1,0 +1,92 @@
+-- Old per-LSP on_attach folding wrappers (removed: now handled by
+-- fold_utils.on_lsp_attach() called from lsp_utils.default_on_attach)
+-- These were in after/plugin/lsp/lsp.lua
+
+-- ts_ls on_attach with folding
+-- vim.lsp.config("ts_ls", {
+--     capabilities = capabilities,
+--     on_attach = function(client, bufnr)
+--         on_attach(client, bufnr)
+--         vim.opt_local.foldmethod = "expr"
+--         vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
+--         vim.opt_local.foldenable = true
+--         vim.opt_local.foldcolumn = "4"
+--         vim.opt_local.foldlevel = 99
+--         vim.opt_local.foldminlines = 1
+--     end,
+--     ...
+-- })
+
+-- html on_attach with folding
+-- vim.lsp.config("html", {
+--     capabilities = capabilities,
+--     on_attach = function(client, bufnr)
+--         on_attach(client, bufnr)
+--         vim.opt_local.foldmethod = "expr"
+--         vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
+--         vim.opt_local.foldenable = true
+--         vim.opt_local.foldcolumn = "4"
+--         vim.opt_local.foldlevel = 99
+--         vim.opt_local.foldminlines = 1
+--     end,
+--     ...
+-- })
+
+-- cssls on_attach with folding
+-- vim.lsp.config("cssls", {
+--     capabilities = capabilities,
+--     on_attach = function(client, bufnr)
+--         on_attach(client, bufnr)
+--         vim.opt_local.foldmethod = "expr"
+--         vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
+--         vim.opt_local.foldenable = true
+--         vim.opt_local.foldcolumn = "4"
+--         vim.opt_local.foldlevel = 99
+--         vim.opt_local.foldminlines = 1
+--     end,
+--     ...
+-- })
+
+-- jsonls on_attach with folding
+-- vim.lsp.config("jsonls", {
+--     capabilities = capabilities,
+--     on_attach = function(client, bufnr)
+--         on_attach(client, bufnr)
+--         vim.opt_local.foldmethod = "expr"
+--         vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
+--         vim.opt_local.foldenable = true
+--         vim.opt_local.foldcolumn = "4"
+--         vim.opt_local.foldlevel = 99
+--         vim.opt_local.foldminlines = 1
+--     end,
+--     ...
+-- })
+
+-- Rust FileType folding (was in after/plugin/lsp/python_c_go_rust.lua)
+-- vim.api.nvim_create_autocmd("FileType", {
+--     pattern = "rust",
+--     callback = function()
+--         vim.opt_local.foldmethod = "expr"
+--         vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
+--         vim.opt_local.foldenable = true
+--         vim.opt_local.foldcolumn = "4"
+--         vim.opt_local.foldlevel = 99
+--         vim.opt_local.foldminlines = 1
+--         ...
+--     end,
+-- })
+
+-- clangd on_attach with folding (was in after/plugin/lsp/python_c_go_rust.lua)
+-- vim.lsp.config("clangd", {
+--     capabilities = capabilities,
+--     on_attach = function(client, bufnr)
+--         on_attach(client, bufnr)
+--         vim.opt_local.foldmethod = "expr"
+--         vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
+--         vim.opt_local.foldenable = true
+--         vim.opt_local.foldcolumn = "4"
+--         vim.opt_local.foldlevel = 99
+--         vim.opt_local.foldminlines = 1
+--     end,
+--     ...
+-- })

@@ -64,6 +64,7 @@ vim.fn.mkdir(undodir, "p")
 
 -- folding
 opt.foldmethod = "expr"
+opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
 opt.foldenable = true
 opt.foldcolumn = "4"
 opt.foldlevel = 99

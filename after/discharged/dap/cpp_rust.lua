@@ -1,0 +1,68 @@
+-- C/C++/Rust DAP adapter (CodeLLDB)
+-- To restore: uncomment and add to after/plugin/lsp/dap.lua
+-- Also add codelldb mason package
+--
+-- dap.adapters.codelldb = {
+--     type = "server",
+--     port = "${port}",
+--     executable = {
+--         command = vim.fn.stdpath("data") .. "/mason/packages/codelldb/extension/adapter/codelldb",
+--         args = { "--port", "${port}" },
+--     },
+-- }
+-- dap.configurations.rust = {
+--     {
+--         type = "codelldb",
+--         request = "launch",
+--         name = "Debug executable",
+--         program = function()
+--             return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+--         end,
+--         cwd = "${workspaceFolder}",
+--         stopOnEntry = false,
+--         showDisassembly = "never",
+--     },
+--     {
+--         type = "codelldb",
+--         request = "launch",
+--         name = "Debug unit tests",
+--         program = function()
+--             return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+--         end,
+--         cwd = "${workspaceFolder}",
+--         args = { "--test" },
+--         stopOnEntry = false,
+--         showDisassembly = "never",
+--     },
+-- }
+-- dap.configurations.cpp = {
+--     {
+--         name = "Launch file",
+--         type = "codelldb",
+--         request = "launch",
+--         program = function()
+--             return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+--         end,
+--         cwd = "${workspaceFolder}",
+--         stopOnEntry = false,
+--         args = {},
+--         showDisassembly = "never",
+--     },
+--     {
+--         name = "Debug with arguments",
+--         type = "codelldb",
+--         request = "launch",
+--         program = function()
+--             return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+--         end,
+--         cwd = "${workspaceFolder}",
+--         args = function()
+--             local args = vim.fn.input("Program arguments: ")
+--             return vim.split(args, " ")
+--         end,
+--         stopOnEntry = false,
+--         showDisassembly = "never",
+--     },
+-- }
+--
+-- dap.configurations.c = dap.configurations.cpp

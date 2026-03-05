@@ -9,9 +9,11 @@ if not ok_job then
     return
 end
 
+-- When nvim-cmp is not installed, blink.compat shims require("cmp") so this source
+-- still registers and blink.cmp picks it up via the "bazel" provider in cmp.lua.
 local ok_cmp, cmp = pcall(require, "cmp")
 if not ok_cmp then
-    vim.notify("nvim-cmp is required for Bazel completion source", vim.log.levels.WARN)
+    vim.notify("nvim-cmp or blink.compat (cmp shim) is required for Bazel completion source", vim.log.levels.WARN)
     return
 end
 

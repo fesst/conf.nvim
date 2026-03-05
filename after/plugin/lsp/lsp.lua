@@ -44,15 +44,7 @@ if ssh_utils.IS_LOCAL() then
     -- TypeScript/JavaScript
     vim.lsp.config("ts_ls", {
         capabilities = capabilities,
-        on_attach = function(client, bufnr)
-            on_attach(client, bufnr)
-            vim.opt_local.foldmethod = "expr"
-            vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
-        end,
+        on_attach = on_attach,
         filetypes = { "typescript", "javascript", "typescriptreact", "typescript.tsx" },
         settings = {
             typescript = { folding = true },
@@ -69,15 +61,7 @@ if ssh_utils.IS_LOCAL() then
     vim.lsp.enable("eslint")
     vim.lsp.config("html", {
         capabilities = capabilities,
-        on_attach = function(client, bufnr)
-            on_attach(client, bufnr)
-            vim.opt_local.foldmethod = "expr"
-            vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
-        end,
+        on_attach = on_attach,
         filetypes = { "html", "htmldjango" },
         settings = {
             html = { folding = true },
@@ -87,15 +71,7 @@ if ssh_utils.IS_LOCAL() then
 
     vim.lsp.config("cssls", {
         capabilities = capabilities,
-        on_attach = function(client, bufnr)
-            on_attach(client, bufnr)
-            vim.opt_local.foldmethod = "expr"
-            vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
-        end,
+        on_attach = on_attach,
         filetypes = { "css", "scss", "less" },
         settings = {
             css = { folding = true },
@@ -105,15 +81,7 @@ if ssh_utils.IS_LOCAL() then
 
     vim.lsp.config("jsonls", {
         capabilities = capabilities,
-        on_attach = function(client, bufnr)
-            on_attach(client, bufnr)
-            vim.opt_local.foldmethod = "expr"
-            vim.opt_local.foldexpr = "v:lua.vim.lsp.foldexpr()"
-            vim.opt_local.foldenable = true
-            vim.opt_local.foldcolumn = "4"
-            vim.opt_local.foldlevel = 99
-            vim.opt_local.foldminlines = 1
-        end,
+        on_attach = on_attach,
         settings = {
             json = {
                 schemas = require("schemastore").json.schemas(),
@@ -168,29 +136,38 @@ if ssh_utils.IS_LOCAL() then
     })
     vim.lsp.enable("lua_ls")
 
-    vim.lsp.config("awk_ls", {
-        capabilities = capabilities,
-        on_attach = on_attach,
-    })
-    vim.lsp.enable("awk_ls")
-
-    vim.lsp.config("texlab", {
-        capabilities = capabilities,
-        on_attach = on_attach,
-    })
-    vim.lsp.enable("texlab")
-
-    vim.lsp.config("lemminx", {
-        capabilities = capabilities,
-        on_attach = on_attach,
-    })
-    vim.lsp.enable("lemminx")
+    -- Optional servers moved to after/discharged/lsp/optional_servers.lua
 
     vim.lsp.config("dockerls", {
         capabilities = capabilities,
         on_attach = on_attach,
     })
     vim.lsp.enable("dockerls")
+
+    -- starpls: explicit config so neovim correctly sets the server's CWD to the
+    -- Bazel workspace root. Without this, starpls inherits nvim's process CWD and
+    -- `bazel info` fails in "batch mode" when nvim was launched outside the workspace.
+    vim.lsp.config("starpls", {
+        capabilities = capabilities,
+        on_attach = on_attach,
+        root_markers = { "MODULE.bazel", "WORKSPACE.bazel", "WORKSPACE" },
+        filetypes = { "bzl", "bazel", "BUILD.bazel", "WORKSPACE", "WORKSPACE.bazel" },
+        settings = {
+            starpls = {
+                bazel = {
+                    executable = "bazel",
+                },
+            },
+        },
+    })
+    vim.lsp.enable("starpls")
+
+    -- bazelrc_lsp: Bazel RC file language server
+    vim.lsp.config("bazelrc_lsp", {
+        capabilities = capabilities,
+        on_attach = on_attach,
+    })
+    vim.lsp.enable("bazelrc_lsp")
 
     vim.diagnostic.config({
         virtual_text = true,
@@ -218,20 +195,6 @@ if ssh_utils.IS_LOCAL() then
         return orig_util_open_floating_preview(contents, syntax, opts, ...)
     end
 
-    -- -- Prevent LSP from attaching to text files
-    -- vim.api.nvim_create_autocmd("FileType", {
-    --     pattern = { "text", "txt", "markdown", "md" },
-    --     callback = function()
-    --         vim.api.nvim_buf_set_option(0, "omnifunc", "")
-    --         local clients = vim.lsp.get_clients()
-    --         for _, client in ipairs(clients) do
-    --             if client.name == "textlsp" then
-    --                 vim.lsp.stop_client(client.id)
-    --             end
-    --         end
-    --     end,
-    -- })
-
     vim.api.nvim_create_autocmd("BufReadPost", {
         pattern = { "*.txt", "*.text", "*.md", "*.markdown" },
         callback = function()
@@ -239,5 +202,7 @@ if ssh_utils.IS_LOCAL() then
         end,
     })
 
-    require("render-markdown").setup({})
+    require("render-markdown").setup({
+        latex = { enabled = false },
+    })
 end

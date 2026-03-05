@@ -16,7 +16,6 @@ local plugins_list = {
 local ssh_utils = require("motleyfesst.ssh_utils")
 if ssh_utils.IS_LOCAL() then
     local dev_list = {
-        -- { "github/copilot.vim" },
         {
             "MeanderingProgrammer/render-markdown.nvim",
             dependencies = { "nvim-treesitter", "nvim-tree/nvim-web-devicons" },
@@ -32,18 +31,17 @@ if ssh_utils.IS_LOCAL() then
             dependencies = {
                 "williamboman/mason.nvim",
                 "williamboman/mason-lspconfig.nvim",
-                "hrsh7th/cmp-nvim-lsp",
                 "b0o/schemastore.nvim",
             },
         },
+        -- blink.cmp (old nvim-cmp config in after/discharged/completion/)
         {
-            "hrsh7th/nvim-cmp",
+            "saghen/blink.cmp",
+            version = "*",
+            lazy = false,
             dependencies = {
-                "hrsh7th/cmp-buffer",
-                "hrsh7th/cmp-path",
-                "hrsh7th/cmp-nvim-lsp",
-                "nvim-lua/plenary.nvim",
-                "alexander-born/cmp-bazel",
+                { "saghen/blink.compat", version = "*", lazy = true },
+                "alexander-born/cmp-bazel", -- nvim-cmp source, bridged via blink.compat
                 "onsails/lspkind.nvim",
             },
         },
@@ -53,8 +51,12 @@ if ssh_utils.IS_LOCAL() then
             ft = "java",
         },
         {
-            "nvimtools/none-ls.nvim",
-            dependencies = { "nvim-lua/plenary.nvim" },
+            "stevearc/conform.nvim",
+            event = { "BufWritePre" },
+            cmd = { "ConformInfo" },
+        },
+        {
+            "mfussenegger/nvim-lint",
             event = { "BufReadPre", "BufNewFile" },
         },
         { "rcarriga/nvim-dap-ui", dependencies = { "mfussenegger/nvim-dap", "nvim-neotest/nvim-nio" } },
@@ -115,17 +117,3 @@ table.insert(plugins_list, {
     lazy = false,
 })
 return plugins_list
-
--- {
---     "RRethy/base16-nvim",
---     lazy = false,
---     opts = { transparent = true, italic_comment = true },
---     config = function()
---         vim.cmd("colorscheme base16-material-palenight")
---     end,
--- },
--- {
---     "vague2k/vague.nvim",
---     'wilmanbarrios/palenight.nvim',
---     'alexmozaidze/palenight.nvim',
--- },

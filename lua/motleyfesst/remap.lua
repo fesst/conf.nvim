@@ -11,19 +11,67 @@ local ssh_utils = require("motleyfesst.ssh_utils")
 local function terminal()
     vim.o.shell = ssh_utils.IS_ZSH() and "/bin/zsh -i" or "/usr/bin/bash --login"
 
-    map({ "n", "v" }, "<leader>TT", function()
-        vim.cmd("botright " .. math.floor(vim.o.lines / 4) .. "split")
-        vim.cmd("setlocal modified")
+    -- Persistent state for the main bottom terminal (one per session)
+    local term = { buf = nil, win = nil }
+
+    local function open_bottom(height)
+        vim.cmd("botright " .. height .. "split")
         vim.cmd("terminal")
         vim.cmd("startinsert")
-    end, {})
+        return vim.api.nvim_get_current_buf(), vim.api.nvim_get_current_win()
+    end
+
+    -- <leader>Tt: toggle the persistent bottom terminal (default/primary)
     map({ "n", "v" }, "<leader>Tt", function()
+        local h = math.floor(vim.o.lines / 4)
+        -- Visible → hide it
+        if term.win and vim.api.nvim_win_is_valid(term.win) then
+            vim.api.nvim_win_close(term.win, false)
+            term.win = nil
+            return
+        end
+        -- Buffer alive but window closed → reopen in a new split
+        if term.buf and vim.api.nvim_buf_is_valid(term.buf) then
+            vim.cmd("botright " .. h .. "split")
+            vim.api.nvim_set_current_buf(term.buf)
+            term.win = vim.api.nvim_get_current_win()
+            vim.cmd("startinsert")
+            return
+        end
+        -- Fresh start
+        term.buf, term.win = open_bottom(h)
+    end, { desc = "Toggle bottom terminal (1/4 height)" })
+
+    -- <leader>TT: always spawn a new terminal at the bottom 1/4
+    map({ "n", "v" }, "<leader>TT", function()
+        open_bottom(math.floor(vim.o.lines / 4))
+    end, { desc = "New bottom terminal (1/4 height)" })
+
+    -- <leader>Ts: side vertical-split terminal
+    map({ "n", "v" }, "<leader>Ts", function()
         vim.cmd("rightbelow " .. math.floor(vim.o.columns / 2.1) .. "vsplit")
-        vim.cmd("setlocal modified")
         vim.cmd("terminal")
         vim.cmd("startinsert")
-    end, {})
+    end, { desc = "New side terminal" })
+
+    -- Exit terminal insert mode
     map("t", "<A-q>", "<C-\\><C-n>", {})
+
+    -- Auto-close the split when the shell process exits
+    vim.api.nvim_create_autocmd("TermClose", {
+        callback = function(ev)
+            vim.schedule(function()
+                if vim.api.nvim_buf_is_valid(ev.buf) then
+                    pcall(vim.api.nvim_buf_delete, ev.buf, { force = true })
+                end
+                -- Reset persistent state if it was our tracked buffer
+                if term.buf == ev.buf then
+                    term.buf = nil
+                    term.win = nil
+                end
+            end)
+        end,
+    })
 end
 
 local function leader_motions()
@@ -91,27 +139,44 @@ local function jdtls_motions()
         end)
     )
 
+    -- <leader>j = java-specific actions (kept separate from <leader>d = debug)
     map(
         "n",
-        "<leader>df",
+        "<leader>jf",
         with_jdtls(function(jdtls)
             jdtls.test_class()
-        end)
+        end),
+        { desc = "Java: test class (File)" }
     )
     map(
         "n",
-        "<leader>dn",
+        "<leader>jn",
         with_jdtls(function(jdtls)
             jdtls.test_nearest_method()
-        end)
+        end),
+        { desc = "Java: test Nearest method" }
     )
 end
 
 local function completion_motions()
     local function trigger_completion()
-        local ok, cmp = pcall(require, "cmp")
+        -- NEW: blink.cmp
+        local ok, blink = pcall(require, "blink.cmp")
         if not ok then
-            vim.notify("nvim-cmp is not available", vim.log.levels.WARN)
+            -- OLD: nvim-cmp fallback (kept for reference)
+            -- local ok_cmp, cmp = pcall(require, "cmp")
+            -- if not ok_cmp then
+            --     vim.notify("nvim-cmp is not available", vim.log.levels.WARN)
+            --     return
+            -- end
+            -- local mode = vim.fn.mode()
+            -- if mode == "n" then
+            --     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("i", true, false, true), "n", false)
+            -- elseif mode:match("[vV\22]") then
+            --     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>i", true, false, true), "n", false)
+            -- end
+            -- vim.schedule(function() cmp.complete() end)
+            vim.notify("blink.cmp is not available", vim.log.levels.WARN)
             return
         end
 
@@ -123,7 +188,7 @@ local function completion_motions()
         end
 
         vim.schedule(function()
-            cmp.complete()
+            blink.show()
         end)
     end
 

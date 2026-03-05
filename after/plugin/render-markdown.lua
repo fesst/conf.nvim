@@ -1,6 +1,1 @@
--- Configure render-markdown to disable LaTeX support
---require('render-markdown').setup({
---   latex = {
---        enabled = false
---    }
---})
+-- render-markdown setup is in after/plugin/lsp/lsp.lua (local-only)

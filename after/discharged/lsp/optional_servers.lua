@@ -1,0 +1,10 @@
+-- Optional LSP servers — uncomment when installed
+-- To restore: add to after/plugin/lsp/lsp.lua inside IS_LOCAL() block
+-- Also add to mason-lspconfig ensure_installed list
+--
+-- vim.lsp.config("awk_ls", { capabilities = capabilities, on_attach = on_attach })
+-- vim.lsp.enable("awk_ls")
+-- vim.lsp.config("texlab", { capabilities = capabilities, on_attach = on_attach })
+-- vim.lsp.enable("texlab")
+-- vim.lsp.config("lemminx", { capabilities = capabilities, on_attach = on_attach })
+-- vim.lsp.enable("lemminx")

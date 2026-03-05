@@ -1,0 +1,14 @@
+-- Disabled language-specific keybindings
+-- To restore: add to after/plugin/lsp/lang_specific_mapping.lua
+--
+-- -- Go
+-- keymap("n", "<leader>yr", ":!go run %<CR>", { desc = "Run Go file" })
+-- keymap("n", "<leader>yt", ":!go test %<CR>", { desc = "Run Go tests" })
+--
+-- -- Rust
+-- keymap("n", "<leader>yr", ":!cargo run<CR>", { desc = "Run Rust project" })
+-- keymap("n", "<leader>yt", ":!cargo test<CR>", { desc = "Run Rust tests" })
+--
+-- -- Docker
+-- keymap("n", "<leader>yd", ":!docker build .<CR>", { desc = "Build Docker image" })
+-- keymap("n", "<leader>yr", ":!docker run<CR>", { desc = "Run Docker container" })

@@ -1,0 +1,29 @@
+-- Python DAP adapter and configurations (debugpy)
+-- To restore: uncomment and add to after/plugin/lsp/dap.lua
+-- Also add "debugpy" to ensure_dap_installed() adapters list
+--
+-- dap.adapters.python = {
+--     type = "executable",
+--     command = "python",
+--     args = { "-m", "debugpy.adapter" },
+-- }
+--
+-- dap.configurations.python = {
+--     {
+--         type = "python",
+--         request = "launch",
+--         name = "Launch file",
+--         program = "${file}",
+--         pythonPath = function()
+--             return vim.fn.exepath("python3")
+--         end,
+--     },
+--     {
+--         type = "python",
+--         request = "attach",
+--         name = "Attach to process",
+--         processId = function()
+--             return vim.fn.input("Process ID: ")
+--         end,
+--     },
+-- }

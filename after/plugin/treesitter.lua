@@ -1,115 +1,24 @@
 local ssh_utils = require("motleyfesst.ssh_utils")
+local fold_utils = require("motleyfesst.fold_utils")
 
-local function setup_base_folding()
-    vim.opt_local.foldmethod = "expr"
-    vim.opt_local.foldenable = true
-    vim.opt_local.foldcolumn = "4"
-    vim.opt_local.foldlevel = 99
-    vim.opt_local.foldminlines = 1
-    vim.opt_local.foldnestmax = 20
-end
-
-vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "FileType" }, {
-    pattern = { "*.py", "python" },
+-- Indent-based folding for filetypes where treesitter folding is poor.
+-- Global default (set.lua) provides treesitter folding for everything else.
+vim.api.nvim_create_autocmd("FileType", {
+    pattern = { "python" },
     callback = function()
-        setup_base_folding()
-        vim.opt_local.foldmethod = "indent"
-        vim.opt_local.foldexpr = "" -- Clear any expr-based folding
+        fold_utils.setup_indent()
     end,
     group = vim.api.nvim_create_augroup("PythonFolding", { clear = true }),
 })
-vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "FileType" }, {
-    pattern = { "*.lua", "lua" },
+vim.api.nvim_create_autocmd("FileType", {
+    pattern = { "sh", "bash", "zsh" },
     callback = function()
-        setup_base_folding()
-        vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-    end,
-    group = vim.api.nvim_create_augroup("LuaFolding", { clear = true }),
-})
-vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "FileType" }, {
-    pattern = { "*.sh", "*.bash", "*.zsh", "sh", "bash", "zsh" },
-    callback = function()
-        setup_base_folding()
-        vim.opt_local.foldmethod = "indent"
-        vim.opt_local.foldexpr = "" -- Clear any expr-based folding
+        fold_utils.setup_indent()
     end,
     group = vim.api.nvim_create_augroup("ShellFolding", { clear = true }),
 })
-vim.api.nvim_create_autocmd("FileType", {
-    pattern = { "c", "cpp", "objc", "cuda" },
-    callback = function()
-        setup_base_folding()
-        vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-    end,
-    group = vim.api.nvim_create_augroup("CCPPFolding", { clear = true }),
-})
-vim.api.nvim_create_autocmd("FileType", {
-    pattern = { "javascript", "typescript", "javascriptreact", "typescriptreact" },
-    callback = function()
-        setup_base_folding()
-        vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-    end,
-    group = vim.api.nvim_create_augroup("JSTSFolding", { clear = true }),
-})
-vim.api.nvim_create_autocmd("FileType", {
-    pattern = { "json", "jsonc" },
-    callback = function()
-        setup_base_folding()
-        vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-    end,
-    group = vim.api.nvim_create_augroup("JSONFolding", { clear = true }),
-})
-vim.api.nvim_create_autocmd("FileType", {
-    pattern = { "html", "htmldjango" },
-    callback = function()
-        setup_base_folding()
-        vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-    end,
-    group = vim.api.nvim_create_augroup("HTMLFolding", { clear = true }),
-})
-vim.api.nvim_create_autocmd("FileType", {
-    pattern = { "css", "scss", "less" },
-    callback = function()
-        setup_base_folding()
-        vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-    end,
-    group = vim.api.nvim_create_augroup("CSSFolding", { clear = true }),
-})
-if ssh_utils.IS_LOCAL() then
-    vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "FileType" }, {
-        pattern = { "*" },
-        callback = function()
-            local skip_filetypes = {
-                python = true,
-                lua = true,
-                sh = true,
-                bash = true,
-                zsh = true,
-                c = true,
-                cpp = true,
-                objc = true,
-                cuda = true,
-                javascript = true,
-                typescript = true,
-                javascriptreact = true,
-                typescriptreact = true,
-                json = true,
-                jsonc = true,
-                html = true,
-                htmldjango = true,
-                css = true,
-                scss = true,
-                less = true,
-            }
-            if skip_filetypes[vim.bo.filetype] then
-                return
-            end
-            setup_base_folding()
-            vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-        end,
-        group = vim.api.nvim_create_augroup("DefaultFolding", { clear = true }),
-    })
 
+if ssh_utils.IS_LOCAL() then
     require("nvim-treesitter.configs").setup({
         ensure_installed = {
             "bash",

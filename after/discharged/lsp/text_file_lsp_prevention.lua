@@ -1,0 +1,15 @@
+-- Prevent LSP from attaching to text files
+-- To restore: add to after/plugin/lsp/lsp.lua inside IS_LOCAL() block
+--
+-- vim.api.nvim_create_autocmd("FileType", {
+--     pattern = { "text", "txt", "markdown", "md" },
+--     callback = function()
+--         vim.api.nvim_buf_set_option(0, "omnifunc", "")
+--         local clients = vim.lsp.get_clients()
+--         for _, client in ipairs(clients) do
+--             if client.name == "textlsp" then
+--                 vim.lsp.stop_client(client.id)
+--             end
+--         end
+--     end,
+-- })
