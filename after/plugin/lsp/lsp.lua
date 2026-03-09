@@ -39,6 +39,7 @@ if ssh_utils.IS_LOCAL() then
         capabilities = capabilities,
         on_attach = on_attach,
         filetypes = { "typescript", "html", "typescriptreact", "typescript.tsx" },
+        root_markers = { "angular.json", "project.json" },
     })
     vim.lsp.enable("angularls")
     -- TypeScript/JavaScript
@@ -46,6 +47,7 @@ if ssh_utils.IS_LOCAL() then
         capabilities = capabilities,
         on_attach = on_attach,
         filetypes = { "typescript", "javascript", "typescriptreact", "typescript.tsx" },
+        root_markers = { "tsconfig.json", "jsconfig.json", "package.json", ".git" },
         settings = {
             typescript = { folding = true },
             javascript = { folding = true },
@@ -57,12 +59,17 @@ if ssh_utils.IS_LOCAL() then
         capabilities = capabilities,
         on_attach = on_attach,
         filetypes = { "typescript", "javascript", "typescriptreact", "typescript.tsx" },
+        root_markers = {
+            ".eslintrc", ".eslintrc.js", ".eslintrc.json", ".eslintrc.yml",
+            "eslint.config.js", "eslint.config.mjs", "package.json",
+        },
     })
     vim.lsp.enable("eslint")
     vim.lsp.config("html", {
         capabilities = capabilities,
         on_attach = on_attach,
         filetypes = { "html", "htmldjango" },
+        root_markers = { "package.json", ".git" },
         settings = {
             html = { folding = true },
         },
@@ -73,6 +80,7 @@ if ssh_utils.IS_LOCAL() then
         capabilities = capabilities,
         on_attach = on_attach,
         filetypes = { "css", "scss", "less" },
+        root_markers = { "package.json", ".git" },
         settings = {
             css = { folding = true },
         },
@@ -82,6 +90,7 @@ if ssh_utils.IS_LOCAL() then
     vim.lsp.config("jsonls", {
         capabilities = capabilities,
         on_attach = on_attach,
+        root_markers = { "package.json", ".git" },
         settings = {
             json = {
                 schemas = require("schemastore").json.schemas(),
@@ -95,6 +104,7 @@ if ssh_utils.IS_LOCAL() then
     vim.lsp.config("yamlls", {
         capabilities = capabilities,
         on_attach = on_attach,
+        root_markers = { ".git" },
         settings = {
             yaml = {
                 schemas = require("schemastore").yaml.schemas(),
@@ -106,6 +116,7 @@ if ssh_utils.IS_LOCAL() then
     vim.lsp.config("kotlin_language_server", {
         capabilities = capabilities,
         on_attach = on_attach,
+        root_markers = { "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts", "pom.xml" },
     })
     vim.lsp.enable("kotlin_language_server")
     -- Bash
@@ -113,6 +124,7 @@ if ssh_utils.IS_LOCAL() then
         capabilities = capabilities,
         on_attach = on_attach,
         filetypes = { "sh", "zsh", "bash" },
+        root_markers = { ".git" },
         settings = {
             bashls = { folding = true, shiftwidth = 4 },
             zsh = { folding = true, shiftwidth = 4 },
@@ -124,6 +136,7 @@ if ssh_utils.IS_LOCAL() then
     vim.lsp.config("lua_ls", {
         capabilities = capabilities,
         on_attach = on_attach,
+        root_markers = { ".luarc.json", ".luarc.jsonc", ".luacheckrc", "stylua.toml", ".stylua.toml", ".git" },
         settings = {
             Lua = {
                 runtime = { version = "LuaJIT" },
@@ -141,6 +154,7 @@ if ssh_utils.IS_LOCAL() then
     vim.lsp.config("dockerls", {
         capabilities = capabilities,
         on_attach = on_attach,
+        root_markers = { "Dockerfile", "docker-compose.yml", "docker-compose.yaml", ".git" },
     })
     vim.lsp.enable("dockerls")
 
@@ -166,6 +180,7 @@ if ssh_utils.IS_LOCAL() then
     vim.lsp.config("bazelrc_lsp", {
         capabilities = capabilities,
         on_attach = on_attach,
+        root_markers = { "MODULE.bazel", "WORKSPACE.bazel", "WORKSPACE", ".bazelrc" },
     })
     vim.lsp.enable("bazelrc_lsp")
 
