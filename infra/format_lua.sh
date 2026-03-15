@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Exit on error
-set -e
+set -euo pipefail
 
 # Install required tools if not present
 if ! command -v stylua &>/dev/null; then
@@ -14,14 +13,11 @@ if ! command -v luacheck &>/dev/null; then
     luarocks install luacheck
 fi
 
-# Format Lua files
 echo "Formatting Lua files..."
 stylua lua/ after/plugin/
 
-# Remove trailing whitespace and empty lines
 echo "Cleaning up whitespace..."
-find lua/ after/plugin/ -type f -name "*.lua" -exec sed -i 's/[[:space:]]*$//' {} +
-find lua/ after/plugin/ -type f -name "*.lua" -exec sed -i '/^[[:space:]]*$/d' {} +
+find lua/ after/plugin/ -type f -name "*.lua" -exec perl -0pi -e 's/[ \t]+$//mg; s/\n{3,}/\n\n/g' {} +
 
 # Run luacheck
 echo "Running luacheck..."

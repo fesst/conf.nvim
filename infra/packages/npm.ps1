@@ -1,36 +1,36 @@
-# PowerShell script for installing npm packages
-
 $ErrorActionPreference = 'Stop'
 
-# NPM packages
 $NPM_PACKAGES = @(
-    "typescript@latest"     # Required for TypeScript language server
+    "typescript@latest"
     "typescript-language-server@latest"
-    "prettier@latest"      # Required for formatting
-    "eslint@latest"        # Required for linting
-    "@angular/cli@latest"  # Required for Angular development
-    "sql-language-server@latest" # Required for SQL support
-    "eslint_d@latest"      # Required for null-ls ESLint integration
+    "prettier@latest"
+    "eslint@latest"
+    "@angular/cli@latest"
+    "eslint_d@latest"
 )
 
-# Add npm configuration to optimize caching and installation
 $NPM_CONFIG = @(
-    "--no-fund"           # Disable funding messages
-    "--no-audit"          # Disable audit (we handle this separately)
-    "--no-package-lock"   # Don't create package-lock.json for global installs
-    "--no-save"           # Don't save to package.json
-    "--prefer-offline"    # Use cached packages when possible
-    "--progress=false"    # Disable progress bar for cleaner logs
+    "--no-audit"
+    "--no-fund"
+    "--no-package-lock"
+    "--no-save"
+    "--prefer-offline"
+    "--progress=false"
 )
 
-# Export variables
 $env:NPM_PACKAGES = $NPM_PACKAGES
 $env:NPM_CONFIG = $NPM_CONFIG
 
-# Install packages
 foreach ($package in $NPM_PACKAGES) {
+    $normalizedPackage = if ($package.Contains('@')) { $package.Substring(0, $package.LastIndexOf('@')) } else { $package }
+    $installed = npm list -g --depth=0 $normalizedPackage 2>$null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Output "npm package already installed: $normalizedPackage"
+        continue
+    }
+
     Write-Output "Installing $package..."
-    npm install -g $package $NPM_CONFIG
+    npm install -g $package @NPM_CONFIG
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to install $package"
     }

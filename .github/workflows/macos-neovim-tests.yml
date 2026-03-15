@@ -1,4 +1,4 @@
-name: "Neovim Tests"
+name: "Neovim Tests (macOS)"
 
 permissions:
   contents: read
@@ -7,62 +7,90 @@ on:
   workflow_call:
   push:
     branches: ["master"]
-  schedule:
-    - cron: "33 12 * * 1"
-
+    paths:
+      - "infra/**"
+      - ".github/workflows/**"
+      - "lua/**"
+      - "after/**"
+      - "init.lua"
+      - "lazy-lock.json"
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  group: macos-neovim-tests-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  check-changes:
-    name: Check for Changes
+  test:
     runs-on: macos-latest
-    outputs:
-      run_tests: ${{ steps.test_check.outputs.run_tests }}
+    timeout-minutes: 45
+    env:
+      CI: "true"
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      INSTALL_BREW_CASKS: "false"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          fetch-depth: 1
+          node-version: "20"
 
-      - name: Check if tests should run (test/, infra/, *.lua)
-        id: test_check
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: macos-npm-${{ hashFiles('infra/packages/npm.sh') }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/pip
+          key: macos-pip-${{ hashFiles('infra/packages/pip.sh') }}
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: macos-cargo-${{ hashFiles('infra/packages/cargo.sh') }}
+
+      - name: Cache Neovim data
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/nvim
+            ~/.local/state/nvim
+            ~/.cache/nvim
+          key: macos-nvim-${{ hashFiles('lazy-lock.json') }}
+
+      - name: Create Python virtual environment
+        shell: bash
         run: |
-          chmod +x infra/should_run_tests.sh || true
-          bash infra/should_run_tests.sh ${{ github.base_ref }} ${{ github.sha }} || exit_code=$?
-          case ${exit_code:-0} in
-            0)
-              echo "run_tests=true" >> $GITHUB_OUTPUT
-              ;;
-            1)
-              echo "run_tests=false" >> $GITHUB_OUTPUT
-              ;;
-            *)
-              echo "Unexpected error occurred (exit code: ${exit_code:-0}). Running tests to be safe."
-              echo "run_tests=true" >> $GITHUB_OUTPUT
-              ;;
-          esac
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/venv"
+          echo "VIRTUAL_ENV=$RUNNER_TEMP/venv" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
 
-  setup:
-    name: Setup Environment
-    needs: check-changes
-    if: needs.check-changes.outputs.run_tests == 'true'
-    uses: ./.github/workflows/setup-environment.yml
-    with:
-      setup_python: true
-      setup_rust: true
-      setup_node: true
-      setup_lua: true
-      runner: macos-latest
+      - name: Install toolchain and plugins
+        shell: bash
+        run: |
+          set -euo pipefail
+          source "$VIRTUAL_ENV/bin/activate"
+          ./infra/ci-setup-macos.sh
 
-  test:
-    name: Run Tests
-    needs: [check-changes, setup]
-    if: needs.check-changes.outputs.run_tests == 'true'
-    uses: ./.github/workflows/test-steps.yml
-    with:
-      platform: macos
-      venv_path: ${{ needs.setup.outputs.virtual_env }}
-      use_cache: true
-      install_deps: true
+      - name: Run sanity tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          source "$VIRTUAL_ENV/bin/activate"
+          ./infra/nvim_sanity_test.sh

@@ -1,9 +1,10 @@
-name: "PR Windows Tests"
+name: "Neovim Tests (Windows)"
 
 permissions:
   contents: read
 
 on:
+  workflow_call:
   pull_request:
     branches: ["master"]
     paths:
@@ -12,6 +13,7 @@ on:
       - "lua/**"
       - "after/**"
       - "init.lua"
+      - "lazy-lock.json"
   push:
     branches: ["master"]
     paths:
@@ -20,26 +22,98 @@ on:
       - "lua/**"
       - "after/**"
       - "init.lua"
-  workflow_dispatch: # Allow manual triggering
+      - "lazy-lock.json"
+  workflow_dispatch:
 
 concurrency:
-  group: pr-windows-${{ github.ref }}
+  group: windows-neovim-tests-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  setup:
-    uses: ./.github/workflows/setup-environment-windows.yml
-    with:
-      setup_python: true
-      setup_rust: true
-      setup_node: true
-      setup_lua: true
-
   test:
-    needs: setup
-    uses: ./.github/workflows/test-steps.yml
-    with:
-      platform: windows
-      venv_path: ${{ needs.setup.outputs.virtual_env }}
-      use_cache: true
-      install_deps: true
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      CI: "true"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\npm-cache
+            ~\AppData\Roaming\npm-cache
+          key: windows-npm-${{ hashFiles('infra/packages/npm.ps1') }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: windows-pip-${{ hashFiles('infra/packages/pip.ps1') }}
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\.cargo\bin
+            ~\.cargo\registry
+            ~\.cargo\git
+          key: windows-cargo-${{ hashFiles('infra/packages/cargo.ps1') }}
+
+      - name: Cache Neovim data
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\nvim-data
+          key: windows-nvim-${{ hashFiles('lazy-lock.json') }}
+
+      - name: Install system packages
+        shell: pwsh
+        run: |
+          choco install -y neovim lua luarocks ripgrep fd llvm
+          "C:\ProgramData\chocolatey\bin" >> $env:GITHUB_PATH
+          if (Test-Path "C:\Program Files\Neovim\bin") {
+            "C:\Program Files\Neovim\bin" >> $env:GITHUB_PATH
+          }
+          if (Test-Path "C:\tools\neovim\nvim-win64\bin") {
+            "C:\tools\neovim\nvim-win64\bin" >> $env:GITHUB_PATH
+          }
+          if (Test-Path "C:\Program Files (x86)\Lua\5.1") {
+            "C:\Program Files (x86)\Lua\5.1" >> $env:GITHUB_PATH
+          }
+
+      - name: Create Python virtual environment
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          "VIRTUAL_ENV=$pwd\.venv" >> $env:GITHUB_ENV
+          "$pwd\.venv\Scripts" >> $env:GITHUB_PATH
+
+      - name: Install toolchain and plugins
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          & .\infra\packages\pip.ps1
+          & .\infra\packages\npm.ps1
+          & .\infra\packages\cargo.ps1
+          & .\infra\packages\luarocks.ps1
+          & .\infra\packages\nvim.ps1
+
+      - name: Run sanity tests
+        shell: pwsh
+        run: |
+          & .\infra\nvim_sanity_test.ps1

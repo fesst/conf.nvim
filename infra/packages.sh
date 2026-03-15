@@ -1,10 +1,11 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-# Source individual package files
-source "$(dirname "$0")/packages/brew.sh"
-source "$(dirname "$0")/packages/npm.sh"
-source "$(dirname "$0")/packages/pip.sh"
-source "$(dirname "$0")/packages/luarocks.sh"
-# source "$(dirname "$0")/packages/cargo.sh"
-source "$(dirname "$0")/packages/nvim.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+source "$SCRIPT_DIR/packages/brew.sh"
+source "$SCRIPT_DIR/packages/npm.sh"
+source "$SCRIPT_DIR/packages/pip.sh"
+source "$SCRIPT_DIR/packages/luarocks.sh"
+source "$SCRIPT_DIR/packages/cargo.sh"
+source "$SCRIPT_DIR/packages/nvim.sh"

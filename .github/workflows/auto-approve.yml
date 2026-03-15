@@ -22,4 +22,4 @@ jobs:
               pull_number: pullRequestNumber,
               event: 'APPROVE',
               body: 'Auto-approved by @fesst'
-            }); 
+            });

@@ -1,39 +1,48 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-# Homebrew packages
 BREW_PACKAGES=(
-    "fzf"     # Required for telescope
-    "ripgrep" # Required for telescope live grep
-    "fd"      # Required for telescope find_files
-    "llvm"    # Required for some language servers
-    # "cmake"         # Required for building some language servers
-    # "delve"         # Required for Go debugging
+    "fd"
+    "fzf"
     "git"
-    # "gcc"
-    # "make"
+    "llvm"
+    "luarocks"
+    "neovim"
     "pkg-config"
-    # "php"
-    # "composer"
-    "luarocks" # Required for Lua package management
-    # "postgresql"    # Required for PostgreSQL support
-    # "pgformatter"   # Required for PostgreSQL formatting
-    "shellcheck"  # Required for shell script linting
-    "shfmt"       # Required for shell script formatting
-    "tree-sitter" # Required for Treesitter CLI
+    "ripgrep"
+    "shellcheck"
+    "shfmt"
+    "tree-sitter"
 )
 
-# Homebrew casks
 BREW_CASKS=(
-    "mactex" # Required for LaTeX support (includes GUI tools)
-    "skim"   # Required for PDF viewing
+    "skim"
 )
 
-# Export variables
 export BREW_PACKAGES
 export BREW_CASKS
 
-# Install Homebrew packages
-for package in "${BREW_PACKAGES[@]}"; do
-    brew install "$package"
-done
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    if ! command -v brew &>/dev/null; then
+        echo "Homebrew is required to run $0" >&2
+        exit 1
+    fi
+
+    for package in "${BREW_PACKAGES[@]}"; do
+        if brew list "$package" &>/dev/null; then
+            echo "brew package already installed: $package"
+            continue
+        fi
+        brew install "$package"
+    done
+
+    if [ "${INSTALL_BREW_CASKS:-false}" = "true" ]; then
+        for cask in "${BREW_CASKS[@]}"; do
+            if brew list --cask "$cask" &>/dev/null; then
+                echo "brew cask already installed: $cask"
+                continue
+            fi
+            brew install --cask "$cask"
+        done
+    fi
+fi

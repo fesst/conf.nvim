@@ -116,7 +116,8 @@ RUN python3 -m pip install --no-cache-dir \
     pynvim \
     black \
     flake8 \
-    isort
+    isort \
+    pytest
 
 # Install npm packages
 RUN npm install -g --no-fund --no-audit --no-package-lock --no-save \
@@ -125,7 +126,6 @@ RUN npm install -g --no-fund --no-audit --no-package-lock --no-save \
     prettier@latest \
     eslint@latest \
     @angular/cli@latest \
-    sql-language-server@latest \
     eslint_d@latest
 
 # Install LuaRocks packages
@@ -165,7 +165,7 @@ COPY --chown=developer:developer . /home/developer/.config/nvim/
 
 # Install Neovim plugins (skip in CI)
 RUN if [ "$CI" != "true" ]; then \
-        nvim --headless -c "Lazy sync" -c "qa"; \
+        nvim --headless -c "Lazy! restore" -c "qa"; \
     fi
 
 # Set the default command

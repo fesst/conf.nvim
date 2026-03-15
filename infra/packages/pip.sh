@@ -1,13 +1,22 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-# Python packages
 PIP_PACKAGES=(
-    "pynvim" # Required for Python integration
-    "black"  # Required for Python formatting
-    "flake8" # Required for Python linting
-    "isort"  # Required for Python import sorting
+    "black"
+    "flake8"
+    "isort"
+    "pynvim"
+    "pytest"
 )
 
-# Export variables
 export PIP_PACKAGES
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    if ! command -v python3 &>/dev/null; then
+        echo "python3 is required to run $0" >&2
+        exit 1
+    fi
+
+    python3 -m pip install --upgrade pip
+    python3 -m pip install "${PIP_PACKAGES[@]}"
+fi

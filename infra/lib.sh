@@ -1,12 +1,11 @@
 #!/bin/bash
 
-# Colors for output (CI-aware)
 CI="${CI:-false}"
 if [ "$CI" != "true" ]; then
     RED='\033[0;31m'
     GREEN='\033[0;32m'
     YELLOW='\033[1;33m'
-    NC='\033[0m' # No Color
+    NC='\033[0m'
 else
     RED=''
     GREEN=''
@@ -27,7 +26,6 @@ print_error() {
     echo -e "${RED}[x]${NC} $1"
 }
 
-# Function to check if running on macOS
 check_macos() {
     if [[ $OSTYPE != "darwin"* ]]; then
         print_error "This script is currently only supported on macOS"
@@ -35,7 +33,6 @@ check_macos() {
     fi
 }
 
-# Function to check if Homebrew is installed
 check_homebrew() {
     if ! command -v brew &>/dev/null; then
         print_error "Homebrew is not installed. Please install it first from https://brew.sh"
@@ -43,7 +40,15 @@ check_homebrew() {
     fi
 }
 
-# Generic package check function
+normalize_npm_package() {
+    local package=$1
+    if [[ $package == *@* ]]; then
+        printf '%s\n' "${package%@*}"
+    else
+        printf '%s\n' "$package"
+    fi
+}
+
 check_package() {
     local type=$1
     local package=$2
@@ -56,13 +61,13 @@ check_package() {
         brew list --cask "$package" &>/dev/null
         ;;
     npm)
-        npm list -g "$package" &>/dev/null
+        npm list -g --depth=0 "$(normalize_npm_package "$package")" &>/dev/null
         ;;
     pip)
         python3 -m pip show "$package" &>/dev/null
         ;;
     luarocks)
-        luarocks list | grep -q "^$package "
+        luarocks list --porcelain 2>/dev/null | grep -q "^$package "
         ;;
     cargo)
         cargo install --list | grep -q "^$package "
@@ -74,20 +79,18 @@ check_package() {
     esac
 }
 
-# Function to check if a command exists
 check_command() {
     local cmd=$1
     command -v "$cmd" &>/dev/null
 }
 
-# Function to ensure cargo is in PATH
 ensure_cargo_path() {
     if check_command rustup; then
+        # shellcheck disable=SC1090
         source "$HOME/.cargo/env"
     fi
 }
 
-# Function to run final checks
 run_final_checks() {
     print_status "Running final checks..."
     if ! check_command nvim; then
@@ -96,7 +99,6 @@ run_final_checks() {
     fi
 }
 
-# Function to check MacTeX installation status
 check_mactex() {
     if check_command latexmk; then
         return 0
@@ -113,16 +115,14 @@ check_mactex() {
     return 1
 }
 
-# Generic package management functions
 manage_packages() {
-    local action=$1 # install or uninstall
-    local type=$2   # package type
+    local action=$1
+    local type=$2
     shift 2
     local packages=("$@")
 
     local install_cmd
     local uninstall_cmd
-    local check_func="check_package $type"
 
     case $type in
     brew)
@@ -134,22 +134,12 @@ manage_packages() {
         uninstall_cmd="brew uninstall --cask"
         ;;
     npm)
-        install_cmd="npm install -g --loglevel=verbose ${NPM_CONFIG[@]}"
-        uninstall_cmd="npm uninstall -g --loglevel=verbose"
+        install_cmd="npm install -g"
+        uninstall_cmd="npm uninstall -g"
         ;;
     pip)
-        if [ "$CI" = "true" ]; then
-            # In CI, ensure we're using the virtual environment's pip
-            if [ -z "$VIRTUAL_ENV" ]; then
-                print_error "Virtual environment not activated in CI"
-                exit 1
-            fi
-            install_cmd="$VIRTUAL_ENV/bin/pip install --quiet"
-            uninstall_cmd="$VIRTUAL_ENV/bin/pip uninstall -y"
-        else
-            install_cmd="python3 -m pip install --quiet"
-            uninstall_cmd="python3 -m pip uninstall -y"
-        fi
+        install_cmd="python3 -m pip install"
+        uninstall_cmd="python3 -m pip uninstall -y"
         ;;
     luarocks)
         install_cmd="luarocks install"
@@ -166,23 +156,34 @@ manage_packages() {
     esac
 
     if [ "$action" = "install" ]; then
-        if [ "$CI" = "true" ]; then
-            $install_cmd "${packages[@]}"
-        else
-            for package in "${packages[@]}"; do
-                if ! $check_func "$package"; then
-                    print_status "Installing $package..."
-                    $install_cmd "$package"
-                else
-                    print_warning "$package is already installed"
-                fi
-            done
-        fi
+        for package in "${packages[@]}"; do
+            if check_package "$type" "$package"; then
+                print_warning "$package is already installed"
+                continue
+            fi
+
+            print_status "Installing $package..."
+            case $type in
+            npm)
+                $install_cmd "$package" "${NPM_CONFIG[@]}"
+                ;;
+            *)
+                $install_cmd "$package"
+                ;;
+            esac
+        done
     elif [ "$action" = "uninstall" ]; then
         for package in "${packages[@]}"; do
-            if $check_func "$package"; then
+            if check_package "$type" "$package"; then
                 print_status "Uninstalling $package..."
-                $uninstall_cmd "$package"
+                case $type in
+                npm)
+                    $uninstall_cmd "$(normalize_npm_package "$package")"
+                    ;;
+                *)
+                    $uninstall_cmd "$package"
+                    ;;
+                esac
             else
                 print_warning "$package is not installed"
             fi
@@ -219,6 +220,7 @@ export -f check_command
 export -f ensure_cargo_path
 export -f run_final_checks
 export -f check_mactex
+export -f normalize_npm_package
 export -f manage_packages
 export -f install_brew_packages
 export -f install_brew_casks

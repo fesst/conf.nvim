@@ -32,25 +32,13 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
 - Autofolding for multiple languages (using LSP and treesitter, except indent for python).
 - **Persistent folding state** - automatically saves and restores fold state between sessions.
 - Various custom settings and mappings (with focus on preservation compatibility with help).
-- Installation script for MacOS ([brew](https://brew.sh/)).
+- Installation scripts for macOS ([brew](https://brew.sh/)) and Windows (`winget` or Chocolatey).
 - GitHub Actions CI with:
-  - Automated environment setup with cross-platform support (macOS and Windows)
-  - Virtual environment management for Python dependencies
-  - Sanity check tests
-  - Lua code analysis
-  - Security scanning (CodeQL, secret scanning)
-  - Docker image building
-  - Automated cleanup of old workflow runs
-  - Manual check still required for all features
-  - Efficient caching strategy for:
-    - Python virtual environments
-    - Homebrew packages (macOS)
-    - Chocolatey packages (Windows)
-    - Node.js packages
-    - Rust packages
-    - LuaRocks packages
-    - Neovim plugins
-  - Compressed artifacts for faster downloads
+  - Native macOS and Windows sanity runs on a single runner per platform
+  - Toolchain/bootstrap caching for Python, npm, Cargo, and Neovim plugin state
+  - Security scanning with CodeQL (GitHub Actions) and Trivy
+  - Docker image builds for `amd64` and `arm64`
+  - Cleanup of stale workflow runs
 
 ## Installation
 
@@ -78,38 +66,35 @@ grep "\".*/.*\"" lua/motleyfesst/lazy.lua | sed 's/dependencies = {\(.*\) }/\1/g
    .\infra\install.ps1 -UseChocolatey
    ```
 
-   Note: The installation script supports both macOS and Windows environments. On macOS, it uses Homebrew for package management, while on Windows it uses winget by default with Chocolatey as an optional alternative.
+   On macOS the script uses Homebrew. On Windows it can use `winget` or Chocolatey.
 
 The installation script will:
 
 - Install required system dependencies via Homebrew (macOS) or winget/Chocolatey (Windows)
-- Set up Python packages
-- Install Node.js and npm packages
-- Install Rust and related tools
-- Install CodeLLDB for Rust/C++ debugging
-- Configure tmux
+- Create or reuse a Python virtual environment
+- Install Python, npm, Cargo, and LuaRocks packages needed by the config
+- Bootstrap the pinned Neovim plugin set
 
 ## Debugging Setup
 
 ### Rust/C++ Debugging
 
 - Uses CodeLLDB for debugging Rust and C++ code.
-- Automatically installed in `~/.local/share/nvim/mason/packages/codelldb`.
-- Requires LLVM 19 for proper functionality.
+- Can be installed with [`infra/codelldb.sh`](infra/codelldb.sh) when needed.
+- Requires LLVM tooling for proper functionality.
 
 ### Python Debugging
 
-- Uses debugpy for Python debugging.
-- Automatically installed through Mason.
+- Python DAP support is not bootstrapped by the current installer path.
+- Enable and install adapters explicitly if you restore the discharged Python DAP config.
 
 ### Go Debugging
 
-- Uses Delve for Go debugging.
-- Installed via Homebrew.
+- Go DAP support is currently discharged and not installed by default.
 
 ## Key Mappings
 
-[Custom mappings within current configuration](wiki/mappings.md)
+[Custom mappings within current configuration](ordered_mappings.md)
 
 ### Debugging
 
@@ -140,12 +125,10 @@ To clean up the installation:
 
 ## Documentation
 
-- [Project rules](wiki/ai_context.md)
-  e.g. CI should use infra scripts as much as possible to have a single source of truth for CI and local pipeline.
-- [Infrastructure description](wiki/infrastructure.md)
-- [Key Mappings](wiki/mappings.md)
-- [Docker Setup](wiki/docker.md)
-- [Testing](wiki/tests.md)
+- [Key Mappings](ordered_mappings.md)
+- [Contribution Guide](CONTRIBUTING.md)
+- [`infra/`](infra) for installer and CI entry points
+- [`test/`](test) for local validation fixtures
 
 ## Project Structure
 
@@ -154,8 +137,8 @@ To clean up the installation:
 ├── after/          # Plugin configurations
 ├── infra/          # Installation scripts
 ├── lua/            # Lua configurations
-├── test/           # Test files
-└── wiki/           # Documentation
+├── ordered_mappings.md  # Key mapping reference
+└── test/                # Test files
 ```
 
 ## Requirements
@@ -172,9 +155,6 @@ To clean up the installation:
 - Rust
 - Python 3
 - Node.js
-- tmux
-
-For detailed information about dependencies and tools, see [Shared Tools](wiki/shared_tools.md).
 
 ## Contributing
 

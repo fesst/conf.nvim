@@ -1,129 +1,76 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
-# Source utility functions and package collections
-source "$(dirname "$0")/lib.sh"
-source "$(dirname "$0")/packages.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Check system requirements (skip in CI)
+source "$SCRIPT_DIR/lib.sh"
+source "$SCRIPT_DIR/packages.sh"
+
+ensure_runtime() {
+    local command_name=$1
+    local brew_package=$2
+
+    if check_command "$command_name"; then
+        return 0
+    fi
+
+    print_status "Installing missing runtime: $brew_package"
+    brew install "$brew_package"
+}
+
+ensure_python_venv() {
+    if [ -n "${VIRTUAL_ENV:-}" ]; then
+        print_status "Using active virtual environment: $VIRTUAL_ENV"
+        return 0
+    fi
+
+    local venv_dir="${SCRIPT_DIR%/infra}/.venv"
+    if [ ! -d "$venv_dir" ]; then
+        print_status "Creating Python virtual environment at $venv_dir"
+        python3 -m venv "$venv_dir"
+    fi
+
+    # shellcheck disable=SC1090
+    source "$venv_dir/bin/activate"
+}
+
 if [ "$CI" != "true" ]; then
     check_macos
     check_homebrew
 fi
 
-# Install Homebrew packages
+ensure_runtime python3 python
+ensure_runtime node node
+ensure_runtime cargo rust
+
 print_status "Installing Homebrew packages..."
-install_brew_packages "${BREW_PACKAGES[@]}"
+"$SCRIPT_DIR/packages/brew.sh"
 
-# Install MacTeX (skip in CI)
-if [ "$CI" != "true" ]; then
-    if ! check_mactex; then
-        print_status "Installing MacTeX..."
-        brew install --no-quarantine --cask mactex
-    else
-        print_warning "MacTeX is already installed"
-    fi
+if [ "${INSTALL_BREW_CASKS:-false}" = "true" ]; then
+    print_status "Installing optional Homebrew casks..."
+    INSTALL_BREW_CASKS=true "$SCRIPT_DIR/packages/brew.sh"
 fi
 
-# Install other Homebrew casks
-print_status "Installing Homebrew casks..."
-install_brew_casks "${BREW_CASKS[@]}"
+print_status "Installing Node.js packages..."
+"$SCRIPT_DIR/packages/npm.sh"
 
-# Install Node.js and npm packages
-print_status "Installing Node.js and npm packages..."
-if [ "$CI" = "true" ]; then
-    brew install --no-quarantine node
-else
-    if ! check_command node; then
-        print_status "Installing Node.js..."
-        brew install --no-quarantine node
-    fi
-fi
-install_npm_packages "${NPM_PACKAGES[@]}"
+ensure_python_venv
+print_status "Installing Python packages..."
+"$SCRIPT_DIR/packages/pip.sh"
 
-install_rust_and_cargo_packages() {
-    print_status "Installing Rust and Cargo packages..."
-    if [ "$CI" = "true" ]; then
-        brew install --no-quarantine rust rust-analyzer
-    else
-        if ! check_command rustc; then
-            print_status "Installing Rust..."
-            brew install --no-quarantine rust
-        fi
+print_status "Installing Cargo packages..."
+"$SCRIPT_DIR/packages/cargo.sh"
 
-        ensure_cargo_path
-
-        if ! check_package brew rust-analyzer; then
-            print_status "Installing rust-analyzer..."
-            brew install --no-quarantine rust-analyzer
-        else
-            print_warning "rust-analyzer is already installed"
-        fi
-    fi
-    install_cargo_packages "${CARGO_PACKAGES[@]}"
-}
-install_python_packages() {
-    print_status "Installing Python packages..."
-    if [ "$CI" = "true" ]; then
-        # In CI, ensure we're in the virtual environment
-        if [ -z "$VIRTUAL_ENV" ]; then
-            print_error "Virtual environment not activated in CI"
-            exit 1
-        fi
-        # Ensure pip is using the virtual environment
-        export PIP_PREFIX="$VIRTUAL_ENV"
-        install_pip_packages "${PIP_PACKAGES[@]}"
-    else
-        if ! check_command python3; then
-            print_status "Installing Python..."
-            brew install --no-quarantine python
-        fi
-
-        # Check if we're in a virtual environment
-        if [ -z "$VIRTUAL_ENV" ]; then
-            print_warning "No virtual environment detected. Creating one..."
-            if [ ! -d ".venv" ]; then
-                print_status "Creating Python virtual environment..."
-                python3 -m venv .venv
-            fi
-            source .venv/bin/activate
-        else
-            print_status "Using existing virtual environment: $VIRTUAL_ENV"
-        fi
-        install_pip_packages "${PIP_PACKAGES[@]}"
-    fi
-}
-
-install_lua_packages() {
+if [ "${INSTALL_LUAROCKS_PACKAGES:-true}" = "true" ]; then
     print_status "Installing LuaRocks packages..."
-    install_luarocks_packages "${LUAROCKS_PACKAGES[@]}"
+    "$SCRIPT_DIR/packages/luarocks.sh"
+fi
 
-    # Install Lua tools
-    if ! command -v stylua &>/dev/null; then
-        echo "Installing stylua..."
-        cargo install stylua
-    fi
+print_status "Syncing Neovim plugins..."
+"$SCRIPT_DIR/packages/nvim.sh"
 
-    wget https://www.lua.org/ftp/lua-5.1.5.tar.gz
-    tar xzf lua-5.1.5.tar.gz
-    cd lua-5.1.5
-    make macosx
-    mkdir -p "${HOME}"/opt
-    make INSTALL_TOP="${HOME}"/opt/lua@5.1 install
-    mkdir -p "${HOME}"/.local/bin
-    ln -s "${HOME}"/opt/lua@5.1/bin/lua "${HOME}"/.local/bin/lua5.1
-}
-install_luarocks_packages
-
-install_code_lldb() {
-    "$(dirname "$0")/codelldb.sh"
-}
-
-# Run final checks (skip in CI)
 if [ "$CI" != "true" ]; then
     run_final_checks
-    print_status "Installation completed successfully!"
-    print_status "Please restart your terminal and run :checkhealth in Neovim to verify the installation."
-    print_status "Note: Mason packages (codelldb, debugpy, etc.) will be installed automatically when you first open Neovim."
+    print_status "Installation completed successfully"
 fi
