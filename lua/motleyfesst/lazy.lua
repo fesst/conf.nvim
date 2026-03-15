@@ -11,6 +11,7 @@ local plugins_list = {
     { "mbbill/undotree" },
     { "theprimeagen/harpoon" },
     { "nvim-lualine/lualine.nvim", dependencies = { "nvim-tree/nvim-web-devicons" } },
+    { "nanozuki/tabby.nvim", dependencies = { "nvim-tree/nvim-web-devicons" } },
     { "tpope/vim-fugitive" },
 }
 local ssh_utils = require("motleyfesst.ssh_utils")

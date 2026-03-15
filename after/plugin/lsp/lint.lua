@@ -11,20 +11,37 @@ if not ok then
     return
 end
 
-lint.linters_by_ft = {
-    lua = { "luacheck" },
-    sh = { "shellcheck" },
-    bash = { "shellcheck" },
-    zsh = { "shellcheck" },
-}
+local function has_executable(cmd)
+    return vim.fn.executable(cmd) == 1
+end
+
+local linters_by_ft = {}
+if has_executable("luacheck") then
+    linters_by_ft.lua = { "luacheck" }
+end
+if has_executable("shellcheck") then
+    linters_by_ft.sh = { "shellcheck" }
+    linters_by_ft.bash = { "shellcheck" }
+    linters_by_ft.zsh = { "shellcheck" }
+end
+
+lint.linters_by_ft = linters_by_ft
 
 local lint_group = vim.api.nvim_create_augroup("NvimLint", { clear = true })
 vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "InsertLeave" }, {
     group = lint_group,
-    callback = function()
+    callback = function(args)
         local ok_lint, lint_mod = pcall(require, "lint")
-        if ok_lint then
-            lint_mod.try_lint()
+        if not ok_lint then
+            return
         end
+
+        local ft = vim.bo[args.buf].filetype
+        local names = lint_mod.linters_by_ft[ft] or {}
+        if vim.tbl_isempty(names) then
+            return
+        end
+
+        lint_mod.try_lint(names, { ignore_errors = true })
     end,
 })

@@ -91,6 +91,18 @@ local function leader_motions()
     map("v", "<leader>gF", ":vnew <cfile><CR>")
 end
 
+local function clipboard_motions()
+    map("v", "<C-q>", '"+y', { desc = "Copy selection to system clipboard" })
+
+    map({ "n", "x" }, "<leader>V", "<C-v>", { remap = true, desc = "Block visual mode" })
+
+    for _, lhs in ipairs({ "<C-q>", "<C-S-q>" }) do
+        map("n", lhs, '"+p', { desc = "Paste from system clipboard" })
+        map("i", lhs, "<C-r>+", { desc = "Paste from system clipboard" })
+        map("c", lhs, "<C-r>+", { desc = "Paste from system clipboard" })
+    end
+end
+
 local function jdtls_motions()
     local function with_jdtls(cb)
         return function()
@@ -298,6 +310,7 @@ end
 
 terminal()
 leader_motions()
+clipboard_motions()
 jdtls_motions()
 completion_motions()
 embrace_visual()

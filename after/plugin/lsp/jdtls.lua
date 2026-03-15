@@ -7,6 +7,47 @@ end
 local lsp_utils = require("motleyfesst.lsp_utils")
 local jdtls_group = vim.api.nvim_create_augroup("JdtlsAutostart", { clear = true })
 
+local function find_up(markers, start_path)
+    local found = vim.fs.find(markers, {
+        upward = true,
+        path = start_path,
+        limit = 1,
+    })[1]
+
+    if not found then
+        return nil
+    end
+
+    return vim.fs.dirname(found)
+end
+
+local function resolve_root_dir(bufname)
+    local start_path = bufname ~= "" and vim.fs.dirname(bufname) or vim.fn.getcwd()
+    local bazel_root = find_up({ "MODULE.bazel", "WORKSPACE.bazel", "WORKSPACE" }, start_path)
+    if bazel_root then
+        return bazel_root
+    end
+
+    local build_root = find_up({
+        "settings.gradle.kts",
+        "settings.gradle",
+        "build.gradle.kts",
+        "build.gradle",
+        "pom.xml",
+        "mvnw",
+        "gradlew",
+    }, start_path)
+    if build_root then
+        return build_root
+    end
+
+    return find_up({ ".git" }, start_path) or vim.fn.getcwd()
+end
+
+local function workspace_name(root_dir)
+    return root_dir:gsub("[/\\:]", "_")
+end
+
 vim.api.nvim_create_autocmd("FileType", {
     group = jdtls_group,
     pattern = "java",
@@ -17,62 +58,74 @@ vim.api.nvim_create_autocmd("FileType", {
             return
         end
 
-        local ok_setup, jdtls_setup = pcall(require, "jdtls.setup")
-        if not ok_setup then
-            vim.notify("nvim-jdtls setup module is not available", vim.log.levels.WARN)
-            return
-        end
+        local root_dir = resolve_root_dir(vim.api.nvim_buf_get_name(0))
+        local project_name = workspace_name(root_dir)
 
-        local root_markers = {
-            ".git",
-            "mvnw",
-            "gradlew",
-            "pom.xml",
-            "build.gradle",
-            "build.gradle.kts",
-            "settings.gradle",
-            "settings.gradle.kts",
-            "WORKSPACE",
-            "WORKSPACE.bazel",
-            "MODULE.bazel",
-            "BUILD",
-            "BUILD.bazel",
-        }
-        local root_dir = jdtls_setup.find_root(root_markers)
-        if root_dir == nil or root_dir == "" then
-            root_dir = vim.fn.getcwd()
-        end
+        local function get_bazel_exec_root()
+            local exec_root = root_dir .. "/bazel-" .. vim.fn.fnamemodify(root_dir, ":t")
+            if vim.fn.isdirectory(exec_root) == 1 then
+                return exec_root
+            end
 
-        local project_name = vim.fn.fnamemodify(root_dir, ":p:t")
+            if vim.fn.executable("bazel") == 0 or not vim.system then
+                return nil
+            end
+
+            local result = vim.system({ "bazel", "info", "execution_root" }, {
+                cwd = root_dir,
+                text = true,
+            }):wait()
+
+            if result.code ~= 0 then
+                return nil
+            end
+
+            local detected_exec_root = vim.trim(result.stdout or "")
+            if detected_exec_root == "" or vim.fn.isdirectory(detected_exec_root) == 0 then
+                return nil
+            end
+
+            return detected_exec_root
+        end
 
         -- Collect Maven jars from Bazel's external repository so jdtls can resolve
         -- external dependencies for go-to-definition, hover, and completion.
-        -- rules_jvm_external stores downloaded jars under bazel-{workspace}/external/maven/.
-        local function collect_bazel_classpath_jars()
-            local exec_root = root_dir .. "/bazel-" .. project_name
-            if vim.fn.isdirectory(exec_root) == 0 then
-                return {}
+        -- rules_jvm_external stores downloaded jars under the Bazel execution root.
+        local function collect_bazel_referenced_libraries()
+            local exec_root = get_bazel_exec_root()
+            if not exec_root then
+                return { include = {}, sources = {} }
             end
+
             local maven_dir = exec_root .. "/external/maven"
             if vim.fn.isdirectory(maven_dir) == 0 then
-                return {}
+                return { include = {}, sources = {} }
             end
+
             local all_jars = vim.fn.glob(maven_dir .. "/**/*.jar", false, true)
-            local jars = {}
+            table.sort(all_jars)
+
+            local libraries = { include = {}, sources = {} }
             for _, jar in ipairs(all_jars) do
                 local name = vim.fn.fnamemodify(jar, ":t")
-                -- Skip sources and javadoc jars — jdtls fetches those via downloadSources
-                if not name:match("%-sources%.jar$") and not name:match("%-javadoc%.jar$") then
-                    table.insert(jars, jar)
+                if not name:match("%-javadoc%.jar$") and not name:match("%-sources%.jar$") then
+                    table.insert(libraries.include, jar)
+
+                    local source_jar = jar:gsub("%.jar$", "-sources.jar")
+                    if source_jar ~= jar and vim.fn.filereadable(source_jar) == 1 then
+                        libraries.sources[jar] = source_jar
+                    end
                 end
             end
-            return jars
+
+            return libraries
         end
 
         local home = os.getenv("HOME")
         local mason_dir = home .. "/.local/share/nvim/mason" -- ===<MASON_DIR>===
         local jdtls_dir = mason_dir .. "/packages/jdtls" -- ===<JDTLS_DIR>===
         local workspace_dir = home .. "/.local/share/nvim/jdtls-workspace/" .. project_name -- ===<JDTLS_WORKSPACE_DIR>===
+        local bazel_libraries = collect_bazel_referenced_libraries()
 
         local java_bin = "java" -- ===<JAVA_BIN>===
         -- lombok.jar: prefer ~/apps/lombok.jar, fall back to bundled one inside jdtls package
@@ -133,8 +186,7 @@ vim.api.nvim_create_autocmd("FileType", {
         end
 
         local on_attach = function(client, bufnr)
-            lsp_utils.attach_default_keymaps(bufnr)
-            require("motleyfesst.fold_utils").on_lsp_attach(client, bufnr)
+            lsp_utils.default_on_attach(client, bufnr)
 
             pcall(function()
                 jdtls.setup_dap({ hotcodereplace = "auto" })
@@ -235,13 +287,13 @@ vim.api.nvim_create_autocmd("FileType", {
                             enabled = true,
                         },
                     },
-                    -- Classpath: lombok + all Maven jars from Bazel's external repo.
-                    -- This is what enables go-to-definition across external dependencies.
+                    -- Classpath: lombok + Maven jars from Bazel's external repo.
+                    -- This keeps unmanaged Bazel Java workspaces navigable in jdtls.
                     project = {
-                        referencedLibraries = vim.list_extend(
-                            { lombok_jar },
-                            collect_bazel_classpath_jars()
-                        ),
+                        referencedLibraries = {
+                            include = vim.list_extend({ lombok_jar }, bazel_libraries.include),
+                            sources = bazel_libraries.sources,
+                        },
                     },
                     -- Keep jdtls index in sync with source changes
                     autobuild = {
@@ -261,8 +313,20 @@ vim.api.nvim_create_autocmd("FileType", {
                     implementationsCodeLens = {
                         enabled = true,
                     },
+                    references = {
+                        includeAccessors = true,
+                        includeDeclarations = true,
+                        includeDecompiledSources = true,
+                    },
                     referencesCodeLens = {
                         enabled = true,
+                    },
+                    search = {
+                        scope = "all",
+                    },
+                    symbols = {
+                        includeGeneratedCode = true,
+                        includeSourceMethodDeclarations = true,
                     },
                 },
             },

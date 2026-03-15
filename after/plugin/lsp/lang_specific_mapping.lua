@@ -83,7 +83,7 @@ if ssh_utils.IS_LOCAL() then
                     ":!latexmk -pdf -synctex=1 -interaction=nonstopmode %<CR>",
                     { buffer = ev.buf, desc = "Build LaTeX document" }
                 )
-                keymap("n", "<leader>yv", ":!open -a Skim %:r.pdf<CR>", { buffer = ev.buf, desc = "View LaTeX PDF" })
+                keymap("n", "<leader>yv", ":!open %:r.pdf<CR>", { buffer = ev.buf, desc = "View LaTeX PDF" })
             end,
         })
 

@@ -8,8 +8,8 @@ local lsp_utils = require("motleyfesst.lsp_utils")
 local capabilities = lsp_utils.make_capabilities()
 
 vim.lsp.config("graphql", {
-    on_attach = function(_, bufnr)
-        lsp_utils.default_on_attach(nil, bufnr)
+    on_attach = function(client, bufnr)
+        lsp_utils.default_on_attach(client, bufnr)
     end,
     filetypes = { "graphqls", "graphql", "gql", "json", "ts", "js" },
     flags = {
