@@ -5,7 +5,7 @@ local lua_dir = script_dir .. ".." .. path_sep .. ".." .. path_sep .. "lua"
 package.path = package.path .. ";" .. lua_dir .. path_sep .. "?.lua;" .. lua_dir .. path_sep .. "?" .. path_sep .. "init.lua"
 
 -- Try to require the module with error handling
-local status, print_table = pcall(require, "motleyfesst.print_table")
+local status, print_table = pcall(require, "motleyfesst.utils.print_table")
 if not status then
     print("Error loading module:", print_table)
     os.exit(1)

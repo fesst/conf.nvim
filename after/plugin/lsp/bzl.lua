@@ -1,21 +1,14 @@
-local ssh_utils = require("motleyfesst.ssh_utils")
+local bazel_utils = require("motleyfesst.utils.bazel")
+local ssh_utils = require("motleyfesst.utils.ssh")
 if not ssh_utils.IS_LOCAL() then
     return
 end
 
-local ok_job, Job = pcall(require, "plenary.job")
-if not ok_job then
-    vim.notify("plenary.nvim is required for Bazel completion source", vim.log.levels.WARN)
-    return
-end
+local Job = require("plenary.job")
 
 -- When nvim-cmp is not installed, blink.compat shims require("cmp") so this source
 -- still registers and blink.cmp picks it up via the "bazel" provider in cmp.lua.
-local ok_cmp, cmp = pcall(require, "cmp")
-if not ok_cmp then
-    vim.notify("nvim-cmp or blink.compat (cmp shim) is required for Bazel completion source", vim.log.levels.WARN)
-    return
-end
+local cmp = require("cmp")
 
 local source = {}
 
@@ -87,18 +80,7 @@ local function complete_file(name, items)
 end
 
 local function get_bazel_workspace(bufnr)
-    local buf_dir = vim.fn.expand(("#%d:p:h"):format(bufnr))
-    local workspace = buf_dir
-    while 1 do
-        if vim.fn.filereadable(workspace .. "/WORKSPACE") == 1 then
-            break
-        end
-        if workspace == "/" then
-            return buf_dir
-        end
-        workspace = vim.fn.fnamemodify(workspace, ":h")
-    end
-    return workspace
+    return bazel_utils.find_workspace_for_buf(bufnr)
 end
 
 local function get_dir(workspace, target)
@@ -231,4 +213,4 @@ source.complete = function(self, params, callback)
     end
 end
 
-require("cmp").register_source("bazel", source.new())
+cmp.register_source("bazel", source.new())

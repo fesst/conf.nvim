@@ -91,10 +91,15 @@ main() {
     run_headless "Plugin availability" \
         "+lua assert(pcall(require, 'telescope'), 'telescope missing')" \
         "+lua assert(pcall(require, 'nvim-treesitter.configs'), 'treesitter missing')" \
+        "+lua assert(pcall(require, 'nvim-treesitter-textobjects.select'), 'treesitter textobjects missing')" \
         "+lua assert(pcall(require, 'blink.cmp'), 'blink.cmp missing')" \
         "+lua assert(pcall(require, 'conform'), 'conform missing')" \
         "+lua assert(pcall(require, 'lint'), 'nvim-lint missing')" \
         "+lua assert(pcall(require, 'tabby'), 'tabby missing')" \
+        "+lua assert(pcall(require, 'motleyfesst.utils.ssh'), 'utils.ssh missing')" \
+        "+lua assert(pcall(require, 'motleyfesst.utils.lsp'), 'utils.lsp missing')" \
+        "+lua assert(pcall(require, 'motleyfesst.utils.fold'), 'utils.fold missing')" \
+        "+lua assert(pcall(require, 'motleyfesst.utils.bazel'), 'utils.bazel missing')" \
         "+qa" || exit 1
     run_headless "Commands available" \
         "+lua assert(vim.fn.exists(':Telescope') == 2, ':Telescope missing')" \
@@ -111,6 +116,10 @@ main() {
     run_headless "Markdown filetype" \
         "+edit $TEST_DIR/test.md" \
         "+lua assert(vim.bo.filetype == 'markdown', 'expected markdown filetype')" \
+        "+qa" || exit 1
+    run_headless "Tree-sitter textobjects mappings" \
+        "+lua assert(vim.fn.maparg('af', 'x') ~= '', 'expected af textobject mapping')" \
+        "+lua assert(vim.fn.maparg('if', 'x') ~= '', 'expected if textobject mapping')" \
         "+qa" || exit 1
     run_headless "Health check" "+checkhealth" "+qa" || exit 1
 

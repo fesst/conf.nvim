@@ -1,24 +1,16 @@
-local ssh_utils = require("motleyfesst.ssh_utils")
+local ssh_utils = require("motleyfesst.utils.ssh")
 if not ssh_utils.IS_LOCAL() then
     return
 end
 
-local LOG_TAG = "[conform]"
-
-local ok, conform = pcall(require, "conform")
-if not ok then
-    vim.notify(LOG_TAG .. " conform.nvim not found, skipping setup", vim.log.levels.DEBUG)
-    return
-end
-
-conform.setup({
+require("conform").setup({
     formatters_by_ft = {
         lua = { "stylua" },
         sh = { "shfmt" },
         bash = { "shfmt" },
         zsh = { "shfmt" },
         java = { "google-java-format" },
-        python = { "black", "isort", stop_after_first = true },
+        python = { "isort", "black" },
         javascript = { "prettier", stop_after_first = true },
         typescript = { "prettier", stop_after_first = true },
         typescriptreact = { "prettier", stop_after_first = true },
@@ -32,7 +24,7 @@ conform.setup({
     },
     formatters = {
         shfmt = {
-            prepend_args = { "-i", "2", "-ci" },
+            append_args = { "-ci" },
         },
         ["google-java-format"] = {
             command = vim.fn.stdpath("data") .. "/mason/bin/google-java-format",

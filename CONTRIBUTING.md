@@ -57,6 +57,7 @@ Thank you for your interest in contributing to this Neovim configuration project
 
 - Plugin configurations should be in `after/plugin/`
 - General configurations should be in `lua/motleyfesst/`
+- Shared helper modules should be in `lua/motleyfesst/utils/`
 - Infrastructure scripts should be in `infra/`
 - User-facing documentation should live in tracked Markdown files in the repo root unless a dedicated docs directory exists.
 
@@ -78,6 +79,7 @@ When adding or modifying infrastructure scripts:
 - Document complex functions and configurations
 - Keep related functionality together
 - Place plugin setups in `after/plugin/`
+- Extract reusable cross-plugin logic into `lua/motleyfesst/utils/` instead of duplicating helpers
 
 ### Testing
 
@@ -95,6 +97,7 @@ When adding or modifying infrastructure scripts:
    - Test with the sample files in `test/`
    - Check language server installation
    - Verify debugging capabilities
+   - Confirm shared helper modules under `lua/motleyfesst/utils/` still load in a headless startup
 
 ### Documentation
 

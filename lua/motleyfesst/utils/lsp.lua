@@ -3,19 +3,13 @@ local M = {}
 local LOG_TAG = "[lsp_utils]"
 
 local function format_buffer(bufnr)
-    local ok_conform, conform = pcall(require, "conform")
-    if ok_conform then
-        conform.format({ bufnr = bufnr, timeout_ms = 3000, lsp_format = "fallback" })
-    else
-        vim.notify(LOG_TAG .. " conform not available, using vim.lsp.buf.format", vim.log.levels.DEBUG)
-        vim.lsp.buf.format({ async = false, bufnr = bufnr })
-    end
+    require("conform").format({ bufnr = bufnr, timeout_ms = 3000, lsp_format = "fallback" })
 end
 
 local function telescope_or_lsp(telescope_picker, fallback)
     return function()
-        local ok_telescope, builtin = pcall(require, "telescope.builtin")
-        if ok_telescope and builtin[telescope_picker] then
+        local builtin = require("telescope.builtin")
+        if builtin[telescope_picker] then
             builtin[telescope_picker]()
             return
         end
@@ -29,8 +23,8 @@ local function workspace_symbols()
         return
     end
 
-    local ok_telescope, builtin = pcall(require, "telescope.builtin")
-    if ok_telescope and builtin.lsp_workspace_symbols then
+    local builtin = require("telescope.builtin")
+    if builtin.lsp_workspace_symbols then
         builtin.lsp_workspace_symbols({ query = query })
         return
     end
@@ -102,24 +96,43 @@ end
 
 function M.make_capabilities()
     local capabilities = vim.lsp.protocol.make_client_capabilities()
-    capabilities.workspace = {
-        configuration = true,
-    }
-    capabilities.textDocument = {
-        completion = {
-            completionItem = {
-                snippetSupport = true,
+    capabilities = vim.tbl_deep_extend("force", capabilities, {
+        workspace = {
+            configuration = true,
+        },
+        textDocument = {
+            completion = {
+                completionItem = {
+                    snippetSupport = true,
+                },
             },
         },
-    }
+    })
 
-    -- blink.cmp capabilities (old nvim-cmp in after/discharged/completion/)
-    local ok_blink, blink = pcall(require, "blink.cmp")
-    if ok_blink then
-        capabilities = blink.get_lsp_capabilities(capabilities)
-    end
+    capabilities = require("blink.cmp").get_lsp_capabilities(capabilities)
 
     return capabilities
+end
+
+function M.with_defaults(config)
+    return vim.tbl_deep_extend("force", {
+        capabilities = M.make_capabilities(),
+        on_attach = M.default_on_attach,
+    }, config or {})
+end
+
+function M.extend_on_attach(extra_on_attach)
+    return function(client, bufnr)
+        M.default_on_attach(client, bufnr)
+        if extra_on_attach then
+            extra_on_attach(client, bufnr)
+        end
+    end
+end
+
+function M.setup_server(name, config)
+    vim.lsp.config(name, M.with_defaults(config))
+    vim.lsp.enable(name)
 end
 
 function M.attach_default_keymaps(bufnr)
@@ -179,11 +192,7 @@ function M.setup_codelens(client, bufnr)
     refresh_codelens(bufnr)
 end
 
--- format_on_save is now handled by conform.nvim (after/plugin/lsp/conform.lua)
--- This function is kept for LSPs that need custom filter logic (e.g. jdtls)
 function M.setup_format_on_save(bufnr, filter)
-    -- conform handles format_on_save globally; skip per-buffer LSP setup
-    -- unless a custom filter is provided
     if not filter then
         return
     end
@@ -202,7 +211,7 @@ function M.default_on_attach(client, bufnr)
     M.setup_format_on_save(bufnr)
     M.attach_default_keymaps(bufnr)
     M.setup_codelens(client, bufnr)
-    require("motleyfesst.fold_utils").on_lsp_attach(client, bufnr)
+    require("motleyfesst.utils.fold").on_lsp_attach(client, bufnr)
 end
 
 return M

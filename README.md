@@ -130,13 +130,29 @@ To clean up the installation:
 - [`infra/`](infra) for installer and CI entry points
 - [`test/`](test) for local validation fixtures
 
+## Local Validation
+
+Run the standard sanity check:
+
+```bash
+./infra/nvim_sanity_test.sh
+```
+
+For a lightweight smoke test during refactors:
+
+```bash
+nvim --headless '+qa'
+```
+
 ## Project Structure
 
 ``` .
 .
 ├── after/          # Plugin configurations
 ├── infra/          # Installation scripts
-├── lua/            # Lua configurations
+├── lua/            # Lua configurations and shared helpers
+│   └── motleyfesst/
+│       └── utils/  # Shared helper modules used by plugin and core config
 ├── ordered_mappings.md  # Key mapping reference
 └── test/                # Test files
 ```

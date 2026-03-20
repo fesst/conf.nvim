@@ -1,5 +1,5 @@
-local ssh_utils = require("motleyfesst.ssh_utils")
-local fold_utils = require("motleyfesst.fold_utils")
+local ssh_utils = require("motleyfesst.utils.ssh")
+local fold_utils = require("motleyfesst.utils.fold")
 
 -- Indent-based folding for filetypes where treesitter folding is poor.
 -- Global default (set.lua) provides treesitter folding for everything else.
@@ -68,20 +68,25 @@ if ssh_utils.IS_LOCAL() then
         indent = {
             enable = true,
         },
-        textobjects = {
-            select = {
-                enable = true,
-                lookahead = true,
-                keymaps = {
-                    ["af"] = "@function.outer",
-                    ["if"] = "@function.inner",
-                    ["ac"] = "@class.outer",
-                    ["ic"] = "@class.inner",
-                },
-            },
-        },
-        fold = {
-            enable = true,
+    })
+
+    require("nvim-treesitter-textobjects").setup({
+        select = {
+            lookahead = true,
         },
     })
+
+    local select = require("nvim-treesitter-textobjects.select")
+    vim.keymap.set({ "x", "o" }, "af", function()
+        select.select_textobject("@function.outer", "textobjects")
+    end, { desc = "Tree-sitter around function" })
+    vim.keymap.set({ "x", "o" }, "if", function()
+        select.select_textobject("@function.inner", "textobjects")
+    end, { desc = "Tree-sitter inner function" })
+    vim.keymap.set({ "x", "o" }, "ac", function()
+        select.select_textobject("@class.outer", "textobjects")
+    end, { desc = "Tree-sitter around class" })
+    vim.keymap.set({ "x", "o" }, "ic", function()
+        select.select_textobject("@class.inner", "textobjects")
+    end, { desc = "Tree-sitter inner class" })
 end

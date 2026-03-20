@@ -1,7 +1,7 @@
 require("lualine").setup({
     options = {
         -- "palenight",
-        theme = require("motleyfesst.ssh_utils").IS_LOCAL() and "rose-pine" or "ayu_light",
+        theme = require("motleyfesst.utils.ssh").IS_LOCAL() and "rose-pine" or "ayu_light",
         section_separators = { left = "", right = "" },
         component_separators = { left = "", right = "" },
         refresh = {
@@ -22,7 +22,7 @@ require("lualine").setup({
         },
         lualine_x = {
             "encoding",
-            "lsp-status",
+            "lsp_status",
             {
                 "fileformat",
                 symbols = {
@@ -30,8 +30,8 @@ require("lualine").setup({
                     dos = "", -- e70f
                     mac = "", -- e711
                 },
-                "filetype",
             },
+            "filetype",
         },
     },
     inactive_sections = {

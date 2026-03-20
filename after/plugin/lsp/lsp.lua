@@ -1,7 +1,8 @@
-local ssh_utils = require("motleyfesst.ssh_utils")
+local ssh_utils = require("motleyfesst.utils.ssh")
 
 if ssh_utils.IS_LOCAL() then
-    local lsp_utils = require("motleyfesst.lsp_utils")
+    local bazel_utils = require("motleyfesst.utils.bazel")
+    local lsp_utils = require("motleyfesst.utils.lsp")
     require("mason").setup({
         ui = {
             icons = {
@@ -33,20 +34,13 @@ if ssh_utils.IS_LOCAL() then
         },
         automatic_installation = false,
     })
-    local capabilities = lsp_utils.make_capabilities()
-    local on_attach = lsp_utils.default_on_attach
 
-    vim.lsp.config("angularls", {
-        capabilities = capabilities,
-        on_attach = on_attach,
+    lsp_utils.setup_server("angularls", {
         filetypes = { "typescript", "html", "typescriptreact", "typescript.tsx" },
         root_markers = { "angular.json", "project.json" },
     })
-    vim.lsp.enable("angularls")
     -- TypeScript/JavaScript
-    vim.lsp.config("ts_ls", {
-        capabilities = capabilities,
-        on_attach = on_attach,
+    lsp_utils.setup_server("ts_ls", {
         filetypes = { "typescript", "javascript", "typescriptreact", "typescript.tsx" },
         root_markers = { "tsconfig.json", "jsconfig.json", "package.json", ".git" },
         settings = {
@@ -54,43 +48,31 @@ if ssh_utils.IS_LOCAL() then
             javascript = { folding = true },
         },
     })
-    vim.lsp.enable("ts_ls")
     -- ESLintformat
-    vim.lsp.config("eslint", {
-        capabilities = capabilities,
-        on_attach = on_attach,
+    lsp_utils.setup_server("eslint", {
         filetypes = { "typescript", "javascript", "typescriptreact", "typescript.tsx" },
         root_markers = {
             ".eslintrc", ".eslintrc.js", ".eslintrc.json", ".eslintrc.yml",
             "eslint.config.js", "eslint.config.mjs", "package.json",
         },
     })
-    vim.lsp.enable("eslint")
-    vim.lsp.config("html", {
-        capabilities = capabilities,
-        on_attach = on_attach,
+    lsp_utils.setup_server("html", {
         filetypes = { "html", "htmldjango" },
         root_markers = { "package.json", ".git" },
         settings = {
             html = { folding = true },
         },
     })
-    vim.lsp.enable("html")
 
-    vim.lsp.config("cssls", {
-        capabilities = capabilities,
-        on_attach = on_attach,
+    lsp_utils.setup_server("cssls", {
         filetypes = { "css", "scss", "less" },
         root_markers = { "package.json", ".git" },
         settings = {
             css = { folding = true },
         },
     })
-    vim.lsp.enable("cssls")
 
-    vim.lsp.config("jsonls", {
-        capabilities = capabilities,
-        on_attach = on_attach,
+    lsp_utils.setup_server("jsonls", {
         root_markers = { "package.json", ".git" },
         settings = {
             json = {
@@ -100,11 +82,8 @@ if ssh_utils.IS_LOCAL() then
             },
         },
     })
-    vim.lsp.enable("jsonls")
 
-    vim.lsp.config("yamlls", {
-        capabilities = capabilities,
-        on_attach = on_attach,
+    lsp_utils.setup_server("yamlls", {
         root_markers = { ".git" },
         settings = {
             yaml = {
@@ -112,18 +91,12 @@ if ssh_utils.IS_LOCAL() then
             },
         },
     })
-    vim.lsp.enable("yamlls")
 
-    vim.lsp.config("kotlin_language_server", {
-        capabilities = capabilities,
-        on_attach = on_attach,
+    lsp_utils.setup_server("kotlin_language_server", {
         root_markers = { "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts", "pom.xml" },
     })
-    vim.lsp.enable("kotlin_language_server")
     -- Bash
-    vim.lsp.config("bashls", {
-        capabilities = capabilities,
-        on_attach = on_attach,
+    lsp_utils.setup_server("bashls", {
         filetypes = { "sh", "zsh", "bash" },
         root_markers = { ".git" },
         settings = {
@@ -132,11 +105,8 @@ if ssh_utils.IS_LOCAL() then
             sh = { folding = true, shiftwidth = 4 },
         },
     })
-    vim.lsp.enable("bashls")
 
-    vim.lsp.config("lua_ls", {
-        capabilities = capabilities,
-        on_attach = on_attach,
+    lsp_utils.setup_server("lua_ls", {
         root_markers = { ".luarc.json", ".luarc.jsonc", ".luacheckrc", "stylua.toml", ".stylua.toml", ".git" },
         settings = {
             Lua = {
@@ -148,24 +118,18 @@ if ssh_utils.IS_LOCAL() then
             },
         },
     })
-    vim.lsp.enable("lua_ls")
 
     -- Optional servers moved to after/discharged/lsp/optional_servers.lua
 
-    vim.lsp.config("dockerls", {
-        capabilities = capabilities,
-        on_attach = on_attach,
+    lsp_utils.setup_server("dockerls", {
         root_markers = { "Dockerfile", "docker-compose.yml", "docker-compose.yaml", ".git" },
     })
-    vim.lsp.enable("dockerls")
 
-    -- starpls: explicit config so neovim correctly sets the server's CWD to the
-    -- Bazel workspace root. Without this, starpls inherits nvim's process CWD and
-    -- `bazel info` fails in "batch mode" when nvim was launched outside the workspace.
-    vim.lsp.config("starpls", {
-        capabilities = capabilities,
-        on_attach = on_attach,
-        root_markers = { "MODULE.bazel", "WORKSPACE.bazel", "WORKSPACE" },
+    lsp_utils.setup_server("starpls", {
+        on_attach = lsp_utils.extend_on_attach(function(_, bufnr)
+            bazel_utils.detach_conflicting_starlark_clients(bufnr)
+        end),
+        root_markers = bazel_utils.root_markers(),
         filetypes = { "bzl", "bazel", "BUILD.bazel", "WORKSPACE", "WORKSPACE.bazel" },
         settings = {
             starpls = {
@@ -175,15 +139,11 @@ if ssh_utils.IS_LOCAL() then
             },
         },
     })
-    vim.lsp.enable("starpls")
 
     -- bazelrc_lsp: Bazel RC file language server
-    vim.lsp.config("bazelrc_lsp", {
-        capabilities = capabilities,
-        on_attach = on_attach,
-        root_markers = { "MODULE.bazel", "WORKSPACE.bazel", "WORKSPACE", ".bazelrc" },
+    lsp_utils.setup_server("bazelrc_lsp", {
+        root_markers = bazel_utils.root_markers({ ".bazelrc" }),
     })
-    vim.lsp.enable("bazelrc_lsp")
 
     vim.diagnostic.config({
         virtual_text = true,

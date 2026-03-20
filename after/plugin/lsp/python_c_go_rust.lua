@@ -1,8 +1,8 @@
-local ssh_utils = require("motleyfesst.ssh_utils")
+local ssh_utils = require("motleyfesst.utils.ssh")
 if not ssh_utils.IS_LOCAL() then
     return
 end
-local lsp_utils = require("motleyfesst.lsp_utils")
+local lsp_utils = require("motleyfesst.utils.lsp")
 
 local function setup_tabs(tab_size, expand_tab)
     vim.opt_local.tabstop = tab_size
@@ -43,12 +43,7 @@ setup_language_settings()
 --
 --
 
-local capabilities = lsp_utils.make_capabilities()
-local on_attach = lsp_utils.default_on_attach
--- Python
-vim.lsp.config("pyright", {
-    capabilities = capabilities,
-    on_attach = on_attach,
+lsp_utils.setup_server("pyright", {
     settings = {
         python = {
             analysis = {
@@ -59,12 +54,9 @@ vim.lsp.config("pyright", {
         },
     },
 })
-vim.lsp.enable("pyright")
 
 -- C/C++
-vim.lsp.config("clangd", {
-    capabilities = capabilities,
-    on_attach = on_attach,
+lsp_utils.setup_server("clangd", {
     cmd = {
         "clangd",
         "--background-index",
@@ -76,4 +68,3 @@ vim.lsp.config("clangd", {
         clangd = { folding = true },
     },
 })
-vim.lsp.enable("clangd")

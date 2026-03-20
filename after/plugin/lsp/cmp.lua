@@ -1,28 +1,26 @@
+local ssh_utils = require("motleyfesst.utils.ssh")
+if not ssh_utils.IS_LOCAL() then
+    return
+end
+
 -- ============================================================
 -- blink.cmp setup (old nvim-cmp config in after/discharged/completion/)
 -- blink.compat is a dependency that shims the nvim-cmp API,
 -- so the custom Bazel source in bzl.lua (register_source) still works.
 -- ============================================================
-local ok_blink, blink = pcall(require, "blink.cmp")
-if not ok_blink then
-    return
-end
+local blink = require("blink.cmp")
+local lspkind = require("lspkind")
 
-local ok_lspkind, lspkind = pcall(require, "lspkind")
-
-local kind_icon_component = {}
-if ok_lspkind then
-    kind_icon_component = {
-        kind_icon = {
-            text = function(ctx)
-                return lspkind.symbolic(ctx.kind, { mode = "symbol" }) or ctx.kind_icon .. " "
-            end,
-            highlight = function(ctx)
-                return "CmpItemKind" .. ctx.kind
-            end,
-        },
-    }
-end
+local kind_icon_component = {
+    kind_icon = {
+        text = function(ctx)
+            return lspkind.symbolic(ctx.kind, { mode = "symbol" }) or ctx.kind_icon .. " "
+        end,
+        highlight = function(ctx)
+            return "CmpItemKind" .. ctx.kind
+        end,
+    },
+}
 
 blink.setup({
     keymap = {

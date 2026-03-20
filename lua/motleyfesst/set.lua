@@ -1,27 +1,32 @@
 local opt = vim.opt
 
+local function setup_yank_behavior()
+    vim.api.nvim_create_autocmd("TextYankPost", {
+        group = vim.api.nvim_create_augroup("YankBehavior", { clear = true }),
+        desc = "Mirror yanks to clipboard and highlight them",
+        callback = function()
+            local event = vim.v.event
+            if not event or event.operator ~= "y" then
+                return
+            end
+
+            if event.regcontents and #event.regcontents > 0 then
+                pcall(vim.fn.setreg, "+", event.regcontents, event.regtype)
+                pcall(vim.fn.setreg, "*", event.regcontents, event.regtype)
+            end
+
+            vim.highlight.on_yank({ higroup = "IncSearch", timeout = 40 })
+        end,
+    })
+end
+
 opt.hidden = true
 opt.number = true
 opt.relativenumber = true
 opt.wrap = true
 
--- clipboard: always sync unnamed yanks to both system clipboards (+ and *)
-opt.clipboard = { "unnamed", "unnamedplus" }
-vim.api.nvim_create_autocmd("TextYankPost", {
-    group = vim.api.nvim_create_augroup("yank_to_system_clipboard", { clear = true }),
-    desc = "Mirror yanks into + and * registers",
-    callback = function()
-        local e = vim.v.event
-        if not e or e.operator ~= "y" then
-            return
-        end
-        if not e.regcontents or #e.regcontents == 0 then
-            return
-        end
-        pcall(vim.fn.setreg, "+", e.regcontents, e.regtype)
-        pcall(vim.fn.setreg, "*", e.regcontents, e.regtype)
-    end,
-})
+-- clipboard: nvim uses its own registers, system clipboard via Ctrl+Shift+V (kitty)
+opt.clipboard = ""
 
 -- search
 opt.hlsearch = false
@@ -74,3 +79,5 @@ opt.foldnestmax = 20
 opt.viewoptions = "folds,cursor,curdir,slash,unix"
 
 opt.sessionoptions = "blank,buffers,curdir,folds,help,options,tabpages,terminal,winsize"
+
+setup_yank_behavior()

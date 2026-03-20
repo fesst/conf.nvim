@@ -1,10 +1,10 @@
-local ssh_utils = require("motleyfesst.ssh_utils")
+local ssh_utils = require("motleyfesst.utils.ssh")
 
 if not ssh_utils.IS_LOCAL() then
     return
 end
 
-local lsp_utils = require("motleyfesst.lsp_utils")
+local lsp_utils = require("motleyfesst.utils.lsp")
 local jdtls_group = vim.api.nvim_create_augroup("JdtlsAutostart", { clear = true })
 
 local function find_up(markers, start_path)
@@ -52,13 +52,13 @@ vim.api.nvim_create_autocmd("FileType", {
     group = jdtls_group,
     pattern = "java",
     callback = function()
-        local ok_jdtls, jdtls = pcall(require, "jdtls")
-        if not ok_jdtls then
-            vim.notify("nvim-jdtls is not available", vim.log.levels.WARN)
-            return
-        end
+        local jdtls = require("jdtls")
 
         local root_dir = resolve_root_dir(vim.api.nvim_buf_get_name(0))
+        if not root_dir or root_dir == "" or vim.fn.isdirectory(root_dir) == 0 then
+            vim.notify("jdtls: invalid project root: " .. vim.inspect(root_dir), vim.log.levels.WARN)
+            return
+        end
         local project_name = workspace_name(root_dir)
 
         local function get_bazel_exec_root()
@@ -90,19 +90,24 @@ vim.api.nvim_create_autocmd("FileType", {
 
         -- Collect Maven jars from Bazel's external repository so jdtls can resolve
         -- external dependencies for go-to-definition, hover, and completion.
-        -- rules_jvm_external stores downloaded jars under the Bazel execution root.
+        -- rules_jvm_external (bzlmod) stores jars under:
+        --   <exec_root>/external/rules_jvm_external++maven+<artifact>/file/v1/<path>/<artifact>.jar
         local function collect_bazel_referenced_libraries()
             local exec_root = get_bazel_exec_root()
             if not exec_root then
                 return { include = {}, sources = {} }
             end
 
-            local maven_dir = exec_root .. "/external/maven"
-            if vim.fn.isdirectory(maven_dir) == 0 then
+            local external_dir = exec_root .. "/external"
+            if vim.fn.isdirectory(external_dir) == 0 then
                 return { include = {}, sources = {} }
             end
 
-            local all_jars = vim.fn.glob(maven_dir .. "/**/*.jar", false, true)
+            -- Try bzlmod layout first (rules_jvm_external++maven+*), fall back to legacy (maven/)
+            local all_jars = vim.fn.glob(external_dir .. "/rules_jvm_external++maven+*/**/*.jar", false, true)
+            if vim.tbl_isempty(all_jars) then
+                all_jars = vim.fn.glob(external_dir .. "/maven/**/*.jar", false, true)
+            end
             table.sort(all_jars)
 
             local libraries = { include = {}, sources = {} }
@@ -177,16 +182,9 @@ vim.api.nvim_create_autocmd("FileType", {
         vim.list_extend(bundles, java_decompiler_ext)
         vim.list_extend(bundles, spring_boot_ext)
 
-        -- Full protocol capabilities (not lsp_utils.make_capabilities() — preserves textDocument)
-        -- Old nvim-cmp code in after/discharged/completion/
-        local capabilities = vim.lsp.protocol.make_client_capabilities()
-        local ok_blink, blink_cmp = pcall(require, "blink.cmp")
-        if ok_blink then
-            capabilities = blink_cmp.get_lsp_capabilities(capabilities)
-        end
+        local capabilities = lsp_utils.make_capabilities()
 
-        local on_attach = function(client, bufnr)
-            lsp_utils.default_on_attach(client, bufnr)
+        local on_attach = lsp_utils.extend_on_attach(function(_, bufnr)
 
             pcall(function()
                 jdtls.setup_dap({ hotcodereplace = "auto" })
@@ -210,29 +208,9 @@ vim.api.nvim_create_autocmd("FileType", {
                 vim.notify("jdtls: workspace deleted (" .. ws .. "). Reopen the file to restart.", vim.log.levels.INFO)
             end, { desc = "Delete jdtls workspace cache and stop server (reopen file to restart)" })
 
-            -- Format-on-save: conform.nvim handles this globally (google-java-format).
-            -- If conform is unavailable, fall back to jdtls LSP formatting.
-            local format_group = vim.api.nvim_create_augroup("JavaFormatOnSave", { clear = false })
-            vim.api.nvim_clear_autocmds({ group = format_group, buffer = bufnr })
-            vim.api.nvim_create_autocmd("BufWritePre", {
-                group = format_group,
-                buffer = bufnr,
-                callback = function()
-                    local ok_conform, conform = pcall(require, "conform")
-                    if ok_conform then
-                        conform.format({ bufnr = bufnr, timeout_ms = 3000, lsp_format = "fallback" })
-                    else
-                        vim.lsp.buf.format({
-                            bufnr = bufnr,
-                            async = false,
-                            filter = function(c)
-                                return c.name == "jdtls"
-                            end,
-                        })
-                    end
-                end,
-            })
-        end
+            -- Format-on-save is handled globally by conform.nvim.
+            -- Keep manual formatting on <leader>f via lsp_utils.default_on_attach().
+        end)
 
         local config = {
             cmd = {
@@ -249,6 +227,7 @@ vim.api.nvim_create_autocmd("FileType", {
                 "--add-opens",
                 "java.base/java.lang=ALL-UNNAMED",
                 "-javaagent:" .. lombok_jar,
+                "-Xbootclasspath/a:" .. lombok_jar,
                 "-jar",
                 launcher_jar,
                 "-configuration",

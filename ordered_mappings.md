@@ -66,14 +66,14 @@ Mappings are organized by mode and sorted alphabetically within each mode.
 ### LSP Core
 | Key | Action | File |
 |---|---|---|
-| `<leader>ca` | Code action | `lsp_utils.lua` |
-| `<leader>e` | Show diagnostic float | `lsp_utils.lua` |
-| `<leader>f` | Format buffer | `lsp_utils.lua` |
-| `<leader>rn` | Rename symbol | `lsp_utils.lua` |
-| `[i` | Previous diagnostic | `lsp_utils.lua` |
-| `]i` | Next diagnostic | `lsp_utils.lua` |
-| `gd` | Go to definition | `lsp_utils.lua` |
-| `K` | Hover | `lsp_utils.lua` |
+| `<leader>ca` | Code action | `utils/lsp.lua` |
+| `<leader>e` | Show diagnostic float | `utils/lsp.lua` |
+| `<leader>f` | Format buffer | `utils/lsp.lua` |
+| `<leader>rn` | Rename symbol | `utils/lsp.lua` |
+| `[i` | Previous diagnostic | `utils/lsp.lua` |
+| `]i` | Next diagnostic | `utils/lsp.lua` |
+| `gd` | Go to definition | `utils/lsp.lua` |
+| `K` | Hover | `utils/lsp.lua` |
 
 ### Brackets & Pairs
 | Key | Action | File |

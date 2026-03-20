@@ -1,8 +1,27 @@
-local ssh_utils = require("motleyfesst.ssh_utils")
+local ssh_utils = require("motleyfesst.utils.ssh")
 
 if ssh_utils.IS_LOCAL() then
     local keymap = vim.keymap.set
     local language_group = vim.api.nvim_create_augroup("LanguageSpecificConfig", { clear = true })
+    local uv = vim.uv or vim.loop
+
+    local function realpath(path)
+        return uv.fs_realpath(path) or path
+    end
+
+    local function is_under_dir(path, dir)
+        local resolved_path = realpath(path)
+        local resolved_dir = realpath(dir)
+        return resolved_path == resolved_dir or vim.startswith(resolved_path, resolved_dir .. "/")
+    end
+
+    local function shell_shiftwidth(bufnr)
+        local filename = vim.api.nvim_buf_get_name(bufnr)
+        if filename ~= "" and is_under_dir(filename, vim.fn.stdpath("config")) then
+            return 4
+        end
+        return 2
+    end
 
     local function setup_tabs(tab_size, expand_tab)
         vim.opt_local.tabstop = tab_size
@@ -39,6 +58,13 @@ if ssh_utils.IS_LOCAL() then
             pattern = { "html", "css", "scss", "less" },
             callback = function()
                 setup_tabs(2, true)
+            end,
+        })
+        vim.api.nvim_create_autocmd("FileType", {
+            group = language_group,
+            pattern = { "sh", "bash", "zsh" },
+            callback = function(ev)
+                setup_tabs(shell_shiftwidth(ev.buf), true)
             end,
         })
         vim.api.nvim_create_autocmd("FileType", {

@@ -7,7 +7,7 @@ local function map(mode, lhs, rhs, opts)
     vim.keymap.set(mode, lhs, rhs, merged_opts)
 end
 
-local ssh_utils = require("motleyfesst.ssh_utils")
+local ssh_utils = require("motleyfesst.utils.ssh")
 local function terminal()
     vim.o.shell = ssh_utils.IS_ZSH() and "/bin/zsh -i" or "/usr/bin/bash --login"
 
@@ -92,26 +92,13 @@ local function leader_motions()
 end
 
 local function clipboard_motions()
-    map("v", "<C-q>", '"+y', { desc = "Copy selection to system clipboard" })
-
-    map({ "n", "x" }, "<leader>V", "<C-v>", { remap = true, desc = "Block visual mode" })
-
-    for _, lhs in ipairs({ "<C-q>", "<C-S-q>" }) do
-        map("n", lhs, '"+p', { desc = "Paste from system clipboard" })
-        map("i", lhs, "<C-r>+", { desc = "Paste from system clipboard" })
-        map("c", lhs, "<C-r>+", { desc = "Paste from system clipboard" })
-    end
+    -- Copy: leader+= (existing), Paste: Ctrl+Shift+V handled by kitty
 end
 
 local function jdtls_motions()
     local function with_jdtls(cb)
         return function()
-            local ok, jdtls = pcall(require, "jdtls")
-            if not ok then
-                vim.notify("jdtls is not available in this buffer", vim.log.levels.WARN)
-                return
-            end
-            cb(jdtls)
+            cb(require("jdtls"))
         end
     end
 
@@ -172,25 +159,7 @@ end
 
 local function completion_motions()
     local function trigger_completion()
-        -- NEW: blink.cmp
-        local ok, blink = pcall(require, "blink.cmp")
-        if not ok then
-            -- OLD: nvim-cmp fallback (kept for reference)
-            -- local ok_cmp, cmp = pcall(require, "cmp")
-            -- if not ok_cmp then
-            --     vim.notify("nvim-cmp is not available", vim.log.levels.WARN)
-            --     return
-            -- end
-            -- local mode = vim.fn.mode()
-            -- if mode == "n" then
-            --     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("i", true, false, true), "n", false)
-            -- elseif mode:match("[vV\22]") then
-            --     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>i", true, false, true), "n", false)
-            -- end
-            -- vim.schedule(function() cmp.complete() end)
-            vim.notify("blink.cmp is not available", vim.log.levels.WARN)
-            return
-        end
+        local blink = require("blink.cmp")
 
         local mode = vim.fn.mode()
         if mode == "n" then
@@ -311,8 +280,10 @@ end
 terminal()
 leader_motions()
 clipboard_motions()
-jdtls_motions()
-completion_motions()
+if ssh_utils.IS_LOCAL() then
+    jdtls_motions()
+    completion_motions()
+end
 embrace_visual()
 add_pair_big_motion()
 delete_pairs()

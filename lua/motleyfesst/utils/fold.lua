@@ -8,7 +8,6 @@ local function log_debug(msg)
     end)
 end
 
---- Apply buffer-local fold display options.
 local function apply_base_opts()
     vim.opt_local.foldenable = true
     vim.opt_local.foldcolumn = "4"

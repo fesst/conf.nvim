@@ -1,15 +1,9 @@
-local ssh_utils = require("motleyfesst.ssh_utils")
+local ssh_utils = require("motleyfesst.utils.ssh")
 if not ssh_utils.IS_LOCAL() then
     return
 end
 
-local LOG_TAG = "[nvim-lint]"
-
-local ok, lint = pcall(require, "lint")
-if not ok then
-    vim.notify(LOG_TAG .. " nvim-lint not found, skipping setup", vim.log.levels.DEBUG)
-    return
-end
+local lint = require("lint")
 
 local function has_executable(cmd)
     return vim.fn.executable(cmd) == 1
@@ -31,17 +25,12 @@ local lint_group = vim.api.nvim_create_augroup("NvimLint", { clear = true })
 vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "InsertLeave" }, {
     group = lint_group,
     callback = function(args)
-        local ok_lint, lint_mod = pcall(require, "lint")
-        if not ok_lint then
-            return
-        end
-
         local ft = vim.bo[args.buf].filetype
-        local names = lint_mod.linters_by_ft[ft] or {}
+        local names = lint.linters_by_ft[ft] or {}
         if vim.tbl_isempty(names) then
             return
         end
 
-        lint_mod.try_lint(names, { ignore_errors = true })
+        lint.try_lint(names, { ignore_errors = true })
     end,
 })

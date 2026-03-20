@@ -1,9 +1,5 @@
-local ok, tabby = pcall(require, "tabby")
-if not ok then
-    return
-end
-
-local is_local = require("motleyfesst.ssh_utils").IS_LOCAL()
+local tabby = require("tabby")
+local is_local = require("motleyfesst.utils.ssh").IS_LOCAL()
 
 -- Rose-pine inspired theme for local; muted for SSH
 local theme

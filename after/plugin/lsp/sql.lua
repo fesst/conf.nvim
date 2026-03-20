@@ -1,4 +1,4 @@
-local ssh_utils = require("motleyfesst.ssh_utils")
+local ssh_utils = require("motleyfesst.utils.ssh")
 
 if ssh_utils.IS_LOCAL() then
     -- PostgreSQL-specific features

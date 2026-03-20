@@ -7,6 +7,7 @@ local plugins_list = {
         lazy = false,
         build = ":TSUpdate",
     },
+    { "nvim-treesitter/nvim-treesitter-textobjects" },
     { "nvim-treesitter/playground" },
     { "mbbill/undotree" },
     { "theprimeagen/harpoon" },
@@ -14,7 +15,7 @@ local plugins_list = {
     { "nanozuki/tabby.nvim", dependencies = { "nvim-tree/nvim-web-devicons" } },
     { "tpope/vim-fugitive" },
 }
-local ssh_utils = require("motleyfesst.ssh_utils")
+local ssh_utils = require("motleyfesst.utils.ssh")
 if ssh_utils.IS_LOCAL() then
     local dev_list = {
         {
@@ -25,7 +26,7 @@ if ssh_utils.IS_LOCAL() then
             "williamboman/mason.nvim",
             dependencies = { "williamboman/mason-lspconfig.nvim", "neovim/nvim-lspconfig" },
             build = ":MasonUpdate",
-            cmd = "Mason",
+            lazy = false,
         },
         {
             "neovim/nvim-lspconfig",
@@ -53,12 +54,11 @@ if ssh_utils.IS_LOCAL() then
         },
         {
             "stevearc/conform.nvim",
-            event = { "BufWritePre" },
-            cmd = { "ConformInfo" },
+            lazy = false,
         },
         {
             "mfussenegger/nvim-lint",
-            event = { "BufReadPre", "BufNewFile" },
+            lazy = false,
         },
         { "rcarriga/nvim-dap-ui", dependencies = { "mfussenegger/nvim-dap", "nvim-neotest/nvim-nio" } },
         { "theHamsta/nvim-dap-virtual-text", dependencies = { "mfussenegger/nvim-dap" } },

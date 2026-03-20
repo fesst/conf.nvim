@@ -1,22 +1,25 @@
-local ssh_utils = require("motleyfesst.ssh_utils")
+local ssh_utils = require("motleyfesst.utils.ssh")
 
 if not ssh_utils.IS_LOCAL() then
     return
 end
 
-local lsp_utils = require("motleyfesst.lsp_utils")
-local capabilities = lsp_utils.make_capabilities()
+local lsp_utils = require("motleyfesst.utils.lsp")
 
-vim.lsp.config("graphql", {
-    on_attach = function(client, bufnr)
-        lsp_utils.default_on_attach(client, bufnr)
-    end,
-    filetypes = { "graphqls", "graphql", "gql", "json", "ts", "js" },
+vim.lsp.config("graphql", lsp_utils.with_defaults({
+    filetypes = {
+        "graphqls",
+        "graphql",
+        "gql",
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact",
+    },
     flags = {
         debounce_text_changes = 150,
     },
-    capabilities = capabilities,
-})
+}))
 
 vim.lsp.config.graphql.root_dir = function(bufnr, on_dir)
     local fname = vim.api.nvim_buf_get_name(bufnr)
