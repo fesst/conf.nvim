@@ -8,6 +8,7 @@ local function map(mode, lhs, rhs, opts)
 end
 
 local ssh_utils = require("motleyfesst.utils.ssh")
+local url_utils = require("motleyfesst.utils.url")
 local function terminal()
     vim.o.shell = ssh_utils.IS_ZSH() and "/bin/zsh -i" or "/usr/bin/bash --login"
 
@@ -89,6 +90,7 @@ local function leader_motions()
     map("v", "<leader>gf", ":new <cfile><CR>")
     map("n", "<leader>gF", ":vnew <cfile><CR>")
     map("v", "<leader>gF", ":vnew <cfile><CR>")
+    map({ "n", "x" }, "gx", url_utils.open_from_context, { desc = "Open URL from cursor or selection" })
 end
 
 local function clipboard_motions()

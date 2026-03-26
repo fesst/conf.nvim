@@ -94,6 +94,117 @@ local function open_diagnostic_loclist()
     vim.cmd("lopen")
 end
 
+local function jump_to_items(items, method, opts)
+    local bufnr = vim.api.nvim_get_current_buf()
+    local win = vim.api.nvim_get_current_win()
+    local from = vim.fn.getpos(".")
+    local tagname = vim.fn.expand("<cword>")
+
+    from[1] = bufnr
+    opts = opts or {}
+
+    if vim.tbl_isempty(items) then
+        return false
+    end
+
+    if opts.on_list then
+        opts.on_list({
+            title = "LSP locations",
+            items = items,
+            context = { bufnr = bufnr, method = method },
+        })
+        return true
+    end
+
+    if #items == 1 then
+        local item = items[1]
+        local target_buf = item.bufnr or vim.fn.bufadd(item.filename)
+        local target_win = win
+
+        vim.cmd("normal! m'")
+        vim.fn.settagstack(vim.fn.win_getid(win), {
+            items = { { tagname = tagname, from = from } },
+        }, "t")
+
+        vim.bo[target_buf].buflisted = true
+        if opts.reuse_win and vim.api.nvim_win_get_buf(target_win) ~= target_buf then
+            target_win = vim.fn.bufwinid(target_buf)
+            target_win = target_win >= 0 and target_win or vim.fn.win_findbuf(target_buf)[1] or win
+            if target_win ~= win then
+                vim.api.nvim_set_current_win(target_win)
+            end
+        end
+
+        vim.api.nvim_win_set_buf(target_win, target_buf)
+        vim.api.nvim_win_set_cursor(target_win, { item.lnum, item.col - 1 })
+        vim._with({ win = target_win }, function()
+            vim.cmd("normal! zv")
+        end)
+        return true
+    end
+
+    if opts.loclist then
+        vim.fn.setloclist(0, {}, " ", { title = "LSP locations", items = items })
+        vim.cmd("lopen")
+    else
+        vim.fn.setqflist({}, " ", { title = "LSP locations", items = items })
+        vim.cmd("botright copen")
+    end
+
+    return true
+end
+
+local function goto_with_fallback(methods, opts)
+    local bufnr = vim.api.nvim_get_current_buf()
+    local win = vim.api.nvim_get_current_win()
+    opts = opts or {}
+
+    local function request_method(index)
+        local method = methods[index]
+        if not method then
+            vim.notify("No locations found", vim.log.levels.INFO)
+            return
+        end
+
+        local clients = vim.lsp.get_clients({ method = method, bufnr = bufnr })
+        if vim.tbl_isempty(clients) then
+            request_method(index + 1)
+            return
+        end
+
+        vim.lsp.buf_request_all(bufnr, method, function(client)
+            return vim.lsp.util.make_position_params(win, client.offset_encoding)
+        end, function(results)
+            local items = {}
+
+            for client_id, response in pairs(results) do
+                local client = vim.lsp.get_client_by_id(client_id)
+                local locations = {}
+                if response and response.result then
+                    locations = vim.islist(response.result) and response.result or { response.result }
+                end
+                if client then
+                    vim.list_extend(items, vim.lsp.util.locations_to_items(locations, client.offset_encoding))
+                end
+            end
+
+            if not jump_to_items(items, method, opts) then
+                request_method(index + 1)
+            end
+        end)
+    end
+
+    request_method(1)
+end
+
+function M.goto_definition(opts)
+    goto_with_fallback({
+        "textDocument/definition",
+        "textDocument/declaration",
+        "textDocument/typeDefinition",
+    }, opts)
+end
+
 function M.make_capabilities()
     local capabilities = vim.lsp.protocol.make_client_capabilities()
     capabilities = vim.tbl_deep_extend("force", capabilities, {
@@ -138,7 +249,9 @@ end
 function M.attach_default_keymaps(bufnr)
     local opts = { buffer = bufnr, silent = true }
     vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
-    vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+    vim.keymap.set("n", "gd", function()
+        M.goto_definition({ reuse_win = true })
+    end, opts)
     vim.keymap.set("n", "gr", telescope_or_lsp("lsp_references", vim.lsp.buf.references), opts)
     vim.keymap.set("n", "gI", telescope_or_lsp("lsp_implementations", vim.lsp.buf.implementation), opts)
     vim.keymap.set("n", "gy", telescope_or_lsp("lsp_type_definitions", vim.lsp.buf.type_definition), opts)
@@ -208,10 +321,32 @@ function M.setup_format_on_save(bufnr, filter)
 end
 
 function M.default_on_attach(client, bufnr)
-    M.setup_format_on_save(bufnr)
-    M.attach_default_keymaps(bufnr)
+    vim.b[bufnr].motleyfesst_lsp_attached_clients = vim.b[bufnr].motleyfesst_lsp_attached_clients or {}
+    if vim.b[bufnr].motleyfesst_lsp_attached_clients[client.id] then
+        return
+    end
+    vim.b[bufnr].motleyfesst_lsp_attached_clients[client.id] = true
+
+    if not vim.b[bufnr].motleyfesst_lsp_keymaps_attached then
+        M.attach_default_keymaps(bufnr)
+        vim.b[bufnr].motleyfesst_lsp_keymaps_attached = true
+    end
+
     M.setup_codelens(client, bufnr)
     require("motleyfesst.utils.fold").on_lsp_attach(client, bufnr)
 end
+
+local lsp_attach_group = vim.api.nvim_create_augroup("MotleyfesstLspAttach", { clear = true })
+
+vim.api.nvim_create_autocmd("LspAttach", {
+    group = lsp_attach_group,
+    callback = function(args)
+        local client = vim.lsp.get_client_by_id(args.data.client_id)
+        if not client then
+            return
+        end
+        M.default_on_attach(client, args.buf)
+    end,
+})
 
 return M
