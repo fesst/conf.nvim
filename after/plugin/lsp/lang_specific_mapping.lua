@@ -15,14 +15,6 @@ if ssh_utils.IS_LOCAL() then
         return resolved_path == resolved_dir or vim.startswith(resolved_path, resolved_dir .. "/")
     end
 
-    local function shell_shiftwidth(bufnr)
-        local filename = vim.api.nvim_buf_get_name(bufnr)
-        if filename ~= "" and is_under_dir(filename, vim.fn.stdpath("config")) then
-            return 4
-        end
-        return 2
-    end
-
     local function setup_tabs(tab_size, expand_tab)
         vim.opt_local.tabstop = tab_size
         vim.opt_local.shiftwidth = tab_size
@@ -36,7 +28,7 @@ if ssh_utils.IS_LOCAL() then
             pattern = "python",
             callback = function()
                 setup_tabs(4, true)
-                vim.opt_local.textwidth = 88 -- Black formatter default
+                vim.opt_local.textwidth = 88
             end,
         })
         vim.api.nvim_create_autocmd("FileType", {
@@ -64,7 +56,7 @@ if ssh_utils.IS_LOCAL() then
             group = language_group,
             pattern = { "sh", "bash", "zsh" },
             callback = function(ev)
-                setup_tabs(shell_shiftwidth(ev.buf), true)
+                setup_tabs(4, true)
             end,
         })
         vim.api.nvim_create_autocmd("FileType", {
@@ -112,7 +104,6 @@ if ssh_utils.IS_LOCAL() then
                 keymap("n", "<leader>yv", ":!open %:r.pdf<CR>", { buffer = ev.buf, desc = "View LaTeX PDF" })
             end,
         })
-
     end
 
     -- Initialize
