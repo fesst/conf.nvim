@@ -1,7 +1,6 @@
 $NVIM_DIRS = @(
-    "$env:USERPROFILE\.config\nvim"
-    "$env:USERPROFILE\.local\share\nvim"
-    "$env:USERPROFILE\.cache\nvim"
+    "$env:LOCALAPPDATA\nvim"
+    "$env:LOCALAPPDATA\nvim-data"
 )
 
 $env:NVIM_DIRS = $NVIM_DIRS -join " "

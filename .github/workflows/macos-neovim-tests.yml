@@ -5,18 +5,6 @@ permissions:
 
 on:
   workflow_call:
-  push:
-    branches: ["master"]
-    paths:
-      - "infra/**"
-      - ".github/workflows/**"
-      - "lua/**"
-      - "after/**"
-      - "init.lua"
-      - "lazy-lock.json"
-concurrency:
-  group: macos-neovim-tests-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   test:
@@ -80,6 +68,12 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/venv"
           echo "VIRTUAL_ENV=$RUNNER_TEMP/venv" >> "$GITHUB_ENV"
           echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
+
+      - name: Set up Neovim config
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.config"
+          ln -sfn "$GITHUB_WORKSPACE" "$HOME/.config/nvim"
 
       - name: Install toolchain and plugins
         shell: bash

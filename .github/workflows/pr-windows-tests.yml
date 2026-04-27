@@ -14,20 +14,7 @@ on:
       - "after/**"
       - "init.lua"
       - "lazy-lock.json"
-  push:
-    branches: ["master"]
-    paths:
-      - "infra/**"
-      - ".github/workflows/**"
-      - "lua/**"
-      - "after/**"
-      - "init.lua"
-      - "lazy-lock.json"
   workflow_dispatch:
-
-concurrency:
-  group: windows-neovim-tests-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   test:
@@ -102,6 +89,13 @@ jobs:
           python -m venv .venv
           "VIRTUAL_ENV=$pwd\.venv" >> $env:GITHUB_ENV
           "$pwd\.venv\Scripts" >> $env:GITHUB_PATH
+
+      - name: Set up Neovim config
+        shell: pwsh
+        run: |
+          $nvimConfig = "$env:LOCALAPPDATA\nvim"
+          if (Test-Path $nvimConfig) { Remove-Item $nvimConfig -Recurse -Force }
+          New-Item -ItemType SymbolicLink -Path $nvimConfig -Target $env:GITHUB_WORKSPACE
 
       - name: Install toolchain and plugins
         shell: pwsh
