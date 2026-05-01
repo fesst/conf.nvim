@@ -69,6 +69,16 @@ if ssh_utils.IS_LOCAL() then
             enable = true,
         },
     })
+    -- nvim-treesitter currently treats directive captures as a single node,
+    -- while Neovim 0.12 passes a list of nodes for each capture.
+    require("vim.treesitter.query").add_directive("set-lang-from-info-string!", function(match, _, bufnr, pred, metadata)
+        local nodes = match[pred[2]]
+        local node = type(nodes) == "table" and nodes[1] or nodes
+        if node then
+            local lang = vim.treesitter.get_node_text(node, bufnr):lower()
+            metadata["injection.language"] = vim.filetype.match({ filename = "a." .. lang }) or lang
+        end
+    end, { force = true, all = false })
 
     require("nvim-treesitter-textobjects").setup({
         select = {
