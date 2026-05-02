@@ -4,7 +4,6 @@ require("nvim-tree").setup({
     hijack_unnamed_buffer_when_opening = false,
     sync_root_with_cwd = true,
     reload_on_bufenter = true,
-    system_open = vim.fn.has("mac") == 1 and { cmd = "open", args = { "-R" } } or nil,
     view = {
         centralize_selection = false,
         side = "left",
