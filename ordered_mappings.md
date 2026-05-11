@@ -68,7 +68,7 @@ Mappings are organized by mode and sorted alphabetically within each mode.
 |---|---|---|
 | `<leader>ca` | Code action | `utils/lsp.lua` |
 | `<leader>e` | Show diagnostic float | `utils/lsp.lua` |
-| `<leader>f` | Format buffer | `utils/lsp.lua` |
+| `<leader>f` | Format buffer | `after/plugin/lsp/conform.lua` |
 | `<leader>rn` | Rename symbol | `utils/lsp.lua` |
 | `[i` | Previous diagnostic | `utils/lsp.lua` |
 | `]i` | Next diagnostic | `utils/lsp.lua` |

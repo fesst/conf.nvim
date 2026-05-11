@@ -2,10 +2,6 @@ local M = {}
 
 local LOG_TAG = "[lsp_utils]"
 
-local function format_buffer(bufnr)
-    require("conform").format({ bufnr = bufnr, timeout_ms = 3000, lsp_format = "fallback" })
-end
-
 local function telescope_or_lsp(telescope_picker, fallback)
     return function()
         local builtin = require("telescope.builtin")
@@ -274,9 +270,6 @@ function M.attach_default_keymaps(bufnr)
     end, opts)
     vim.keymap.set("n", "<leader>lC", function()
         refresh_codelens(bufnr)
-    end, opts)
-    vim.keymap.set("n", "<leader>f", function()
-        format_buffer(bufnr)
     end, opts)
     vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, opts)
     vim.keymap.set("n", "<leader>dq", open_diagnostic_quickfix, opts)

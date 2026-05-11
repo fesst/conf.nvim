@@ -208,8 +208,7 @@ vim.api.nvim_create_autocmd("FileType", {
                 vim.notify("jdtls: workspace deleted (" .. ws .. "). Reopen the file to restart.", vim.log.levels.INFO)
             end, { desc = "Delete jdtls workspace cache and stop server (reopen file to restart)" })
 
-            -- Format-on-save is handled globally by conform.nvim.
-            -- Keep manual formatting on <leader>f via lsp_utils.default_on_attach().
+            -- Format-on-save and manual formatting on <leader>f are handled globally by conform.nvim.
         end)
 
         local config = {

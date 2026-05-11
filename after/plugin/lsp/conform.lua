@@ -3,6 +3,10 @@ if not ssh_utils.IS_LOCAL() then
     return
 end
 
+vim.keymap.set("n", "<leader>f", function()
+    require("conform").format({ async = true, timeout_ms = 3000, lsp_format = "fallback" })
+end, { desc = "Format buffer", silent = true })
+
 require("conform").setup({
     formatters_by_ft = {
         lua = { "stylua" },
@@ -24,7 +28,7 @@ require("conform").setup({
     },
     formatters = {
         shfmt = {
-            append_args = { "-ci" },
+            append_args = { "-i", "4", "-ci" },
         },
         ["google-java-format"] = {
             command = vim.fn.stdpath("data") .. "/mason/bin/google-java-format",
