@@ -23,10 +23,6 @@ end
 
 local function resolve_root_dir(bufname)
     local start_path = bufname ~= "" and vim.fs.dirname(bufname) or vim.fn.getcwd()
-    local bazel_root = find_up({ "MODULE.bazel", "WORKSPACE.bazel", "WORKSPACE" }, start_path)
-    if bazel_root then
-        return bazel_root
-    end
 
     local build_root = find_up({
         "settings.gradle.kts",
@@ -61,76 +57,11 @@ vim.api.nvim_create_autocmd("FileType", {
         end
         local project_name = workspace_name(root_dir)
 
-        local function get_bazel_exec_root()
-            local exec_root = root_dir .. "/bazel-" .. vim.fn.fnamemodify(root_dir, ":t")
-            if vim.fn.isdirectory(exec_root) == 1 then
-                return exec_root
-            end
-
-            if vim.fn.executable("bazel") == 0 or not vim.system then
-                return nil
-            end
-
-            local result = vim.system({ "bazel", "info", "execution_root" }, {
-                cwd = root_dir,
-                text = true,
-            }):wait()
-
-            if result.code ~= 0 then
-                return nil
-            end
-
-            local detected_exec_root = vim.trim(result.stdout or "")
-            if detected_exec_root == "" or vim.fn.isdirectory(detected_exec_root) == 0 then
-                return nil
-            end
-
-            return detected_exec_root
-        end
-
-        -- Collect Maven jars from Bazel's external repository so jdtls can resolve
-        -- external dependencies for go-to-definition, hover, and completion.
-        -- rules_jvm_external (bzlmod) stores jars under:
-        --   <exec_root>/external/rules_jvm_external++maven+<artifact>/file/v1/<path>/<artifact>.jar
-        local function collect_bazel_referenced_libraries()
-            local exec_root = get_bazel_exec_root()
-            if not exec_root then
-                return { include = {}, sources = {} }
-            end
-
-            local external_dir = exec_root .. "/external"
-            if vim.fn.isdirectory(external_dir) == 0 then
-                return { include = {}, sources = {} }
-            end
-
-            -- Try bzlmod layout first (rules_jvm_external++maven+*), fall back to legacy (maven/)
-            local all_jars = vim.fn.glob(external_dir .. "/rules_jvm_external++maven+*/**/*.jar", false, true)
-            if vim.tbl_isempty(all_jars) then
-                all_jars = vim.fn.glob(external_dir .. "/maven/**/*.jar", false, true)
-            end
-            table.sort(all_jars)
-
-            local libraries = { include = {}, sources = {} }
-            for _, jar in ipairs(all_jars) do
-                local name = vim.fn.fnamemodify(jar, ":t")
-                if not name:match("%-javadoc%.jar$") and not name:match("%-sources%.jar$") then
-                    table.insert(libraries.include, jar)
-
-                    local source_jar = jar:gsub("%.jar$", "-sources.jar")
-                    if source_jar ~= jar and vim.fn.filereadable(source_jar) == 1 then
-                        libraries.sources[jar] = source_jar
-                    end
-                end
-            end
-
-            return libraries
-        end
-
         local home = os.getenv("HOME")
         local mason_dir = home .. "/.local/share/nvim/mason" -- ===<MASON_DIR>===
         local jdtls_dir = mason_dir .. "/packages/jdtls" -- ===<JDTLS_DIR>===
         local workspace_dir = home .. "/.local/share/nvim/jdtls-workspace/" .. project_name -- ===<JDTLS_WORKSPACE_DIR>===
-        local bazel_libraries = collect_bazel_referenced_libraries()
+        local bazel_libraries = { include = {}, sources = {} }
 
         local java_bin = "java" -- ===<JAVA_BIN>===
         -- lombok.jar: prefer ~/apps/lombok.jar, fall back to bundled one inside jdtls package
@@ -191,12 +122,12 @@ vim.api.nvim_create_autocmd("FileType", {
                 jdtls.dap.setup_dap_main_class_configs()
             end)
 
-            -- :JavaBazelSync — force jdtls to re-read project config (Bazel/Maven/Gradle).
-            -- Run this after a BUILD.bazel change or when go-to-definition stops working.
-            vim.api.nvim_buf_create_user_command(bufnr, "JavaBazelSync", function()
+            -- :JavaSync — force jdtls to re-read project config (Maven/Gradle).
+            -- Run this when go-to-definition stops working.
+            vim.api.nvim_buf_create_user_command(bufnr, "JavaSync", function()
                 vim.lsp.buf.execute_command({ command = "java.projectConfiguration.update", arguments = { vim.uri_from_bufnr(bufnr) } })
                 vim.notify("jdtls: project configuration update requested", vim.log.levels.INFO)
-            end, { desc = "Re-sync jdtls project config (Bazel/Maven/Gradle)" })
+            end, { desc = "Re-sync jdtls project config (Maven/Gradle)" })
 
             -- :JavaResetWorkspace — delete cached workspace and restart jdtls.
             -- Use when go-to-definition / classpath is broken (InvisibleProjectImporter was
@@ -261,16 +192,13 @@ vim.api.nvim_create_autocmd("FileType", {
                                 enabled = true,
                             },
                         },
-                        bazel = {
-                            enabled = true,
-                        },
                     },
                     -- Classpath: lombok + Maven jars from Bazel's external repo.
                     -- This keeps unmanaged Bazel Java workspaces navigable in jdtls.
                     project = {
                         referencedLibraries = {
-                            include = vim.list_extend({ lombok_jar }, bazel_libraries.include),
-                            sources = bazel_libraries.sources,
+                            include = { lombok_jar },
+                            sources = {},
                         },
                     },
                     -- Keep jdtls index in sync with source changes

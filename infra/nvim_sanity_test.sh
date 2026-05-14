@@ -99,7 +99,6 @@ main() {
         "+lua assert(pcall(require, 'motleyfesst.utils.ssh'), 'utils.ssh missing')" \
         "+lua assert(pcall(require, 'motleyfesst.utils.lsp'), 'utils.lsp missing')" \
         "+lua assert(pcall(require, 'motleyfesst.utils.fold'), 'utils.fold missing')" \
-        "+lua assert(pcall(require, 'motleyfesst.utils.bazel'), 'utils.bazel missing')" \
         "+qa" || exit 1
     run_headless "Commands available" \
         "+lua assert(vim.fn.exists(':Telescope') == 2, ':Telescope missing')" \

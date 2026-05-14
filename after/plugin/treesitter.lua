@@ -28,7 +28,6 @@ if ssh_utils.IS_LOCAL() then
             "csv",
             "diff",
             "dockerfile",
-            "graphql",
             "html",
             "jq",
             "java",

@@ -49,16 +49,7 @@ blink.setup({
         },
     },
     sources = {
-        default = { "lsp", "path", "buffer", "bazel" },
-        providers = {
-            -- bazel source is the custom one from bzl.lua, bridged via blink.compat
-            bazel = {
-                name = "bazel",
-                module = "blink.compat.source",
-                score_offset = -3,
-                opts = {},
-            },
-        },
+        default = { "lsp", "path", "buffer" },
     },
     appearance = {
         use_nvim_cmp_as_default = false,

@@ -1,7 +1,6 @@
 local ssh_utils = require("motleyfesst.utils.ssh")
 
 if ssh_utils.IS_LOCAL() then
-    local bazel_utils = require("motleyfesst.utils.bazel")
     local lsp_utils = require("motleyfesst.utils.lsp")
     require("mason").setup({
         ui = {
@@ -19,7 +18,6 @@ if ssh_utils.IS_LOCAL() then
             "cssls",
             "dockerls",
             "eslint",
-            "graphql",
             "html",
             "starpls",
             "bazelrc_lsp",
@@ -126,23 +124,8 @@ if ssh_utils.IS_LOCAL() then
     })
 
     lsp_utils.setup_server("starpls", {
-        on_attach = lsp_utils.extend_on_attach(function(_, bufnr)
-            bazel_utils.detach_conflicting_starlark_clients(bufnr)
-        end),
-        root_markers = bazel_utils.root_markers(),
-        filetypes = { "bzl", "bazel", "BUILD.bazel", "WORKSPACE", "WORKSPACE.bazel" },
-        settings = {
-            starpls = {
-                bazel = {
-                    executable = "bazel",
-                },
-            },
-        },
-    })
-
-    -- bazelrc_lsp: Bazel RC file language server
-    lsp_utils.setup_server("bazelrc_lsp", {
-        root_markers = bazel_utils.root_markers({ ".bazelrc" }),
+        filetypes = { "bzl", "starlark" },
+        root_markers = { ".git" },
     })
 
     vim.diagnostic.config({

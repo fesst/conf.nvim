@@ -43,7 +43,6 @@ if ssh_utils.IS_LOCAL() then
             lazy = false,
             dependencies = {
                 { "saghen/blink.compat", version = "*", lazy = true },
-                "alexander-born/cmp-bazel", -- nvim-cmp source, bridged via blink.compat
                 "onsails/lspkind.nvim",
             },
         },
