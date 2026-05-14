@@ -24,7 +24,7 @@
   "plenary.nvim": { "branch": "master", "commit": "74b06c6c75e4eeb3108ec01852001636d85a932b" },
   "render-markdown.nvim": { "branch": "main", "commit": "629eb9533ec989d9d5c6cab8f3ad5372422c24e0" },
   "rose-pine": { "branch": "main", "commit": "6a961effd67f6130d36df6d1c05c48c739796dd2" },
-  "schemastore.nvim": { "branch": "main", "commit": "5b319663792e537f0f6f36b449e6cb86da6b0f7f" },
+  "schemastore.nvim": { "branch": "main", "commit": "1c28767e3a7f3c9b7c5cc66e7f16b268c964e2c9" },
   "tabby.nvim": { "branch": "main", "commit": "3c130e1fcb598ce39a9c292847e32d7c3987cf11" },
   "telescope.nvim": { "branch": "master", "commit": "aa4ad82068176e9610034eedcf945289e90e5b0a" },
   "undotree": { "branch": "master", "commit": "6fa6b57cda8459e1e4b2ca34df702f55242f4e4d" },

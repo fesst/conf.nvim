@@ -1,8 +1,0 @@
--- Old treesitter folding FileType autocmds (removed: now handled by global
--- foldexpr in set.lua + fold_utils.lua layered strategy)
--- To restore: add to after/plugin/treesitter.lua
---
--- Archived behavior summary:
--- - created per-filetype treesitter folding autocmd groups for Lua/C/C++/JS/TS/JSON/HTML/CSS
--- - added a catch-all fallback group for other local filetypes
--- - duplicated folding defaults that now live in fold_utils.lua

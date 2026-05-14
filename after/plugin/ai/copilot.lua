@@ -1,3 +1,0 @@
--- Copilot plugin disabled (not in lazy.lua plugin list)
--- Config preserved in after/discharged/ai/copilot.lua
--- To restore: add { "github/copilot.vim" } to dev_list in lazy.lua

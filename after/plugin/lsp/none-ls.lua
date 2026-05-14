@@ -1,2 +1,0 @@
--- Replaced by conform.nvim (formatting) + nvim-lint (linting)
--- Old config preserved in after/discharged/lsp/none-ls.lua

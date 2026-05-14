@@ -1,1 +1,0 @@
--- render-markdown setup is in after/plugin/lsp/lsp.lua (local-only)
