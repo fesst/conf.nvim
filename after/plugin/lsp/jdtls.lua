@@ -61,7 +61,6 @@ vim.api.nvim_create_autocmd("FileType", {
         local mason_dir = home .. "/.local/share/nvim/mason" -- ===<MASON_DIR>===
         local jdtls_dir = mason_dir .. "/packages/jdtls" -- ===<JDTLS_DIR>===
         local workspace_dir = home .. "/.local/share/nvim/jdtls-workspace/" .. project_name -- ===<JDTLS_WORKSPACE_DIR>===
-        local bazel_libraries = { include = {}, sources = {} }
 
         local java_bin = "java" -- ===<JAVA_BIN>===
         -- lombok.jar: prefer ~/apps/lombok.jar, fall back to bundled one inside jdtls package
@@ -193,8 +192,7 @@ vim.api.nvim_create_autocmd("FileType", {
                             },
                         },
                     },
-                    -- Classpath: lombok + Maven jars from Bazel's external repo.
-                    -- This keeps unmanaged Bazel Java workspaces navigable in jdtls.
+                    -- Classpath: lombok jars included for jdtls.
                     project = {
                         referencedLibraries = {
                             include = { lombok_jar },
