@@ -188,7 +188,7 @@ vim.keymap.set("n", "<leader>pv", function()
     open_tree_float()
 end, { noremap = true, silent = true })
 
-vim.keymap.set("n", "<leader>pb", function()
+vim.keymap.set("n", "<leader>pl", function()
     open_tree_pane()
 end, { noremap = true, silent = true })
 
